@@ -13,10 +13,10 @@
 
 ## 当前状态
 
-- 循环计数器：3
-- 已完成：4/12
-- 进行中：FP-04
-- 待开始：FP-05, FP-07 ~ FP-12
+- 循环计数器：5
+- 已完成：5/12
+- 进行中：无
+- 待开始：FP-07 ~ FP-12
 
 ## 待处理功能点
 
@@ -25,8 +25,8 @@
 | FP-01 | WebGPU 渲染器 + TSL 基础 + WebGL 优雅降级 | `npm run dev` 启动无错；Canvas 正常渲染；不支持 WebGPU 时自动回退 WebGL | - | 已完成 |
 | FP-02 | 高级程序化星云背景（自定义 GLSL/TSL） | 背景具备多层噪声星云、尘埃带、色彩渐变；帧率稳定 | FP-01 | 已完成 |
 | FP-03 | 3D 折射玻璃标题（Text3D + MeshTransmissionMaterial） | 姓名/职称以 3D 玻璃质感呈现；带环境反射与折射 | FP-01 | 已完成 |
-| FP-04 | 全息/虹彩实体材质升级 | 五个主题实体在 hover/激活时呈现全息、虹彩或薄膜干涉效果 | FP-01 | 待开始 |
-| FP-05 | 高级后期处理栈 | 组合 Bloom、DepthOfField、ChromaticAberration、Vignette、Noise、ToneMapping | FP-01 | 待开始 |
+| FP-04 | 全息/虹彩实体材质升级 | 五个主题实体在 hover/激活时呈现全息、虹彩或薄膜干涉效果 | FP-01 | 已完成 |
+| FP-05 | 高级后期处理栈 | 组合 Bloom、DepthOfField、ChromaticAberration、Vignette、Noise、ToneMapping | FP-01 | 已完成 |
 | FP-06 | 弹簧阻尼相机 + 鼠标视差 | 相机移动带 spring-damp；鼠标移动产生平滑视差；点击实体流畅推进 | - | 已完成 |
 | FP-07 | GSAP ScrollTrigger + Lenis 平滑滚动 | 页面存在可滚动内容区；滚动驱动 3D 相机/元素动画；Lenis 提供丝滑滚动 | FP-06 | 待开始 |
 | FP-08 | GPU Instanced 粒子场 | 使用 InstancedMesh/Points 实现万级粒子；性能 60fps | FP-01 | 待开始 |
@@ -40,6 +40,8 @@
 - FP-01：Theater.jsx 已接入 WebGPURenderer 异步创建，失败自动回退 WebGLRenderer；`npm run build` 通过。
 - FP-02：GalaxyBackground.jsx 已重写为 WebGPU（NodeMaterial + TSL）/ WebGL（ShaderMaterial）双路径，包含多层分形噪声星云、色彩渐变、尘埃带、星点闪烁与缓慢旋转； Theater.jsx 同步迁移 VolumetricCone 为双路径材质并增加 WebGPU adapter 预检，避免无效初始化报错。
 - FP-03：新增 HeroText3D.jsx，使用本地 Helvetiker Bold JSON 字体渲染 "XUANRUIMU"；WebGL 路径使用 MeshTransmissionMaterial 实现折射/反射玻璃，WebGPU 路径降级为 MeshPhysicalMaterial；通过程序化 DataTexture 提供离线环境反射，并加入缓慢浮动/旋转动画；已集成到 Theater.jsx SceneContent。
+- FP-04：新增 HolographicMaterial.jsx，WebGPU 路径基于 MeshPhysicalNodeMaterial + TSL 实现 fresnel 虹彩边缘光、扫描线与 hover 能量脉冲，WebGL 路径使用 MeshPhysicalMaterial 保持 iridescence/clearcoat/sheen 能力；EntityObject.jsx 五个实体核心几何体已替换为该材质并提升 hover 旋转速度/点光源强度；Playwright 截图验证剧场渲染无控制台报错。
+- FP-05：新增 PostProcessingStack.jsx，WebGL 路径组合 Bloom（mipmapBlur + activeSection 动态强度）、DepthOfField（目标随 active/hover section 平滑插值）、ChromaticAberration（radialModulation + 动态偏移）、Vignette、Noise、ToneMapping（AGX）；WebGPU 路径通过 `gl.isWebGPURenderer` 检测跳过 EffectComposer；`npm run lint` 与 `npm run build` 通过，开发服务器正常启动。
 - FP-06：重写 CameraController.jsx，使用手写 spring-damper 实现位置/注视点双弹簧阻尼；接入鼠标位置映射为 subtle 视差位移与 ±2° 旋转；无激活 section 时启用慢速自动巡航；`pointer: fine` 媒体查询保证触控设备安全降级；`npm run lint` 与 `npm run build` 通过。
 
 ## 当前决策

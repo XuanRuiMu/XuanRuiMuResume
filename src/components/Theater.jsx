@@ -1,7 +1,8 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useRef, useMemo } from 'react'
 import * as THREE from 'three'
-import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing'
+import { NodeMaterial } from 'three/webgpu'
+import { vec3, float, uniform, smoothstep, uv } from 'three/tsl'
 import { Grid, useGLTF } from '@react-three/drei'
 
 import { Entities } from './Entities'
@@ -9,9 +10,20 @@ import { CameraController } from './CameraController'
 import { FloatingBoard } from './FloatingBoard'
 import { GalaxyBackground } from './GalaxyBackground'
 import { SpaceStation, FarStation } from './SpaceStation'
-import { useTheaterStore, SECTION_META } from '../store/useTheaterStore'
+import 玻璃文字标题 from './HeroText3D'
+import { PostProcessingStack } from './PostProcessingStack'
+import { SECTION_META } from '../store/useTheaterStore'
 
 const 创建渲染器 = async (props) => {
+  if (typeof navigator !== 'undefined' && navigator.gpu) {
+    try {
+      const adapter = await navigator.gpu.requestAdapter()
+      if (!adapter) throw new Error('WebGPU adapter not available')
+    } catch {
+      return new THREE.WebGLRenderer({ ...props, antialias: true, alpha: false, powerPreference: 'high-performance' })
+    }
+  }
+
   try {
     const { WebGPURenderer } = await import('three/webgpu')
     const renderer = new WebGPURenderer({ ...props, antialias: true, alpha: false, powerPreference: 'high-performance' })
@@ -49,40 +61,51 @@ function ArchiveRings() {
 }
 
 function VolumetricCone({ position, color }) {
-  const uniforms = useMemo(
-    () => ({
-      uColor: { value: new THREE.Color(color) },
-      uOpacity: { value: 0.08 },
-    }),
-    [color]
-  )
+  const { gl } = useThree()
+  const 是否WebGPU = gl.isWebGPURenderer === true
 
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms,
-        transparent: true,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        vertexShader: `
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 uColor;
-          uniform float uOpacity;
-          varying vec2 vUv;
-          void main() {
-            float falloff = smoothstep(0.0, 0.25, vUv.y) * (1.0 - vUv.y);
-            gl_FragColor = vec4(uColor, falloff * uOpacity);
-          }
-        `,
-      }),
-    [uniforms]
-  )
+  const material = useMemo(() => {
+    if (是否WebGPU) {
+      const uColor = uniform(new THREE.Color(color))
+      const uOpacity = uniform(0.08)
+      const vUv = uv()
+      const falloff = smoothstep(0, 0.25, vUv.y).mul(float(1).sub(vUv.y))
+
+      const mat = new NodeMaterial()
+      mat.colorNode = vec3(uColor)
+      mat.opacityNode = falloff.mul(uOpacity)
+      mat.transparent = true
+      mat.depthWrite = false
+      mat.side = THREE.DoubleSide
+      return mat
+    }
+
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: new THREE.Color(color) },
+        uOpacity: { value: 0.08 },
+      },
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform float uOpacity;
+        varying vec2 vUv;
+        void main() {
+          float falloff = smoothstep(0.0, 0.25, vUv.y) * (1.0 - vUv.y);
+          gl_FragColor = vec4(uColor, falloff * uOpacity);
+        }
+      `,
+    })
+  }, [color, 是否WebGPU])
 
   return (
     <mesh position={position} material={material} rotation={[Math.PI, 0, 0]}>
@@ -169,6 +192,7 @@ function SceneContent() {
         <GalaxyBackground />
         <SpaceStation />
         <FarStation />
+        <玻璃文字标题 />
       </Suspense>
       <ArchiveGrid />
       <ArchiveRings />
@@ -182,8 +206,6 @@ function SceneContent() {
 }
 
 export function Theater() {
-  const activeSection = useTheaterStore((s) => s.activeSection)
-
   return (
     <div className="absolute inset-0">
       <Canvas
@@ -192,16 +214,7 @@ export function Theater() {
         gl={创建渲染器}
       >
         <SceneContent />
-        <EffectComposer>
-          <Bloom
-            intensity={activeSection ? 0.9 : 0.55}
-            luminanceThreshold={0.55}
-            luminanceSmoothing={0.5}
-            mipmapBlur
-          />
-          <Vignette eskil={false} offset={0.05} darkness={0.65} />
-          <Noise opacity={0.035} />
-        </EffectComposer>
+        <PostProcessingStack />
       </Canvas>
     </div>
   )

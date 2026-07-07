@@ -13,6 +13,7 @@ import { SpaceStation, FarStation } from './SpaceStation'
 import 玻璃文字标题 from './HeroText3D'
 import { PostProcessingStack } from './PostProcessingStack'
 import { InstancedParticles } from './InstancedParticles'
+import { EnvironmentProbe } from './EnvironmentProbe'
 import { SECTION_META } from '../store/useTheaterStore'
 
 const 创建渲染器 = async (props) => {
@@ -153,6 +154,7 @@ function SceneContent() {
   return (
     <>
       <color attach="background" args={['#05070d']} />
+      <EnvironmentProbe />
       <ambientLight intensity={0.28} color="#4a5a78" />
       <hemisphereLight color="#5c6f8f" groundColor="#0f121a" intensity={0.22} position={[0, 20, 0]} />
       <directionalLight color="#a5b0c5" intensity={0.55} position={[8, 14, 8]} castShadow />

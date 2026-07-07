@@ -98,6 +98,7 @@ function ITEntity({ hovered, color, baseColor }) {
           hoverBoost={1.2}
           metalness={0.85}
           roughness={0.18}
+          envMapIntensity={1.4}
         />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -177,6 +178,7 @@ function EduEntity({ hovered, color, baseColor }) {
           metalness={0.4}
           roughness={0.18}
           clearcoat={0.4}
+          envMapIntensity={1.4}
         />
       </mesh>
       <mesh scale={hovered ? 0.55 : 0.42}>
@@ -236,6 +238,7 @@ function DesignEntity({ hovered, color, baseColor }) {
     hoverBoost: 0.9,
     metalness: 0.75,
     roughness: 0.25,
+    envMapIntensity: 1.4,
   }
 
   return (
@@ -265,6 +268,7 @@ function DesignEntity({ hovered, color, baseColor }) {
           hoverBoost={1.0}
           metalness={0.8}
           roughness={0.2}
+          envMapIntensity={1.4}
         />
       </mesh>
       <OrbitField count={5} radius={[0.85, 1.15]} speed={0.5} color={color} hovered={hovered}>
@@ -322,6 +326,7 @@ function MusicEntity({ hovered, color, baseColor }) {
           metalness={0.8}
           roughness={0.25}
           clearcoat={0.5}
+          envMapIntensity={1.4}
         />
       </mesh>
       <mesh position={[0, 0.12, 0]}>
@@ -406,6 +411,7 @@ function MediaEntity({ hovered, color, baseColor }) {
           metalness={0.55}
           roughness={0.35}
           clearcoat={0.4}
+          envMapIntensity={1.4}
         />
       </mesh>
       <OrbitField count={4} radius={[0.88, 1.12]} speed={0.4} showBeams color={color} hovered={hovered}>

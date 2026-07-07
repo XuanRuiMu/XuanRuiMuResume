@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:env": "node scripts/generate-hdr-env.js"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

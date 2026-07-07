@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Text3D, MeshTransmissionMaterial, useFont } from '@react-three/drei'
@@ -7,55 +7,17 @@ import { useTheaterStore } from '../store/useTheaterStore'
 const 字体路径 = '/fonts/helvetiker_bold.typeface.json'
 useFont.preload(字体路径)
 
-function 创建环境贴图() {
-  const 宽度 = 512
-  const 高度 = 256
-  const 数据 = new Uint8Array(宽度 * 高度 * 4)
-  const 底部色 = new THREE.Color('#0a1322')
-  const 顶部色 = new THREE.Color('#3d5a78')
-  const 高光色 = new THREE.Color('#a3bcd6')
-
-  for (let y = 0; y < 高度; y++) {
-    const t = y / (高度 - 1)
-    const 基础色 = new THREE.Color().lerpColors(底部色, 顶部色, Math.pow(1 - t, 1.6))
-    const 水平高光 = Math.max(0, 1 - Math.abs(t - 0.55) * 4)
-    const 最终色 = 基础色.clone().lerp(高光色, 水平高光 * 0.25)
-
-    for (let x = 0; x < 宽度; x++) {
-      const i = (y * 宽度 + x) * 4
-      数据[i] = Math.floor(最终色.r * 255)
-      数据[i + 1] = Math.floor(最终色.g * 255)
-      数据[i + 2] = Math.floor(最终色.b * 255)
-      数据[i + 3] = 255
-    }
-  }
-
-  const 贴图 = new THREE.DataTexture(数据, 宽度, 高度, THREE.RGBAFormat)
-  贴图.mapping = THREE.EquirectangularReflectionMapping
-  贴图.needsUpdate = true
-  return 贴图
-}
-
 export default function HeroText3D() {
   const 网格引用 = useRef()
-  const { gl, scene } = useThree()
+  const { gl } = useThree()
   const 是否WebGPU = gl.isWebGPURenderer === true
-
-  useEffect(() => {
-    const 贴图 = 创建环境贴图()
-    scene.environment = 贴图
-    return () => {
-      scene.environment = null
-      贴图.dispose()
-    }
-  }, [scene])
 
   const 基础材质属性 = useMemo(
     () => ({
       color: new THREE.Color('#aaccff'),
-      roughness: 0.15,
-      ior: 1.5,
-      envMapIntensity: 1.2,
+      roughness: 0.12,
+      ior: 1.55,
+      envMapIntensity: 1.6,
     }),
     []
   )

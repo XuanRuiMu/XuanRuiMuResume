@@ -2,7 +2,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useRef, useMemo } from 'react'
 import * as THREE from 'three'
 import { NodeMaterial } from 'three/webgpu'
-import { vec3, float, uniform, smoothstep, uv } from 'three/tsl'
+import { vec3, float, uniform, smoothstep, uv, positionWorld, mx_noise_float, abs, max, div, oneMinus, pow } from 'three/tsl'
 import { Grid, useGLTF } from '@react-three/drei'
 
 import { Entities } from './Entities'
@@ -14,7 +14,7 @@ import 玻璃文字标题 from './HeroText3D'
 import { PostProcessingStack } from './PostProcessingStack'
 import { InstancedParticles } from './InstancedParticles'
 import { EnvironmentProbe } from './EnvironmentProbe'
-import { SECTION_META } from '../store/useTheaterStore'
+import { useTheaterStore, SECTION_META } from '../store/useTheaterStore'
 
 const 创建渲染器 = async (props) => {
   if (typeof navigator !== 'undefined' && navigator.gpu) {
@@ -62,56 +62,166 @@ function ArchiveRings() {
   )
 }
 
-function VolumetricCone({ position, color }) {
+function VolumetricCone({ position, color, section }) {
   const { gl } = useThree()
   const 是否WebGPU = gl.isWebGPURenderer === true
+  const activeSection = useTheaterStore((s) => s.activeSection)
+  const hoveredSection = useTheaterStore((s) => s.hoveredSection)
+  const isActive = activeSection === section
+  const isHovered = hoveredSection === section
 
-  const material = useMemo(() => {
+  const { material, uniforms } = useMemo(() => {
+    const uniforms = {
+      uColor: { value: new THREE.Color(color) },
+      uOpacity: { value: 0.12 },
+      uIntensity: { value: 1.0 },
+      uTime: { value: 0 },
+      uNoiseScale: { value: 1.2 },
+      uNoiseSpeed: { value: 0.35 },
+    }
+
     if (是否WebGPU) {
-      const uColor = uniform(new THREE.Color(color))
-      const uOpacity = uniform(0.08)
+      const 颜色Uniform = uniform(uniforms.uColor.value)
+      const 透明度Uniform = uniform(uniforms.uOpacity.value)
+      const 强度Uniform = uniform(uniforms.uIntensity.value)
+      const 时间Uniform = uniform(uniforms.uTime.value)
+      const 噪声缩放Uniform = uniform(uniforms.uNoiseScale.value)
+      const 噪声速度Uniform = uniform(uniforms.uNoiseSpeed.value)
+
       const vUv = uv()
-      const falloff = smoothstep(0, 0.25, vUv.y).mul(float(1).sub(vUv.y))
+      const 高度 = vUv.y
+      const 径向偏移 = abs(vUv.x.sub(0.5)).mul(2.0)
+      const 边缘距离 = div(径向偏移, max(高度, 0.05))
+      const 高度衰减 = smoothstep(0.0, 0.12, 高度).mul(pow(oneMinus(高度), 0.4))
+      const 边缘衰减 = oneMinus(smoothstep(0.0, 0.75, 边缘距离))
+      const 基础透明度 = 高度衰减.mul(边缘衰减)
+
+      const 噪声位置 = positionWorld.mul(噪声缩放Uniform).add(vec3(0.0, 时间Uniform.mul(噪声速度Uniform), 0.0))
+      const 噪声值 = mx_noise_float(噪声位置)
+      const 尘粒 = float(0.7).add(float(0.3).mul(噪声值))
+      const alpha = 基础透明度.mul(尘粒).mul(透明度Uniform).mul(强度Uniform)
+      const finalColor = vec3(颜色Uniform).mul(float(1.0).add(float(0.2).mul(噪声值)))
+
+      uniforms.uColor = 颜色Uniform
+      uniforms.uOpacity = 透明度Uniform
+      uniforms.uIntensity = 强度Uniform
+      uniforms.uTime = 时间Uniform
+      uniforms.uNoiseScale = 噪声缩放Uniform
+      uniforms.uNoiseSpeed = 噪声速度Uniform
 
       const mat = new NodeMaterial()
-      mat.colorNode = vec3(uColor)
-      mat.opacityNode = falloff.mul(uOpacity)
+      mat.colorNode = finalColor
+      mat.opacityNode = alpha
       mat.transparent = true
       mat.depthWrite = false
       mat.side = THREE.DoubleSide
-      return mat
+      mat.blending = THREE.AdditiveBlending
+      return { material: mat, uniforms }
     }
 
-    return new THREE.ShaderMaterial({
-      uniforms: {
-        uColor: { value: new THREE.Color(color) },
-        uOpacity: { value: 0.08 },
-      },
+    const mat = new THREE.ShaderMaterial({
+      uniforms,
       transparent: true,
       depthWrite: false,
       side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
       vertexShader: `
         varying vec2 vUv;
+        varying vec3 vWorldPos;
         void main() {
           vUv = uv;
+          vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
         uniform vec3 uColor;
         uniform float uOpacity;
+        uniform float uIntensity;
+        uniform float uTime;
+        uniform float uNoiseScale;
+        uniform float uNoiseSpeed;
         varying vec2 vUv;
+        varying vec3 vWorldPos;
+
+        vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
+        vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+        float snoise(vec3 v) {
+          const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
+          const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+          vec3 i = floor(v + dot(v, C.yyy));
+          vec3 x0 = v - i + dot(i, C.xxx);
+          vec3 g = step(x0.yzx, x0.xyz);
+          vec3 l = 1.0 - g;
+          vec3 i1 = min(g.xyz, l.zxy);
+          vec3 i2 = max(g.xyz, l.zxy);
+          vec3 x1 = x0 - i1 + C.xxx;
+          vec3 x2 = x0 - i2 + C.yyy;
+          vec3 x3 = x0 - D.yyy;
+          i = mod289(i);
+          vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+          float n_ = 0.142857142857;
+          vec3 ns = n_ * D.wyz - D.xzx;
+          vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+          vec4 x_ = floor(j * ns.z);
+          vec4 y_ = floor(j - 7.0 * x_);
+          vec4 x = x_ * ns.x + ns.yyyy;
+          vec4 y = y_ * ns.x + ns.yyyy;
+          vec4 h = 1.0 - abs(x) - abs(y);
+          vec4 b0 = vec4(x.xy, y.xy);
+          vec4 b1 = vec4(x.zw, y.zw);
+          vec4 s0 = floor(b0) * 2.0 + 1.0;
+          vec4 s1 = floor(b1) * 2.0 + 1.0;
+          vec4 sh = -step(h, vec4(0.0));
+          vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+          vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+          vec3 p0 = vec3(a0.xy, h.x);
+          vec3 p1 = vec3(a0.zw, h.y);
+          vec3 p2 = vec3(a1.xy, h.z);
+          vec3 p3 = vec3(a1.zw, h.w);
+          vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+          p0 *= norm.x;
+          p1 *= norm.y;
+          p2 *= norm.z;
+          p3 *= norm.w;
+          vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+          m = m * m;
+          return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+        }
+
         void main() {
-          float falloff = smoothstep(0.0, 0.25, vUv.y) * (1.0 - vUv.y);
-          gl_FragColor = vec4(uColor, falloff * uOpacity);
+          float h = vUv.y;
+          float r = abs(vUv.x - 0.5) * 2.0;
+          float edgeDist = r / max(h, 0.05);
+          float heightFalloff = smoothstep(0.0, 0.12, h) * pow(1.0 - h, 0.4);
+          float edgeFalloff = 1.0 - smoothstep(0.0, 0.75, edgeDist);
+          float baseAlpha = heightFalloff * edgeFalloff;
+          float n = snoise(vWorldPos * uNoiseScale + vec3(0.0, uTime * uNoiseSpeed, 0.0));
+          float dust = 0.7 + 0.3 * n;
+          float alpha = baseAlpha * dust * uOpacity * uIntensity;
+          vec3 finalColor = uColor * (1.0 + 0.2 * n);
+          gl_FragColor = vec4(finalColor, alpha);
         }
       `,
     })
+
+    return { material: mat, uniforms }
   }, [color, 是否WebGPU])
 
+  useFrame((state, delta) => {
+    const 目标强度 = isActive ? 2.4 : isHovered ? 1.8 : 1.0
+    const 目标透明度 = isActive ? 0.24 : isHovered ? 0.19 : 0.12
+    uniforms.uIntensity.value = THREE.MathUtils.lerp(uniforms.uIntensity.value, 目标强度, Math.min(delta * 5, 1))
+    uniforms.uOpacity.value = THREE.MathUtils.lerp(uniforms.uOpacity.value, 目标透明度, Math.min(delta * 5, 1))
+    uniforms.uTime.value = state.clock.elapsedTime
+  })
+
   return (
-    <mesh position={position} material={material} rotation={[Math.PI, 0, 0]}>
-      <cylinderGeometry args={[2.6, 0.08, 10, 32, 1, true]} />
+    <mesh position={position} material={material}>
+      <cylinderGeometry args={[2.2, 0.02, 7.5, 16, 1, true]} />
     </mesh>
   )
 }
@@ -123,7 +233,7 @@ function EntitySpotlights() {
         const angle = (i * 72 - 90) * (Math.PI / 180)
         const x = Math.cos(angle) * 3.6
         const z = Math.sin(angle) * 3.6
-        return <VolumetricCone key={section} position={[x, 9, z]} color={SECTION_META[section].color} />
+        return <VolumetricCone key={section} section={section} position={[x, 4.25, z]} color={SECTION_META[section].color} />
       })}
     </group>
   )

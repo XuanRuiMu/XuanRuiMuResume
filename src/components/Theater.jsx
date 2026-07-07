@@ -12,6 +12,7 @@ import { GalaxyBackground } from './GalaxyBackground'
 import { SpaceStation, FarStation } from './SpaceStation'
 import 玻璃文字标题 from './HeroText3D'
 import { PostProcessingStack } from './PostProcessingStack'
+import { InstancedParticles } from './InstancedParticles'
 import { SECTION_META } from '../store/useTheaterStore'
 
 const 创建渲染器 = async (props) => {
@@ -127,36 +128,6 @@ function EntitySpotlights() {
   )
 }
 
-function AmbientDust() {
-  const count = 600
-  const points = useMemo(() => {
-    const positions = new Float32Array(count * 3)
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 40
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 20 + 4
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 40
-    }
-    return positions
-  }, [])
-
-  const ref = useRef()
-  useFrame((state) => {
-    if (ref.current) {
-      ref.current.rotation.y = state.clock.elapsedTime * 0.003
-      ref.current.position.y = Math.sin(state.clock.elapsedTime * 0.15) * 0.2
-    }
-  })
-
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={count} array={points} itemSize={3} />
-      </bufferGeometry>
-      <pointsMaterial color="#7c8fa8" size={0.035} transparent opacity={0.3} sizeAttenuation />
-    </points>
-  )
-}
-
 function ArchiveGrid() {
   return (
     <Grid
@@ -197,7 +168,7 @@ function SceneContent() {
       <ArchiveGrid />
       <ArchiveRings />
       <EntitySpotlights />
-      <AmbientDust />
+      <InstancedParticles />
       <Entities />
       <FloatingBoard />
       <CameraController />

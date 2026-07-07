@@ -8,6 +8,8 @@ export const SECTIONS = {
   MEDIA: 'media',
 }
 
+export const SECTION_ORDER = [SECTIONS.IT, SECTIONS.EDU, SECTIONS.DESIGN, SECTIONS.MUSIC, SECTIONS.MEDIA]
+
 export const SECTION_META = {
   [SECTIONS.IT]: {
     id: SECTIONS.IT,
@@ -57,6 +59,9 @@ export const useTheaterStore = create((set, get) => ({
   transitioning: false,
   audioEnabled: false,
   cameraTarget: null,
+  scrollProgress: 0,
+  scrollSectionIndex: 0,
+  scrollSection: null,
 
   setActiveSection: (section) => {
     if (get().transitioning) return
@@ -73,4 +78,6 @@ export const useTheaterStore = create((set, get) => ({
   setHoveredSection: (section) => set({ hoveredSection: section }),
   setAudioEnabled: (enabled) => set({ audioEnabled: enabled }),
   setCameraTarget: (target) => set({ cameraTarget: target }),
+  setScrollProgress: (progress, index, section) =>
+    set({ scrollProgress: progress, scrollSectionIndex: index, scrollSection: section }),
 }))

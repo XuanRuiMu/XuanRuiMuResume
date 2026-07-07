@@ -4,6 +4,7 @@ import { Html } from '@react-three/drei'
 import * as THREE from 'three'
 import { useTheaterStore, SECTION_META } from '../store/useTheaterStore'
 import { audioManager } from '../utils/audio'
+import { HolographicMaterial } from './HolographicMaterial'
 
 function OrbitField({ count, radius, speed = 1, children, showBeams = false, color, hovered }) {
   const objectsRef = useRef([])
@@ -75,26 +76,28 @@ function GlowRing({ radius, tube = 0.012, color, opacity, hovered, rotateSpeed =
   )
 }
 
-function ITEntity({ hovered, color }) {
+function ITEntity({ hovered, color, baseColor }) {
   const group = useRef()
   useFrame((state) => {
     if (group.current) {
-      group.current.rotation.y += hovered ? 0.022 : 0.006
+      group.current.rotation.y += hovered ? 0.032 : 0.008
       group.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.25) * 0.03
     }
   })
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 2.0 : 0.7} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 2.4 : 0.7} distance={5.5} decay={2} position={[0, 0, 0]} />
       <mesh>
         <icosahedronGeometry args={[0.38, 1]} />
-        <meshStandardMaterial
-          color="#050a12"
-          emissive={color}
-          emissiveIntensity={hovered ? 1.0 : 0.48}
-          roughness={0.2}
+        <HolographicMaterial
+          color={color}
+          baseColor={baseColor}
+          hovered={hovered}
+          baseIntensity={0.45}
+          hoverBoost={1.2}
           metalness={0.85}
+          roughness={0.18}
         />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -151,28 +154,29 @@ function ITEntity({ hovered, color }) {
   )
 }
 
-function EduEntity({ hovered, color }) {
+function EduEntity({ hovered, color, baseColor }) {
   const group = useRef()
   useFrame((state) => {
     if (group.current) {
-      group.current.rotation.y = state.clock.elapsedTime * (hovered ? 0.32 : 0.1)
+      group.current.rotation.y = state.clock.elapsedTime * (hovered ? 0.4 : 0.12)
       group.current.position.y = Math.sin(state.clock.elapsedTime * 1.1) * 0.06
     }
   })
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 1.9 : 0.65} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 2.3 : 0.65} distance={5.5} decay={2} position={[0, 0, 0]} />
       <mesh>
         <octahedronGeometry args={[0.48, 0]} />
-        <meshStandardMaterial
-          color="#f5ecd8"
-          emissive={color}
-          emissiveIntensity={hovered ? 0.8 : 0.35}
+        <HolographicMaterial
+          color={color}
+          baseColor={baseColor}
+          hovered={hovered}
+          baseIntensity={0.35}
+          hoverBoost={1.1}
+          metalness={0.4}
           roughness={0.18}
-          metalness={0.35}
-          transparent
-          opacity={0.95}
+          clearcoat={0.4}
         />
       </mesh>
       <mesh scale={hovered ? 0.55 : 0.42}>
@@ -215,51 +219,52 @@ function EduEntity({ hovered, color }) {
   )
 }
 
-function DesignEntity({ hovered, color }) {
+function DesignEntity({ hovered, color, baseColor }) {
   const group = useRef()
   useFrame((state) => {
     if (group.current) {
-      group.current.rotation.y = state.clock.elapsedTime * (hovered ? 0.28 : 0.08)
+      group.current.rotation.y = state.clock.elapsedTime * (hovered ? 0.34 : 0.1)
       group.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.3) * 0.04
     }
   })
 
-  const barMat = useMemo(
-    () => ({
-      color: '#141414',
-      emissive: color,
-      emissiveIntensity: hovered ? 0.9 : 0.45,
-      roughness: 0.25,
-      metalness: 0.75,
-    }),
-    [hovered, color]
-  )
+  const 条材质属性 = {
+    color,
+    baseColor,
+    hovered,
+    baseIntensity: 0.4,
+    hoverBoost: 0.9,
+    metalness: 0.75,
+    roughness: 0.25,
+  }
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 1.8 : 0.6} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 2.2 : 0.6} distance={5.5} decay={2} position={[0, 0, 0]} />
       <group scale={hovered ? 1.12 : 1}>
         <mesh rotation={[0, 0, Math.PI / 3]} position={[0, 0.42, 0]}>
           <boxGeometry args={[1.4, 0.16, 0.16]} />
-          <meshStandardMaterial {...barMat} />
+          <HolographicMaterial {...条材质属性} />
         </mesh>
         <mesh rotation={[0, 0, -Math.PI / 3]} position={[0.6, -0.28, 0]}>
           <boxGeometry args={[1.4, 0.16, 0.16]} />
-          <meshStandardMaterial {...barMat} />
+          <HolographicMaterial {...条材质属性} />
         </mesh>
         <mesh rotation={[0, 0, Math.PI]} position={[-0.6, -0.28, 0]}>
           <boxGeometry args={[1.4, 0.16, 0.16]} />
-          <meshStandardMaterial {...barMat} />
+          <HolographicMaterial {...条材质属性} />
         </mesh>
       </group>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <torusKnotGeometry args={[0.62, 0.04, 128, 8, 2, 3]} />
-        <meshStandardMaterial
-          color="#0a0a0a"
-          emissive={color}
-          emissiveIntensity={hovered ? 0.75 : 0.35}
-          roughness={0.2}
+        <HolographicMaterial
+          color={color}
+          baseColor={baseColor}
+          hovered={hovered}
+          baseIntensity={0.35}
+          hoverBoost={1.0}
           metalness={0.8}
+          roughness={0.2}
         />
       </mesh>
       <OrbitField count={5} radius={[0.85, 1.15]} speed={0.5} color={color} hovered={hovered}>
@@ -286,7 +291,7 @@ function DesignEntity({ hovered, color }) {
   )
 }
 
-function MusicEntity({ hovered, color }) {
+function MusicEntity({ hovered, color, baseColor }) {
   const group = useRef()
   const pads = useMemo(() => {
     const notes = ['#00D9FF', '#FF9F43', '#A55EEA', '#A855F7', '#FF6B9D', '#4ECDC4', '#00D9FF', '#FF006E']
@@ -299,21 +304,24 @@ function MusicEntity({ hovered, color }) {
 
   useFrame((state) => {
     if (group.current) {
-      group.current.rotation.y = state.clock.elapsedTime * (hovered ? 0.45 : 0.12)
+      group.current.rotation.y = state.clock.elapsedTime * (hovered ? 0.55 : 0.14)
     }
   })
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 2.0 : 0.7} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 2.4 : 0.7} distance={5.5} decay={2} position={[0, 0, 0]} />
       <mesh>
         <cylinderGeometry args={[0.75, 0.8, 0.22, 40]} />
-        <meshStandardMaterial
-          color="#0a0a0a"
-          emissive={color}
-          emissiveIntensity={hovered ? 0.7 : 0.3}
-          roughness={0.25}
+        <HolographicMaterial
+          color={color}
+          baseColor={baseColor}
+          hovered={hovered}
+          baseIntensity={0.35}
+          hoverBoost={1.1}
           metalness={0.8}
+          roughness={0.25}
+          clearcoat={0.5}
         />
       </mesh>
       <mesh position={[0, 0.12, 0]}>
@@ -365,7 +373,7 @@ function MusicEntity({ hovered, color }) {
   )
 }
 
-function MediaEntity({ hovered, color }) {
+function MediaEntity({ hovered, color, baseColor }) {
   const group = useRef()
   const fragments = useMemo(
     () => [
@@ -379,22 +387,25 @@ function MediaEntity({ hovered, color }) {
 
   useFrame((state) => {
     if (group.current) {
-      group.current.rotation.y = state.clock.elapsedTime * (hovered ? 0.28 : 0.09)
+      group.current.rotation.y = state.clock.elapsedTime * (hovered ? 0.34 : 0.1)
       group.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.22) * 0.04
     }
   })
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 1.9 : 0.65} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 2.3 : 0.65} distance={5.5} decay={2} position={[0, 0, 0]} />
       <mesh>
         <dodecahedronGeometry args={[0.48, 0]} />
-        <meshStandardMaterial
-          color="#1a0f16"
-          emissive={color}
-          emissiveIntensity={hovered ? 0.9 : 0.4}
-          roughness={0.35}
+        <HolographicMaterial
+          color={color}
+          baseColor={baseColor}
+          hovered={hovered}
+          baseIntensity={0.4}
+          hoverBoost={1.1}
           metalness={0.55}
+          roughness={0.35}
+          clearcoat={0.4}
         />
       </mesh>
       <OrbitField count={4} radius={[0.88, 1.12]} speed={0.4} showBeams color={color} hovered={hovered}>
@@ -474,11 +485,14 @@ export function EntityObject({ section, position, angle }) {
   const meta = SECTION_META[section]
   const activeSection = useTheaterStore((s) => s.activeSection)
   const hoveredSection = useTheaterStore((s) => s.hoveredSection)
+  const scrollSection = useTheaterStore((s) => s.scrollSection)
   const setHoveredSection = useTheaterStore((s) => s.setHoveredSection)
   const setActiveSection = useTheaterStore((s) => s.setActiveSection)
   const audioEnabled = useTheaterStore((s) => s.audioEnabled)
   const isActive = activeSection === section
   const isHovered = hoveredSection === section && activeSection === null
+  const isScrollFocused = scrollSection === section && activeSection === null
+  const isFocused = isHovered || isScrollFocused
 
   useFrame((state) => {
     if (!groupRef.current) return
@@ -517,19 +531,19 @@ export function EntityObject({ section, position, angle }) {
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
       onClick={handleClick}
-      scale={isActive ? 0.001 : isHovered ? 1.2 : 1}
+      scale={isActive ? 0.001 : isFocused ? 1.15 : 1}
     >
       <mesh position={[0, -0.95, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.45, 0.52, 32]} />
-        <meshBasicMaterial color={meta.color} transparent opacity={isHovered ? 0.75 : 0.28} />
+        <meshBasicMaterial color={meta.color} transparent opacity={isFocused ? 0.75 : 0.28} />
       </mesh>
-      <EntityComponent hovered={isHovered} color={meta.color} />
+      <EntityComponent hovered={isFocused} color={meta.color} baseColor={meta.darkColor} />
       <Html center distanceFactor={8} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div
           className="text-center transition-all duration-300"
           style={{
-            opacity: activeSection ? 0 : isHovered ? 1 : 0,
-            transform: `translateY(${isHovered ? -110 : -90}px)`,
+            opacity: activeSection ? 0 : isFocused ? 1 : 0,
+            transform: `translateY(${isFocused ? -110 : -90}px)`,
             transition: 'all 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
           }}
         >

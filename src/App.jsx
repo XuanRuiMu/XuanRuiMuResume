@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Theater } from './components/Theater'
+import { ScrollOverlay } from './components/ScrollOverlay'
 import { MobileFallback } from './components/MobileFallback'
 import { personalInfo } from './data/resumeData'
 import { useTheaterStore } from './store/useTheaterStore'
@@ -19,7 +20,7 @@ function IntroOverlay() {
   if (!show) return null
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-theater-bg/90 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-theater-bg/90 backdrop-blur-md">
       <div className="text-center max-w-md px-6">
         <h1 className="text-5xl font-medium tracking-tight mb-2 text-white">{personalInfo.name}</h1>
         <p className="text-white/60 mb-8">{personalInfo.target}</p>
@@ -55,7 +56,7 @@ function AudioToggle() {
           audioManager.ensureRunning()
         }
       }}
-      className="absolute top-5 right-5 z-40 p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-colors"
+      className="fixed top-5 right-5 z-40 p-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-colors"
       aria-label={audioEnabled ? '关闭音效' : '开启音效'}
     >
       {audioEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
@@ -68,7 +69,7 @@ function HeroLabel() {
   if (activeSection) return null
 
   return (
-    <div className="absolute top-6 left-6 z-30 pointer-events-none">
+    <div className="fixed top-6 left-6 z-30 pointer-events-none">
       <h1 className="text-3xl font-medium text-white tracking-tight">{personalInfo.name}</h1>
       <p className="text-sm text-white/50 mt-1">{personalInfo.target}</p>
     </div>
@@ -88,11 +89,12 @@ function App() {
   if (isMobile) return <MobileFallback />
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full min-h-screen">
       <IntroOverlay />
       <AudioToggle />
       <HeroLabel />
       <Theater />
+      <ScrollOverlay />
     </div>
   )
 }

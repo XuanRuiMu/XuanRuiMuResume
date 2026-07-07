@@ -13,10 +13,10 @@
 
 ## 当前状态
 
-- 循环计数器：5
-- 已完成：5/12
+- 循环计数器：6
+- 已完成：6/12
 - 进行中：无
-- 待开始：FP-07 ~ FP-12
+- 待开始：FP-08 ~ FP-12
 
 ## 待处理功能点
 
@@ -28,7 +28,7 @@
 | FP-04 | 全息/虹彩实体材质升级 | 五个主题实体在 hover/激活时呈现全息、虹彩或薄膜干涉效果 | FP-01 | 已完成 |
 | FP-05 | 高级后期处理栈 | 组合 Bloom、DepthOfField、ChromaticAberration、Vignette、Noise、ToneMapping | FP-01 | 已完成 |
 | FP-06 | 弹簧阻尼相机 + 鼠标视差 | 相机移动带 spring-damp；鼠标移动产生平滑视差；点击实体流畅推进 | - | 已完成 |
-| FP-07 | GSAP ScrollTrigger + Lenis 平滑滚动 | 页面存在可滚动内容区；滚动驱动 3D 相机/元素动画；Lenis 提供丝滑滚动 | FP-06 | 待开始 |
+| FP-07 | GSAP ScrollTrigger + Lenis 平滑滚动 | 页面存在可滚动内容区；滚动驱动 3D 相机/元素动画；Lenis 提供丝滑滚动 | FP-06 | 已完成 |
 | FP-08 | GPU Instanced 粒子场 | 使用 InstancedMesh/Points 实现万级粒子；性能 60fps | FP-01 | 待开始 |
 | FP-09 | 环境 HDR 反射 | 加载 HDR/EXR 环境贴图；玻璃/金属材质出现真实反射 | FP-01 | 待开始 |
 | FP-10 | 体积光/上帝光束 | 在实体周围实现锥形体积光或光柱效果 | FP-01 | 待开始 |
@@ -43,6 +43,7 @@
 - FP-04：新增 HolographicMaterial.jsx，WebGPU 路径基于 MeshPhysicalNodeMaterial + TSL 实现 fresnel 虹彩边缘光、扫描线与 hover 能量脉冲，WebGL 路径使用 MeshPhysicalMaterial 保持 iridescence/clearcoat/sheen 能力；EntityObject.jsx 五个实体核心几何体已替换为该材质并提升 hover 旋转速度/点光源强度；Playwright 截图验证剧场渲染无控制台报错。
 - FP-05：新增 PostProcessingStack.jsx，WebGL 路径组合 Bloom（mipmapBlur + activeSection 动态强度）、DepthOfField（目标随 active/hover section 平滑插值）、ChromaticAberration（radialModulation + 动态偏移）、Vignette、Noise、ToneMapping（AGX）；WebGPU 路径通过 `gl.isWebGPURenderer` 检测跳过 EffectComposer；`npm run lint` 与 `npm run build` 通过，开发服务器正常启动。
 - FP-06：重写 CameraController.jsx，使用手写 spring-damper 实现位置/注视点双弹簧阻尼；接入鼠标位置映射为 subtle 视差位移与 ±2° 旋转；无激活 section 时启用慢速自动巡航；`pointer: fine` 媒体查询保证触控设备安全降级；`npm run lint` 与 `npm run build` 通过。
+- FP-07：安装 `@gsap/react` 与 `lenis`；新增 ScrollOverlay.jsx 集成 Lenis 平滑滚动与 GSAP ScrollTrigger（含 scrollerProxy）；在页面前景添加 6 屏可滚动 DOM 覆盖层与占位卡片；CameraController.jsx 根据 scrollProgress 以 spring-damper 驱动相机 subtle 弧线；EntityObject.jsx 与 HeroText3D.jsx 响应滚动实现旋转/缩放/发光/位移动画；点击实体进入详情的交互保留；`npm run lint` 与 `npm run build` 通过，开发服务器正常启动。
 
 ## 当前决策
 

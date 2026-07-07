@@ -12,8 +12,6 @@ const 刚度 = 0.008
 const 阻尼 = 0.075
 const 视差位移强度 = 0.25
 const 视差俯仰强度 = 0.035
-const 巡航半径 = 0.12
-const 巡航速度 = 0.00025
 
 export function CameraController() {
   const { camera } = useThree()
@@ -91,16 +89,19 @@ export function CameraController() {
     const scale = dt * 60
 
     if (!activeSection) {
-      const t = state.clock.elapsedTime * 巡航速度 * 1000
+      const 滚动进度 = useTheaterStore.getState().scrollProgress || 0
+      const 角度 = 滚动进度 * Math.PI * 1.2 - Math.PI * 0.6
+      const 时间漂移 = state.clock.elapsedTime * 0.0003
+
       目标位置.current.set(
-        Math.sin(t) * 巡航半径,
-        默认位置.y + Math.sin(t * 1.3) * 巡航半径 * 0.35,
-        默认位置.z + Math.cos(t * 0.7) * 巡航半径 * 0.65
+        Math.sin(角度 + 时间漂移) * 2.0,
+        0.9 + 滚动进度 * 0.4 + Math.sin(时间漂移 * 1.3) * 0.04,
+        9.5 + Math.cos(角度 + 时间漂移) * 0.4
       )
       目标注视.current.set(
-        Math.sin(t * 0.7) * 巡航半径 * 0.3,
-        默认注视.y,
-        Math.cos(t * 0.5) * 巡航半径 * 0.2
+        Math.sin(角度 + 时间漂移 * 0.7) * 3.5,
+        0.7 + Math.sin(滚动进度 * Math.PI) * 0.25,
+        Math.cos(角度 + 时间漂移 * 0.7) * 2.0 - 1.5
       )
     }
 

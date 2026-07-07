@@ -207,7 +207,7 @@ function SceneContent() {
 
 export function Theater() {
   return (
-    <div className="absolute inset-0">
+    <div className="fixed inset-0 z-0">
       <Canvas
         camera={{ position: [0, 0.8, 10], fov: 50, near: 0.1, far: 200 }}
         dpr={[1, 1.5]}

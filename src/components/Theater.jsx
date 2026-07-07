@@ -3,12 +3,25 @@ import { Suspense, useRef, useMemo } from 'react'
 import * as THREE from 'three'
 import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing'
 import { Grid, useGLTF } from '@react-three/drei'
+
 import { Entities } from './Entities'
 import { CameraController } from './CameraController'
 import { FloatingBoard } from './FloatingBoard'
 import { GalaxyBackground } from './GalaxyBackground'
 import { SpaceStation, FarStation } from './SpaceStation'
 import { useTheaterStore, SECTION_META } from '../store/useTheaterStore'
+
+const 创建渲染器 = async (props) => {
+  try {
+    const { WebGPURenderer } = await import('three/webgpu')
+    const renderer = new WebGPURenderer({ ...props, antialias: true, alpha: false, powerPreference: 'high-performance' })
+    await renderer.init()
+    return renderer
+  } catch (err) {
+    console.warn('WebGPU 初始化失败，回退到 WebGLRenderer：', err)
+    return new THREE.WebGLRenderer({ ...props, antialias: true, alpha: false, powerPreference: 'high-performance' })
+  }
+}
 
 useGLTF.preload('/models/5TxCebwK2h.glb')
 useGLTF.preload('/models/emG0dq38D8f.glb')
@@ -176,7 +189,7 @@ export function Theater() {
       <Canvas
         camera={{ position: [0, 0.8, 10], fov: 50, near: 0.1, far: 200 }}
         dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+        gl={创建渲染器}
       >
         <SceneContent />
         <EffectComposer>

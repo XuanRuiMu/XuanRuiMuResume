@@ -2,12 +2,101 @@ import { useEffect, useRef } from 'react'
 import Lenis from 'lenis'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { MapPin, Mail, Phone, Code, ExternalLink, User, Rocket } from 'lucide-react'
 import { useTheaterStore, SECTION_ORDER, SECTION_META } from '../store/useTheaterStore'
+import { personalInfo } from '../data/resumeData'
+import { ITPanel } from './panels/ITPanel'
+import { EduPanel } from './panels/EduPanel'
+import { DesignPanel } from './panels/DesignPanel'
+import { MusicPanel } from './panels/MusicPanel'
+import { MediaPanel } from './panels/MediaPanel'
 
 gsap.registerPlugin(ScrollTrigger)
 
-function 滚动章节卡片({ section, index }) {
+const 面板映射 = {
+  it: ITPanel,
+  edu: EduPanel,
+  design: DesignPanel,
+  music: MusicPanel,
+  media: MediaPanel,
+}
+
+function 联系方式链接({ href, icon: Icon, children }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="pointer-events-auto flex items-center gap-1.5 text-xs text-white/60 hover:text-white transition-colors"
+    >
+      <Icon size={12} />
+      {children}
+    </a>
+  )
+}
+
+function 英雄屏() {
+  return (
+    <section
+      className="relative min-h-screen flex items-center justify-start px-6 md:px-16 pointer-events-none"
+      data-section="hero"
+    >
+      <div className="pointer-events-auto w-full max-w-xl glass-panel rounded-2xl p-8 md:p-10 ml-0 md:ml-12 border-white/10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/70">
+            <User size={20} />
+          </div>
+          <div>
+            <h1 className="text-3xl md:text-5xl font-medium text-white tracking-tight">{personalInfo.name}</h1>
+            <p className="text-sm text-white/50">{personalInfo.age} 岁 · {personalInfo.location}</p>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <div className="flex items-center gap-2 text-it-cyan text-sm font-medium mb-2">
+            <Rocket size={14} />
+            求职方向
+          </div>
+          <p className="text-base md:text-lg text-white/90 leading-relaxed">{personalInfo.target}</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">期望城市</div>
+            <div className="text-sm text-white/90">{personalInfo.expectedCity}</div>
+          </div>
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">到岗时间</div>
+            <div className="text-sm text-white/90">{personalInfo.availability}</div>
+          </div>
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">期望薪资</div>
+            <div className="text-sm text-white/90">{personalInfo.salary}</div>
+          </div>
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+            <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">学历</div>
+            <div className="text-sm text-white/90">{personalInfo.education.school} · {personalInfo.education.degree}</div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-white/10">
+          <联系方式链接 href={`tel:${personalInfo.phone}`} icon={Phone}>{personalInfo.phone}</联系方式链接>
+          <联系方式链接 href={`mailto:${personalInfo.email}`} icon={Mail}>{personalInfo.email}</联系方式链接>
+          <联系方式链接 href={personalInfo.github} icon={Code}>GitHub</联系方式链接>
+          <联系方式链接 href={personalInfo.bilibili} icon={ExternalLink}>B站</联系方式链接>
+          <span className="flex items-center gap-1.5 text-xs text-white/40">
+            <MapPin size={12} />
+            {personalInfo.location}
+          </span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function 内容屏({ section, index }) {
   const meta = SECTION_META[section]
+  const Panel = 面板映射[section]
 
   return (
     <section
@@ -26,10 +115,7 @@ function 滚动章节卡片({ section, index }) {
           {meta.title}
         </h2>
         <p className="text-sm md:text-base text-white/70 mb-4">{meta.subtitle}</p>
-        <p className="text-sm text-white/50 leading-relaxed">{meta.description}</p>
-        <div className="mt-6 h-1 rounded-full overflow-hidden bg-white/10">
-          <div className="h-full rounded-full" style={{ width: '100%', backgroundColor: meta.color }} />
-        </div>
+        <Panel />
       </div>
     </section>
   )
@@ -112,9 +198,9 @@ export function ScrollOverlay() {
 
   return (
     <div ref={containerRef} className="relative z-10 pointer-events-none">
-      <section className="min-h-screen pointer-events-none" data-section="hero" />
+      <英雄屏 />
       {SECTION_ORDER.map((section, i) => (
-        <滚动章节卡片 key={section} section={section} index={i} />
+        <内容屏 key={section} section={section} index={i} />
       ))}
     </div>
   )

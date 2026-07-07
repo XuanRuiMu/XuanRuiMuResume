@@ -1,362 +1,228 @@
 import { useRef, useMemo, useEffect } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { NodeMaterial } from 'three/webgpu'
+import {
+  vec3,
+  float,
+  uniform,
+  mix,
+  smoothstep,
+  clamp,
+  sin,
+  pow,
+  step,
+  positionWorld,
+  normalize,
+  atan,
+  mx_fractal_noise_float,
+  hash,
+} from 'three/tsl'
 
-const STAR_VERT = /* glsl */ `
-  attribute float aSize;
-  attribute vec3 color;
-  varying vec3 vColor;
-  uniform float uPixelRatio;
-  uniform float uScale;
+const 配置 = {
+  球体半径: 150,
+  旋转速度: 0.0008,
+  噪声流速: 0.03,
+  噪声尺度1: 1.2,
+  噪声尺度2: 2.5,
+  噪声尺度3: 5.0,
+  尘埃带强度: 0.22,
+  星点密度: 0.992,
+  星点亮度: 0.85,
+  核心色: [0.95, 0.75, 0.55],
+  中层色: [0.45, 0.38, 0.62],
+  外层色: [0.04, 0.06, 0.11],
+  尘埃色: [0.78, 0.62, 0.42],
+}
+
+const 顶点着色器 = /* glsl */ `
+  varying vec3 vWorldPos;
   void main() {
-    vColor = color;
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_Position = projectionMatrix * mvPosition;
-    gl_PointSize = aSize * uPixelRatio * (uScale / -mvPosition.z);
+    vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `
 
-const STAR_FRAG = /* glsl */ `
-  varying vec3 vColor;
+const 片段着色器 = /* glsl */ `
+  uniform float uTime;
+  varying vec3 vWorldPos;
+
+  float hash31(vec3 p) {
+    p = vec3(
+      dot(p, vec3(127.1, 311.7, 74.7)),
+      dot(p, vec3(269.5, 183.3, 246.1)),
+      dot(p, vec3(113.5, 271.9, 124.6))
+    );
+    return fract(sin(p.x) * 43758.5453);
+  }
+
+  float noise3(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(
+        mix(hash31(i), hash31(i + vec3(1.0, 0.0, 0.0)), f.x),
+        mix(hash31(i + vec3(0.0, 1.0, 0.0)), hash31(i + vec3(1.0, 1.0, 0.0)), f.x),
+        f.y
+      ),
+      mix(
+        mix(hash31(i + vec3(0.0, 0.0, 1.0)), hash31(i + vec3(1.0, 0.0, 1.0)), f.x),
+        mix(hash31(i + vec3(0.0, 1.0, 1.0)), hash31(i + vec3(1.0, 1.0, 1.0)), f.x),
+        f.y
+      ),
+      f.z
+    );
+  }
+
+  float fbm3(vec3 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 5; i++) {
+      v += a * noise3(p);
+      p *= 2.0;
+      a *= 0.5;
+    }
+    return v;
+  }
+
   void main() {
-    vec2 c = gl_PointCoord - 0.5;
-    float r2 = dot(c, c);
-    if (r2 > 0.25) discard;
-    float a = 1.0 - smoothstep(0.0, 0.25, r2);
-    gl_FragColor = vec4(vColor, a * 0.45);
+    vec3 dir = normalize(vWorldPos);
+    float theta = atan(dir.z, dir.x);
+
+    float n1 = fbm3(dir * 1.2 + vec3(0.0, 0.0, uTime * 0.03));
+    float n2 = fbm3(dir * 2.5 + vec3(uTime * 0.03, 0.0, 0.0));
+    float n3 = fbm3(dir * 5.0 + vec3(0.0, uTime * 0.03, 0.0));
+
+    float vGrad = clamp(dir.y * 0.6 + 0.5, 0.0, 1.0);
+    vec3 color = mix(vec3(0.04, 0.06, 0.11), vec3(0.45, 0.38, 0.62), vGrad);
+
+    float nebula = smoothstep(0.3, 0.7, n1) * 0.55
+                 + smoothstep(0.3, 0.7, n2) * 0.35
+                 + smoothstep(0.3, 0.7, n3) * 0.15;
+    color = mix(color, vec3(0.95, 0.75, 0.55), nebula * 0.45);
+
+    float dust = pow(smoothstep(0.35, 0.65, sin(theta * 6.0 + n1 * 2.0) * 0.5 + 0.5), 2.0) * 0.22;
+    color = mix(color, vec3(0.78, 0.62, 0.42), dust);
+
+    float starSeed = fract(sin(dot(dir * vec3(120.0, 80.0, 120.0), vec3(127.1, 311.7, 74.7))) * 43758.5453);
+    float star = step(0.992, starSeed);
+    float twinkle = sin(uTime * 3.0 + starSeed * 20.0) * 0.5 + 0.5;
+    color += vec3(0.92, 0.95, 1.0) * star * twinkle * 0.85;
+
+    gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
   }
 `
 
-const COSMIC_VERT = /* glsl */ `
-  attribute float aSize;
-  attribute vec3 color;
-  varying vec3 vColor;
-  uniform float uPixelRatio;
-  uniform float uScale;
-  void main() {
-    vColor = color;
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_Position = projectionMatrix * mvPosition;
-    gl_PointSize = aSize * uPixelRatio * (uScale * 2.0 / -mvPosition.z);
-  }
-`
+function 创建WebGPU材质() {
+  const 时间 = uniform(0)
+  const 方向 = normalize(positionWorld)
+  const theta = atan(方向.z, 方向.x)
 
-const COSMIC_FRAG = /* glsl */ `
-  varying vec3 vColor;
-  void main() {
-    vec2 c = gl_PointCoord - 0.5;
-    float r2 = dot(c, c);
-    if (r2 > 0.25) discard;
-    float a = 1.0 - smoothstep(0.0, 0.25, r2);
-    gl_FragColor = vec4(vColor, a * 0.25);
-  }
-`
-
-function makeGalaxyTexture() {
-  const SIZE = 1024
-  const canvas = document.createElement('canvas')
-  canvas.width = SIZE
-  canvas.height = SIZE
-  const ctx = canvas.getContext('2d')
-  const cx = SIZE / 2
-  const cy = SIZE / 2
-  const rMax = SIZE / 2 - 4
-
-  const bulgeGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rMax * 0.18)
-  bulgeGrad.addColorStop(0, 'rgba(255, 240, 200, 0.55)')
-  bulgeGrad.addColorStop(0.5, 'rgba(255, 200, 130, 0.28)')
-  bulgeGrad.addColorStop(1, 'rgba(255, 180, 120, 0)')
-  ctx.fillStyle = bulgeGrad
-  ctx.fillRect(0, 0, SIZE, SIZE)
-
-  const diskGrad = ctx.createRadialGradient(cx, cy, rMax * 0.1, cx, cy, rMax)
-  diskGrad.addColorStop(0, 'rgba(255, 220, 180, 0.22)')
-  diskGrad.addColorStop(0.4, 'rgba(220, 180, 240, 0.12)')
-  diskGrad.addColorStop(1, 'rgba(140, 120, 200, 0)')
-  ctx.fillStyle = diskGrad
-  ctx.fillRect(0, 0, SIZE, SIZE)
-
-  for (let i = 0; i < 16000; i++) {
-    const arm = i % 4
-    const t = Math.random()
-    const theta = arm * (Math.PI / 2) + t * 4 + Math.random() * 0.4
-    const r = (rMax * 0.1 + t * rMax * 0.85) * (0.95 + Math.random() * 0.1)
-    const x = cx + r * Math.cos(theta)
-    const y = cy + r * Math.sin(theta)
-    if (Math.hypot(x - cx, y - cy) > rMax) continue
-    const tone = Math.random() < 0.7 ? 0 : 1
-    ctx.fillStyle =
-      tone === 0
-        ? `rgba(255, ${220 + Math.random() * 35}, ${190 + Math.random() * 50}, ${0.3 + Math.random() * 0.5})`
-        : `rgba(${180 + Math.random() * 60}, ${180 + Math.random() * 60}, 255, ${0.2 + Math.random() * 0.5})`
-    ctx.fillRect(x, y, 0.4 + Math.random() * 1.6, 0.4 + Math.random() * 1.6)
-  }
-
-  const tex = new THREE.CanvasTexture(canvas)
-  tex.minFilter = THREE.LinearFilter
-  tex.magFilter = THREE.LinearFilter
-  return tex
-}
-
-function makeArmPoints(count = 6000, radius = 60) {
-  const positions = new Float32Array(count * 3)
-  const colors = new Float32Array(count * 3)
-  const sizes = new Float32Array(count)
-  const colorWarm = new THREE.Color(0xffe0b0)
-  const colorCool = new THREE.Color(0xc8c0ff)
-
-  for (let i = 0; i < count; i++) {
-    const arm = i % 4
-    const t = Math.random()
-    const theta = arm * (Math.PI / 2) + t * 4 + Math.random() * 0.3
-    const r = radius * 0.08 + t * radius * 0.92 + Math.random() * radius * 0.03
-    positions[i * 3] = r * Math.cos(theta)
-    positions[i * 3 + 1] = (Math.random() - 0.5) * radius * 0.04 * (1 - t * 0.7)
-    positions[i * 3 + 2] = r * Math.sin(theta)
-    const c = Math.random() < 0.5 ? colorWarm : colorCool
-    colors[i * 3] = c.r
-    colors[i * 3 + 1] = c.g
-    colors[i * 3 + 2] = c.b
-    sizes[i] = 0.35 + Math.random() * 0.75
-  }
-
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-  geometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1))
-  return geometry
-}
-
-function makeCosmicDust(count = 8000, range = 90) {
-  const positions = new Float32Array(count * 3)
-  const colors = new Float32Array(count * 3)
-  const sizes = new Float32Array(count)
-  const centers = []
-  const N_CLUSTERS = 40
-
-  for (let i = 0; i < N_CLUSTERS; i++) {
-    centers.push(
-      new THREE.Vector3(
-        (Math.random() - 0.5) * 2 * range,
-        (Math.random() - 0.5) * 2 * range * 0.5,
-        (Math.random() - 0.5) * 2 * range
-      )
-    )
-  }
-
-  for (let i = 0; i < count; i++) {
-    const cluster = Math.random() < 0.85 ? centers[Math.floor(Math.random() * N_CLUSTERS)] : new THREE.Vector3(0, 0, 0)
-    const r = Math.pow(Math.random(), 2) * range * 0.35
-    const t = Math.random() * Math.PI * 2
-    positions[i * 3] = cluster.x + r * Math.cos(t)
-    positions[i * 3 + 1] = cluster.y + (Math.random() - 0.5) * r * 0.4
-    positions[i * 3 + 2] = cluster.z + r * Math.sin(t)
-    if (Math.random() < 0.7) {
-      colors[i * 3] = 1.0
-      colors[i * 3 + 1] = 0.85 + Math.random() * 0.15
-      colors[i * 3 + 2] = 0.7 + Math.random() * 0.2
-    } else {
-      colors[i * 3] = 0.7 + Math.random() * 0.2
-      colors[i * 3 + 1] = 0.85 + Math.random() * 0.15
-      colors[i * 3 + 2] = 1.0
-    }
-    sizes[i] = 0.25 + Math.random() * 0.55
-  }
-
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-  geometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1))
-  return geometry
-}
-
-function makeStarDomePoints(count = 5000, radius = 78) {
-  const positions = new Float32Array(count * 3)
-  const colors = new Float32Array(count * 3)
-  const sizes = new Float32Array(count)
-
-  for (let i = 0; i < count; i++) {
-    const u = Math.random()
-    const v = Math.random()
-    const theta = 2 * Math.PI * u
-    const phi = Math.acos(2 * v - 1)
-    const r = radius * (0.85 + Math.random() * 0.15)
-    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta)
-    positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
-    positions[i * 3 + 2] = r * Math.cos(phi)
-    const intensity = 0.7 + Math.random() * 0.3
-    const tone = Math.random()
-    if (tone < 0.7) {
-      colors[i * 3] = intensity
-      colors[i * 3 + 1] = intensity * (0.92 + Math.random() * 0.08)
-      colors[i * 3 + 2] = intensity * (0.85 + Math.random() * 0.1)
-    } else {
-      colors[i * 3] = intensity * (0.8 + Math.random() * 0.1)
-      colors[i * 3 + 1] = intensity * (0.85 + Math.random() * 0.1)
-      colors[i * 3 + 2] = intensity
-    }
-    sizes[i] = 0.2 + Math.random() * 0.5
-  }
-
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-  geometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1))
-  return geometry
-}
-
-function GalaxyDisk() {
-  const texture = useMemo(() => makeGalaxyTexture(), [])
-  const material = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        opacity: 0.08,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-      }),
-    [texture]
+  const 噪声1 = mx_fractal_noise_float(
+    方向.mul(配置.噪声尺度1).add(vec3(0, 0, 时间.mul(配置.噪声流速))),
+    3,
+    2,
+    0.5,
+    1
+  )
+  const 噪声2 = mx_fractal_noise_float(
+    方向.mul(配置.噪声尺度2).add(vec3(时间.mul(配置.噪声流速), 0, 0)),
+    3,
+    2,
+    0.5,
+    1
+  )
+  const 噪声3 = mx_fractal_noise_float(
+    方向.mul(配置.噪声尺度3).add(vec3(0, 时间.mul(配置.噪声流速), 0)),
+    2,
+    2,
+    0.5,
+    1
   )
 
-  useEffect(() => {
-    return () => {
-      texture.dispose()
-      material.dispose()
-    }
-  }, [texture, material])
+  const 噪声1归一 = 噪声1.mul(0.5).add(0.5)
+  const 噪声2归一 = 噪声2.mul(0.5).add(0.5)
+  const 噪声3归一 = 噪声3.mul(0.5).add(0.5)
 
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -55, 0]} material={material}>
-      <planeGeometry args={[220, 220]} />
-    </mesh>
+  const 垂直渐变 = clamp(方向.y.mul(0.6).add(0.5), 0, 1)
+  const 基础色 = mix(vec3(...配置.外层色), vec3(...配置.中层色), 垂直渐变)
+
+  const 星云 = smoothstep(0.3, 0.7, 噪声1归一).mul(0.55)
+    .add(smoothstep(0.3, 0.7, 噪声2归一).mul(0.35))
+    .add(smoothstep(0.3, 0.7, 噪声3归一).mul(0.15))
+  const 星云色 = mix(基础色, vec3(...配置.核心色), 星云.mul(0.45))
+
+  const 尘埃 = pow(
+    smoothstep(
+      0.35,
+      0.65,
+      sin(theta.mul(6).add(噪声1归一.mul(2))).mul(0.5).add(0.5)
+    ),
+    2
+  ).mul(配置.尘埃带强度)
+  const 尘埃色 = mix(星云色, vec3(...配置.尘埃色), 尘埃)
+
+  const 星点种子 = hash(
+    方向.x.mul(120).add(方向.y.mul(80)).add(方向.z.mul(120)).add(时间.mul(0.05))
   )
+  const 星点 = step(float(配置.星点密度), 星点种子)
+  const 闪烁 = sin(时间.mul(3).add(星点种子.mul(20))).mul(0.5).add(0.5)
+  const 星光 = vec3(0.92, 0.95, 1).mul(星点).mul(闪烁).mul(配置.星点亮度)
+
+  const 最终色 = clamp(尘埃色.add(星光), 0, 1)
+
+  const 材质 = new NodeMaterial()
+  材质.fog = false
+  材质.lights = false
+  材质.depthWrite = false
+  材质.depthTest = false
+  材质.side = THREE.BackSide
+  材质.colorNode = 最终色
+
+  return [时间, 材质]
 }
 
-function StarDome() {
-  const geometry = useMemo(() => makeStarDomePoints(5000, 78), [])
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: { uPixelRatio: { value: window.devicePixelRatio || 1 }, uScale: { value: 55 } },
-        vertexShader: STAR_VERT,
-        fragmentShader: STAR_FRAG,
-      }),
-    []
-  )
-
-  const { viewport } = useThree()
-  useEffect(() => {
-    material.uniforms.uPixelRatio.value = viewport.dpr
-  }, [viewport.dpr, material])
-
-  useEffect(() => {
-    return () => {
-      geometry.dispose()
-      material.dispose()
-    }
-  }, [geometry, material])
-
-  return (
-    <points geometry={geometry} material={material} frustumCulled={false}>
-      <primitive object={new THREE.Object3D()} />
-    </points>
-  )
-}
-
-function ArmStars() {
-  const geometry = useMemo(() => makeArmPoints(6000, 60), [])
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: { uPixelRatio: { value: window.devicePixelRatio || 1 }, uScale: { value: 42 } },
-        vertexShader: STAR_VERT,
-        fragmentShader: STAR_FRAG,
-      }),
-    []
-  )
-
-  const { viewport } = useThree()
-  useEffect(() => {
-    material.uniforms.uPixelRatio.value = viewport.dpr
-  }, [viewport.dpr, material])
-
-  useEffect(() => {
-    return () => {
-      geometry.dispose()
-      material.dispose()
-    }
-  }, [geometry, material])
-
-  return (
-    <points geometry={geometry} material={material} frustumCulled={false}>
-      <primitive object={new THREE.Object3D()} />
-    </points>
-  )
-}
-
-function CosmicDust() {
-  const geometry = useMemo(() => makeCosmicDust(8000, 90), [])
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: { uPixelRatio: { value: window.devicePixelRatio || 1 }, uScale: { value: 75 } },
-        vertexShader: COSMIC_VERT,
-        fragmentShader: COSMIC_FRAG,
-      }),
-    []
-  )
-
-  const { viewport } = useThree()
-  useEffect(() => {
-    material.uniforms.uPixelRatio.value = viewport.dpr
-  }, [viewport.dpr, material])
-
-  useEffect(() => {
-    return () => {
-      geometry.dispose()
-      material.dispose()
-    }
-  }, [geometry, material])
-
-  return (
-    <points geometry={geometry} material={material} frustumCulled={false}>
-      <primitive object={new THREE.Object3D()} />
-    </points>
-  )
-}
-
-function RotatingGroup({ children, speed = 0.002 }) {
-  const ref = useRef()
-  useFrame((state) => {
-    if (ref.current) ref.current.rotation.y = state.clock.elapsedTime * speed
+function 创建WebGL材质() {
+  const 材质 = new THREE.ShaderMaterial({
+    vertexShader: 顶点着色器,
+    fragmentShader: 片段着色器,
+    uniforms: { uTime: { value: 0 } },
+    side: THREE.BackSide,
+    fog: false,
+    lights: false,
+    depthWrite: false,
+    depthTest: false,
   })
-  return <group ref={ref}>{children}</group>
+  return [材质.uniforms.uTime, 材质]
 }
 
 export function GalaxyBackground() {
+  const { gl } = useThree()
+  const 网格引用 = useRef()
+  const 是否WebGPU = gl.isWebGPURenderer === true
+  const [时间, 材质] = useMemo(
+    () => (是否WebGPU ? 创建WebGPU材质() : 创建WebGL材质()),
+    [是否WebGPU]
+  )
+
+  useFrame((state) => {
+    const elapsed = state.clock.elapsedTime
+    if (网格引用.current) {
+      网格引用.current.rotation.y = elapsed * 配置.旋转速度
+    }
+    时间.value = elapsed
+  })
+
+  useEffect(() => {
+    return () => {
+      材质.dispose()
+    }
+  }, [材质])
+
   return (
-    <group>
-      <RotatingGroup speed={0.0008}>
-        <StarDome />
-      </RotatingGroup>
-      <RotatingGroup speed={0.0003}>
-        <ArmStars />
-        <GalaxyDisk />
-      </RotatingGroup>
-      <RotatingGroup speed={0.00015}>
-        <CosmicDust />
-      </RotatingGroup>
-    </group>
+    <mesh ref={网格引用} material={材质}>
+      <sphereGeometry args={[配置.球体半径, 64, 64]} />
+    </mesh>
   )
 }

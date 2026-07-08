@@ -19,21 +19,21 @@ import {
 } from 'three/tsl'
 
 const 默认配置 = {
-  metalness: 0.75,
-  roughness: 0.2,
-  clearcoat: 0.6,
-  clearcoatRoughness: 0.1,
+  metalness: 0.78,
+  roughness: 0.12,
+  clearcoat: 0.8,
+  clearcoatRoughness: 0.06,
   iridescence: 1,
   iridescenceIOR: 1.33,
   iridescenceThicknessRange: [100, 400],
-  sheen: 0.35,
-  sheenRoughness: 0.4,
-  envMapIntensity: 1.3,
-  baseIntensity: 0.4,
-  hoverBoost: 1.0,
-  fresnelPower: 2.4,
-  scanFreq: 24,
-  scanSpeed: 1.5,
+  sheen: 0.55,
+  sheenRoughness: 0.3,
+  envMapIntensity: 2.4,
+  baseIntensity: 1.05,
+  hoverBoost: 2.8,
+  fresnelPower: 1.35,
+  scanFreq: 32,
+  scanSpeed: 2.2,
 }
 
 function 创建WebGPU材质(color, baseColor, 配置) {
@@ -45,22 +45,22 @@ function 创建WebGPU材质(color, baseColor, 配置) {
   const nDotV = clamp(dot(normalWorld, viewDir), 0, 1)
   const fresnel = pow(float(1).sub(nDotV), float(配置.fresnelPower))
 
-  const hue = fresnel.add(uTime.mul(0.1)).add(uHover.mul(0.25))
+  const hue = fresnel.add(uTime.mul(0.12)).add(uHover.mul(0.35))
   const rainbow = vec3(
-    sin(hue.mul(6.28)).mul(0.5).add(0.5),
-    sin(hue.mul(6.28).add(2.09)).mul(0.5).add(0.5),
-    sin(hue.mul(6.28).add(4.18)).mul(0.5).add(0.5)
+    sin(hue.mul(6.28)).mul(0.62).add(0.58),
+    sin(hue.mul(6.28).add(2.09)).mul(0.55).add(0.42),
+    sin(hue.mul(6.28).add(4.18)).mul(0.72).add(0.55)
   )
-  const edgeColor = mix(uColor, rainbow, fresnel.mul(0.7))
+  const edgeColor = mix(uColor, rainbow, fresnel.mul(0.9))
 
   const scan = sin(positionWorld.y.mul(配置.scanFreq).add(uTime.mul(配置.scanSpeed)))
     .mul(0.5)
     .add(0.5)
-  const scanMask = smoothstep(0.35, 0.65, scan).mul(0.12).mul(float(1).add(uHover))
+  const scanMask = smoothstep(0.3, 0.7, scan).mul(0.22).mul(float(1).add(uHover.mul(0.9)))
 
   const baseEmissive = uColor.mul(float(配置.baseIntensity).add(uHover.mul(配置.hoverBoost)))
   const emissive = baseEmissive.add(
-    edgeColor.mul(fresnel.mul(0.9).add(scanMask)).mul(float(1).add(uHover.mul(0.8)))
+    edgeColor.mul(fresnel.mul(1.8).add(scanMask)).mul(float(1).add(uHover.mul(1.4)))
   )
 
   const mat = new MeshPhysicalNodeMaterial({
@@ -101,6 +101,7 @@ function 创建WebGL材质(color, baseColor, 配置) {
   })
   return { material: mat, uniforms: {} }
 }
+
 
 export function HolographicMaterial({
   color,

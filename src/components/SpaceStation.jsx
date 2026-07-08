@@ -47,15 +47,15 @@ export function SpaceStation() {
         child.receiveShadow = true
         const old = child.material
         const mat = new THREE.MeshStandardMaterial({
-          color: '#4a4e5e',
-          roughness: 0.55,
-          metalness: 0.75,
-          emissive: '#1a1e2e',
-          emissiveIntensity: 0.35,
+          color: '#1a1d26',
+          roughness: 0.8,
+          metalness: 0.35,
+          emissive: '#05070a',
+          emissiveIntensity: 0.08,
         })
         if (old && old.map) {
           mat.map = old.map
-          mat.color.set('#6a7080')
+          mat.color.set('#252a36')
         }
         child.material = mat
       }
@@ -70,11 +70,8 @@ export function SpaceStation() {
   })
 
   return (
-    <group ref={groupRef} position={[0, -3.2, 0]} scale={2.5}>
+    <group ref={groupRef} position={[0, -9, 22]} scale={0.08}>
       <primitive object={cloned} />
-      <pointLight color="#5a6a8a" intensity={0.45} distance={18} decay={1.8} position={[0, 2, 0]} />
-      <pointLight color="#4a5568" intensity={0.28} distance={14} decay={2} position={[0, 0.5, 4]} />
-      <pointLight color="#6b5b8a" intensity={0.22} distance={12} decay={2} position={[-3, 1, -2]} />
     </group>
   )
 }
@@ -89,15 +86,15 @@ export function FarStation() {
       if (child.isMesh) {
         const old = child.material
         const mat = new THREE.MeshStandardMaterial({
-          color: '#3a3e4e',
-          roughness: 0.6,
-          metalness: 0.7,
-          emissive: '#151820',
-          emissiveIntensity: 0.25,
+          color: '#252836',
+          roughness: 0.75,
+          metalness: 0.45,
+          emissive: '#0a0c12',
+          emissiveIntensity: 0.12,
         })
         if (old && old.map) {
           mat.map = old.map
-          mat.color.set('#5a6070')
+          mat.color.set('#3a3e4e')
         }
         child.material = mat
       }
@@ -113,7 +110,7 @@ export function FarStation() {
   })
 
   return (
-    <group ref={groupRef} position={[0, -35, -80]} scale={18}>
+    <group ref={groupRef} position={[0, -30, -90]} scale={10}>
       <primitive object={cloned} />
       <sprite position={[0, 8, 0]}>
         <primitive object={makeGlowSprite(0x7c8fa8, 24)} />

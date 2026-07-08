@@ -41,7 +41,10 @@ function 英雄屏() {
       className="relative min-h-screen flex items-center justify-start px-6 md:px-16 pointer-events-none"
       data-section="hero"
     >
-      <div className="pointer-events-auto w-full max-w-xl glass-panel rounded-2xl p-8 md:p-10 ml-0 md:ml-12 border-white/10">
+      <div
+        className="pointer-events-auto w-full max-w-xl glass-panel rounded-2xl p-8 md:p-10 ml-0 md:ml-12"
+        style={{ borderColor: 'rgba(255,255,255,0.16)', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+      >
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/70">
             <User size={20} />
@@ -106,8 +109,8 @@ function 内容屏({ section, index }) {
       <div
         className="pointer-events-auto w-full max-w-md glass-panel rounded-2xl p-6 md:p-8 mr-0 md:mr-12"
         style={{
-          borderColor: `${meta.color}30`,
-          boxShadow: `0 24px 80px ${meta.color}15`,
+          borderColor: `${meta.color}45`,
+          boxShadow: `0 24px 80px ${meta.color}22`,
         }}
       >
         <div className="text-xs uppercase tracking-widest text-white/40 mb-3">0{index + 1}</div>

@@ -59,7 +59,7 @@ export function FloatingBoard() {
           width: '440px',
           maxHeight: '72vh',
           borderColor: `${meta.color}45`,
-          boxShadow: `0 24px 90px ${meta.color}18, inset 0 0 40px ${meta.color}08`,
+          boxShadow: `0 24px 90px ${meta.color}28, inset 0 0 40px ${meta.color}10`,
         }}
       >
         <div

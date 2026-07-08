@@ -21,18 +21,18 @@ import {
 
 const 配置 = {
   球体半径: 150,
-  旋转速度: 0.0008,
-  噪声流速: 0.03,
-  噪声尺度1: 1.2,
-  噪声尺度2: 2.5,
-  噪声尺度3: 5.0,
-  尘埃带强度: 0.22,
-  星点密度: 0.992,
-  星点亮度: 0.85,
-  核心色: [0.95, 0.75, 0.55],
-  中层色: [0.45, 0.38, 0.62],
-  外层色: [0.04, 0.06, 0.11],
-  尘埃色: [0.78, 0.62, 0.42],
+  旋转速度: 0.0005,
+  噪声流速: 0.018,
+  噪声尺度1: 0.9,
+  噪声尺度2: 2.0,
+  噪声尺度3: 4.0,
+  尘埃带强度: 0.14,
+  星点密度: 0.988,
+  星点亮度: 1.55,
+  核心色: [0.32, 0.16, 0.62],
+  中层色: [0.08, 0.07, 0.18],
+  外层色: [0.01, 0.015, 0.04],
+  尘埃色: [0.48, 0.28, 0.58],
 }
 
 const 顶点着色器 = /* glsl */ `
@@ -95,15 +95,15 @@ const 片段着色器 = /* glsl */ `
     float n3 = fbm3(dir * 5.0 + vec3(0.0, uTime * 0.03, 0.0));
 
     float vGrad = clamp(dir.y * 0.6 + 0.5, 0.0, 1.0);
-    vec3 color = mix(vec3(0.04, 0.06, 0.11), vec3(0.45, 0.38, 0.62), vGrad);
+    vec3 color = mix(vec3(0.01, 0.015, 0.04), vec3(0.06, 0.06, 0.14), vGrad);
 
     float nebula = smoothstep(0.3, 0.7, n1) * 0.55
                  + smoothstep(0.3, 0.7, n2) * 0.35
                  + smoothstep(0.3, 0.7, n3) * 0.15;
-    color = mix(color, vec3(0.95, 0.75, 0.55), nebula * 0.45);
+    color = mix(color, vec3(0.32, 0.16, 0.62), nebula * 0.48);
 
-    float dust = pow(smoothstep(0.35, 0.65, sin(theta * 6.0 + n1 * 2.0) * 0.5 + 0.5), 2.0) * 0.22;
-    color = mix(color, vec3(0.78, 0.62, 0.42), dust);
+    float dust = pow(smoothstep(0.35, 0.65, sin(theta * 6.0 + n1 * 2.0) * 0.5 + 0.5), 2.0) * 0.10;
+    color = mix(color, vec3(0.35, 0.25, 0.45), dust);
 
     float starSeed = fract(sin(dot(dir * vec3(120.0, 80.0, 120.0), vec3(127.1, 311.7, 74.7))) * 43758.5453);
     float star = step(0.992, starSeed);
@@ -151,7 +151,7 @@ function 创建WebGPU材质() {
   const 星云 = smoothstep(0.3, 0.7, 噪声1归一).mul(0.55)
     .add(smoothstep(0.3, 0.7, 噪声2归一).mul(0.35))
     .add(smoothstep(0.3, 0.7, 噪声3归一).mul(0.15))
-  const 星云色 = mix(基础色, vec3(...配置.核心色), 星云.mul(0.45))
+  const 星云色 = mix(基础色, vec3(...配置.核心色), 星云.mul(0.48))
 
   const 尘埃 = pow(
     smoothstep(

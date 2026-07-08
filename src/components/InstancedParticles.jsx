@@ -21,15 +21,15 @@ const 默认配置 = {
   分布宽度: 60,
   分布高度: 30,
   分布中心Y: 4,
-  基础尺寸: 0.02,
-  尺寸变化: 0.04,
+  基础尺寸: 0.035,
+  尺寸变化: 0.06,
   漂移速度: 0.05,
   浮动速度: 0.4,
   浮动幅度: 0.25,
   鼠标影响: 0.4,
   滚动影响: 1.5,
-  蓝紫色: [0.486, 0.561, 0.659],
-  暖金色: [0.95, 0.75, 0.55],
+  蓝紫色: [0.45, 0.58, 0.98],
+  暖金色: [1.0, 0.74, 0.32],
 }
 
 function 生成粒子属性(配置) {
@@ -85,7 +85,7 @@ const WebGL顶点着色器 = /* glsl */ `
     viewPos.xy += position.xy * aScale;
 
     gl_Position = projectionMatrix * vec4(viewPos, 1.0);
-    vAlpha = 0.3 + 0.15 * sin(uTime + aPhase);
+    vAlpha = 0.55 + 0.22 * sin(uTime + aPhase);
   }
 `
 
@@ -157,7 +157,7 @@ function 创建WebGPU材质(配置) {
 
   const uv2 = uv().mul(2).sub(1)
   const 距离 = length(uv2)
-  const 透明度 = float(1).sub(距离).mul(float(0.3).add(sin(时间.add(相位属性)).mul(0.15)))
+  const 透明度 = float(1).sub(距离).mul(float(0.55).add(sin(时间.add(相位属性)).mul(0.22)))
   const 颜色 = mix(vec3(...配置.蓝紫色), vec3(...配置.暖金色), 颜色混合属性)
 
   材质.colorNode = 颜色

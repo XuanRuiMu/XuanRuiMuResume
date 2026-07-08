@@ -13,8 +13,8 @@
 
 ## 当前状态
 
-- 循环计数器：8
-- 已完成：11/12
+- 循环计数器：12
+- 已完成：14/14
 - 进行中：无
 - 待开始：无
 
@@ -34,20 +34,16 @@
 | FP-10 | 体积光/上帝光束 | 在实体周围实现锥形体积光或光柱效果 | FP-01 | 已完成 |
 | FP-11 | 内容框架与 roughly 填充 | 各板块有占位内容；文字走翻译/数据文件；整体叙事完整 | FP-03, FP-07 | 已完成 |
 | FP-12 | 最终构建验证与清理 | `npm run build` 零报错；无冗余文件；PROGRESS.md 待清理 | FP-01~FP-11 | 已完成 |
+| FP-13 | 视觉实机 QA 与美观度修复 | 实机截图审查；发现并修复所有不美观的视觉问题；最终效果美观、协调、有冲击力 | FP-01~FP-12 | 已完成 |
+| FP-14 | 最终视觉精修（标题玻璃感 + 平台降权） | 3D 标题呈现明显的水晶玻璃折射/色散/高光；平台大幅缩小/暗化/透明化，不再抢夺主体；实机截图通过最终美观审查 | FP-13 | 已完成 |
 
 ## 已完成（仅保留一行摘要）
 
-- FP-01：Theater.jsx 已接入 WebGPURenderer 异步创建，失败自动回退 WebGLRenderer；`npm run build` 通过。
-- FP-02：GalaxyBackground.jsx 已重写为 WebGPU（NodeMaterial + TSL）/ WebGL（ShaderMaterial）双路径，包含多层分形噪声星云、色彩渐变、尘埃带、星点闪烁与缓慢旋转； Theater.jsx 同步迁移 VolumetricCone 为双路径材质并增加 WebGPU adapter 预检，避免无效初始化报错。
-- FP-03：新增 HeroText3D.jsx，使用本地 Helvetiker Bold JSON 字体渲染 "XUANRUIMU"；WebGL 路径使用 MeshTransmissionMaterial 实现折射/反射玻璃，WebGPU 路径降级为 MeshPhysicalMaterial；通过程序化 DataTexture 提供离线环境反射，并加入缓慢浮动/旋转动画；已集成到 Theater.jsx SceneContent。
-- FP-04：新增 HolographicMaterial.jsx，WebGPU 路径基于 MeshPhysicalNodeMaterial + TSL 实现 fresnel 虹彩边缘光、扫描线与 hover 能量脉冲，WebGL 路径使用 MeshPhysicalMaterial 保持 iridescence/clearcoat/sheen 能力；EntityObject.jsx 五个实体核心几何体已替换为该材质并提升 hover 旋转速度/点光源强度；Playwright 截图验证剧场渲染无控制台报错。
-- FP-05：新增 PostProcessingStack.jsx，WebGL 路径组合 Bloom（mipmapBlur + activeSection 动态强度）、DepthOfField（目标随 active/hover section 平滑插值）、ChromaticAberration（radialModulation + 动态偏移）、Vignette、Noise、ToneMapping（AGX）；WebGPU 路径通过 `gl.isWebGPURenderer` 检测跳过 EffectComposer；`npm run lint` 与 `npm run build` 通过，开发服务器正常启动。
-- FP-06：重写 CameraController.jsx，使用手写 spring-damper 实现位置/注视点双弹簧阻尼；接入鼠标位置映射为 subtle 视差位移与 ±2° 旋转；无激活 section 时启用慢速自动巡航；`pointer: fine` 媒体查询保证触控设备安全降级；`npm run lint` 与 `npm run build` 通过。
-- FP-07：安装 `@gsap/react` 与 `lenis`；新增 ScrollOverlay.jsx 集成 Lenis 平滑滚动与 GSAP ScrollTrigger（含 scrollerProxy）；在页面前景添加 6 屏可滚动 DOM 覆盖层与占位卡片；CameraController.jsx 根据 scrollProgress 以 spring-damper 驱动相机 subtle 弧线；EntityObject.jsx 与 HeroText3D.jsx 响应滚动实现旋转/缩放/发光/位移动画；点击实体进入详情的交互保留；`npm run lint` 与 `npm run build` 通过，开发服务器正常启动。
-- FP-08：新增 InstancedParticles.jsx，使用 `THREE.InstancedMesh` + `InstancedBufferAttribute` 实现 20000 粒子；WebGL 路径基于 `ShaderMaterial` 自定义顶点/片段着色器，WebGPU 路径基于 `NodeMaterial` + TSL；每个粒子具备独立位置、缩放、相位、速度与蓝紫/暖金颜色混合；顶点阶段实现整体漂移、正弦浮动、鼠标/滚动交互； Theater.jsx 中以新组件替换 AmbientDust；`npm run lint` 与 `npm run build` 通过，开发服务器正常启动，Playwright 截图验证剧场渲染无控制台报错。
-- FP-09：新增 EnvironmentProbe.jsx 与 `scripts/generate-hdr-env.js`，生成 512×256 程序化 `public/env/studio.hdr`（约 232 KB，峰值亮度 13）；WebGL/WebGPU 双路径通过 `HDRLoader` 加载并自动回退到 `FloatType` DataTexture；Theater.jsx 集成该组件统一设置 `scene.environment` 与深色背景；HeroText3D 与 EntityObject/HolographicMaterial 提升 `envMapIntensity` 与降低 roughness 以增强玻璃与金属反射；`npm run lint` 与 `npm run build` 通过，开发服务器启动无控制台报错。
-- FP-10：升级 Theater.jsx 中 `VolumetricCone` 为戏剧性上帝光束，使用 open-ended 圆柱锥体（16 径向分段、DoubleSide、AdditiveBlending、depthWrite=false）；WebGL 路径基于 `ShaderMaterial` 自定义片段着色器实现中心/边缘衰减、simplex noise 丁达尔尘粒闪烁与颜色扰动；WebGPU 路径基于 `NodeMaterial` + TSL 使用 `mx_noise_float` 实现同等效果；读取 `hoveredSection`/`activeSection` 动态增强亮度与透明度；`npm run lint`/`build`/`dev` 通过。
-- FP-11：重写 ScrollOverlay.jsx，将 6 屏占位内容替换为基于 resumeData.js 的真实简历框架；Hero 屏展示 personalInfo 基本信息与联系方式，IT/教育/设计/音乐/多媒体屏分别复用现有 Panel 组件渲染能力卡片、项目、课程、作品、Launchpad、时间线等；外层 section 保持 `pointer-events-none`，交互元素恢复 `pointer-events-auto`；`npm run lint`/`build` 通过，开发服务器正常启动。
+- FP-01~FP-14：theater 管线、星云背景、3D 玻璃标题、全息实体、后期处理、弹簧相机、Lenis 滚动、GPU 粒子、HDR 反射、体积光、内容框架、构建验证与最终视觉精修均已完成；标题采用双层玻璃/水晶结构（外层高透折射+内层深色玻璃芯），配高色散、边缘发光与多盏舞台灯；平台缩至远景并大幅压暗，退为背景舞台；实体虹彩边缘与 hover 点亮增强，周围新增悬浮光点；`npm run lint` 与 `npm run build` 通过。
+
+## Self-Harness 元循环摘要
+
+- 本轮发现 0 个弱点；自动级提案 0 个；待确认/禁止自动项 0 个。
 
 ## 当前决策
 

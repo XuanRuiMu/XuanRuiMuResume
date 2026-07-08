@@ -51,11 +51,12 @@ html.lenis, html.lenis body {
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  background: rgba(8, 10, 18, 0.78);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -93,7 +94,7 @@ html.lenis, html.lenis body {
   position: relative;
   border-radius: 1rem;
   overflow: hidden;
-  background: rgba(10, 12, 20, 0.72);
+  background: rgba(8, 10, 18, 0.85);
 }
 
 .hologram-board::before {

@@ -1,5 +1,5 @@
 export const personalInfo = {
-  name: '魏建国',
+  name: '玄锐暮',
   age: 22,
   location: '天津',
   phone: '16622370059',

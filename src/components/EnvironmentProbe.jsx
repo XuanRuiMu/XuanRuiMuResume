@@ -4,18 +4,18 @@ import * as THREE from 'three'
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js'
 
 const HDR路径 = '/env/studio.hdr'
-const 背景色 = '#05070d'
+const 背景色 = '#03040a'
 
-const 底部色 = new THREE.Color(0.02, 0.04, 0.08)
-const 顶部色 = new THREE.Color(0.18, 0.28, 0.42)
-const 水平光色 = new THREE.Color(0.06, 0.08, 0.12)
+const 底部色 = new THREE.Color(0.015, 0.025, 0.055)
+const 顶部色 = new THREE.Color(0.07, 0.1, 0.18)
+const 水平光色 = new THREE.Color(0.035, 0.05, 0.08)
 
 const 光斑列表 = [
-  { u: 0.22, v: 0.78, 半径: 0.09, 颜色: new THREE.Color(2.6, 1.7, 0.9), 强度: 5.0 },
-  { u: 0.78, v: 0.74, 半径: 0.07, 颜色: new THREE.Color(0.7, 2.3, 3.0), 强度: 4.0 },
-  { u: 0.5, v: 0.9, 半径: 0.055, 颜色: new THREE.Color(2.0, 1.1, 2.8), 强度: 3.5 },
-  { u: 0.08, v: 0.55, 半径: 0.14, 颜色: new THREE.Color(1.4, 1.7, 2.1), 强度: 1.4 },
-  { u: 0.92, v: 0.52, 半径: 0.12, 颜色: new THREE.Color(1.6, 1.5, 1.9), 强度: 1.2 },
+  { u: 0.22, v: 0.78, 半径: 0.09, 颜色: new THREE.Color(1.6, 1.1, 0.6), 强度: 3.2 },
+  { u: 0.78, v: 0.74, 半径: 0.07, 颜色: new THREE.Color(0.45, 1.5, 2.0), 强度: 2.6 },
+  { u: 0.5, v: 0.9, 半径: 0.055, 颜色: new THREE.Color(1.3, 0.7, 1.8), 强度: 2.2 },
+  { u: 0.08, v: 0.55, 半径: 0.14, 颜色: new THREE.Color(0.9, 1.1, 1.4), 强度: 0.9 },
+  { u: 0.92, v: 0.52, 半径: 0.12, 颜色: new THREE.Color(1.0, 0.95, 1.2), 强度: 0.8 },
 ]
 
 function 计算像素颜色(u, v, 目标颜色) {

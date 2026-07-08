@@ -55,7 +55,7 @@ function ArchiveRings() {
       {[5, 7, 9].map((radius, i) => (
         <mesh key={i} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[radius - 0.04, radius, 128]} />
-          <meshBasicMaterial color="#2a3a55" transparent opacity={0.35 - i * 0.08} side={THREE.DoubleSide} />
+          <meshBasicMaterial color="#2a3a58" transparent opacity={0.22 - i * 0.05} side={THREE.DoubleSide} />
         </mesh>
       ))}
     </group>
@@ -73,8 +73,8 @@ function VolumetricCone({ position, color, section }) {
   const { material, uniforms } = useMemo(() => {
     const uniforms = {
       uColor: { value: new THREE.Color(color) },
-      uOpacity: { value: 0.12 },
-      uIntensity: { value: 1.0 },
+      uOpacity: { value: 0.22 },
+      uIntensity: { value: 1.6 },
       uTime: { value: 0 },
       uNoiseScale: { value: 1.2 },
       uNoiseSpeed: { value: 0.35 },
@@ -212,8 +212,8 @@ function VolumetricCone({ position, color, section }) {
   }, [color, 是否WebGPU])
 
   useFrame((state, delta) => {
-    const 目标强度 = isActive ? 2.4 : isHovered ? 1.8 : 1.0
-    const 目标透明度 = isActive ? 0.24 : isHovered ? 0.19 : 0.12
+    const 目标强度 = isActive ? 3.6 : isHovered ? 2.8 : 1.6
+    const 目标透明度 = isActive ? 0.38 : isHovered ? 0.3 : 0.22
     uniforms.uIntensity.value = THREE.MathUtils.lerp(uniforms.uIntensity.value, 目标强度, Math.min(delta * 5, 1))
     uniforms.uOpacity.value = THREE.MathUtils.lerp(uniforms.uOpacity.value, 目标透明度, Math.min(delta * 5, 1))
     uniforms.uTime.value = state.clock.elapsedTime
@@ -245,13 +245,13 @@ function ArchiveGrid() {
       position={[0, -2.21, 0]}
       args={[60, 60]}
       cellSize={0.8}
-      cellThickness={0.5}
+      cellThickness={0.35}
       cellColor="#1f2d45"
       sectionSize={5}
-      sectionThickness={0.8}
+      sectionThickness={0.65}
       sectionColor="#2a3d5c"
-      fadeDistance={50}
-      fadeStrength={1.2}
+      fadeDistance={38}
+      fadeStrength={2.0}
       infiniteGrid
     />
   )
@@ -259,18 +259,18 @@ function ArchiveGrid() {
 
 function SceneContent() {
   const { scene } = useThree()
-  scene.fog = new THREE.FogExp2('#05070d', 0.012)
+  scene.fog = new THREE.FogExp2('#020205', 0.016)
 
   return (
     <>
-      <color attach="background" args={['#05070d']} />
+      <color attach="background" args={['#020205']} />
       <EnvironmentProbe />
-      <ambientLight intensity={0.28} color="#4a5a78" />
-      <hemisphereLight color="#5c6f8f" groundColor="#0f121a" intensity={0.22} position={[0, 20, 0]} />
-      <directionalLight color="#a5b0c5" intensity={0.55} position={[8, 14, 8]} castShadow />
-      <directionalLight color="#3a4560" intensity={0.3} position={[-8, 8, -6]} />
-      <pointLight color="#5b6b88" intensity={0.75} distance={50} decay={1.8} position={[0, 5, 0]} />
-      <spotLight color="#8a9ab5" intensity={0.5} distance={40} angle={Math.PI / 4} penumbra={0.6} position={[0, 12, 0]} target-position={[0, 0, 0]} />
+      <ambientLight intensity={0.07} color="#2a3248" />
+      <hemisphereLight color="#2a3450" groundColor="#080a12" intensity={0.07} position={[0, 20, 0]} />
+      <directionalLight color="#5a6a8a" intensity={0.26} position={[8, 14, 8]} castShadow />
+      <directionalLight color="#1a2030" intensity={0.16} position={[-8, 8, -6]} />
+      <pointLight color="#3a4a68" intensity={0.35} distance={50} decay={1.8} position={[0, 5, 0]} />
+      <spotLight color="#4a5a7a" intensity={0.25} distance={40} angle={Math.PI / 4} penumbra={0.6} position={[0, 12, 0]} target-position={[0, 0, 0]} />
       <Suspense fallback={null}>
         <GalaxyBackground />
         <SpaceStation />

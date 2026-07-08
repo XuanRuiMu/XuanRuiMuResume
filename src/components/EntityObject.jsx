@@ -6,6 +6,47 @@ import { useTheaterStore, SECTION_META } from '../store/useTheaterStore'
 import { audioManager } from '../utils/audio'
 import { HolographicMaterial } from './HolographicMaterial'
 
+function SparkField({ count, radius, color, hovered }) {
+  const groupRef = useRef()
+  const data = useMemo(() => {
+    const [rMin, rMax] = Array.isArray(radius) ? radius : [radius, radius]
+    return Array.from({ length: count }).map((_, i) => ({
+      radius: rMin + Math.random() * (rMax - rMin),
+      speed: (0.3 + Math.random() * 0.6) * (i % 2 === 0 ? 1 : -1),
+      offset: (i / count) * Math.PI * 2,
+      yAmp: 0.15 + Math.random() * 0.25,
+      yFreq: 0.8 + Math.random() * 0.7,
+      phase: Math.random() * Math.PI * 2,
+    }))
+  }, [count, radius])
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime
+    const boost = hovered ? 1.8 : 1
+    groupRef.current?.children.forEach((child, i) => {
+      const d = data[i]
+      const angle = t * d.speed * boost + d.offset
+      const x = Math.cos(angle) * d.radius
+      const z = Math.sin(angle) * d.radius
+      const y = Math.sin(t * d.yFreq + d.phase) * d.yAmp * (hovered ? 1.4 : 1)
+      child.position.set(x, y, z)
+      const s = (hovered ? 1.6 : 1) * (0.6 + Math.sin(t * 3 + d.phase) * 0.25)
+      child.scale.setScalar(s)
+    })
+  })
+
+  return (
+    <group ref={groupRef}>
+      {data.map((d, i) => (
+        <mesh key={i}>
+          <sphereGeometry args={[0.035, 8, 8]} />
+          <meshBasicMaterial color={color} transparent opacity={hovered ? 0.95 : 0.65} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
 function OrbitField({ count, radius, speed = 1, children, showBeams = false, color, hovered }) {
   const objectsRef = useRef([])
   const beamGeometry = useMemo(() => {
@@ -87,18 +128,18 @@ function ITEntity({ hovered, color, baseColor }) {
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 2.4 : 0.7} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 4.2 : 1.35} distance={5.5} decay={2} position={[0, 0, 0]} />
       <mesh>
         <icosahedronGeometry args={[0.38, 1]} />
         <HolographicMaterial
           color={color}
           baseColor={baseColor}
           hovered={hovered}
-          baseIntensity={0.45}
-          hoverBoost={1.2}
+          baseIntensity={0.9}
+          hoverBoost={2.0}
           metalness={0.85}
-          roughness={0.18}
-          envMapIntensity={1.4}
+          roughness={0.1}
+          envMapIntensity={2.4}
         />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -140,7 +181,7 @@ function ITEntity({ hovered, color, baseColor }) {
           key={i}
           radius={r}
           color={color}
-          opacity={hovered ? 0.55 - i * 0.12 : 0.22 - i * 0.06}
+          opacity={hovered ? 0.7 - i * 0.14 : 0.32 - i * 0.08}
           hovered={hovered}
           rotateSpeed={0.35 + i * 0.15}
         />
@@ -166,24 +207,24 @@ function EduEntity({ hovered, color, baseColor }) {
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 2.3 : 0.65} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 4.0 : 1.25} distance={5.5} decay={2} position={[0, 0, 0]} />
       <mesh>
         <octahedronGeometry args={[0.48, 0]} />
         <HolographicMaterial
           color={color}
           baseColor={baseColor}
           hovered={hovered}
-          baseIntensity={0.35}
-          hoverBoost={1.1}
-          metalness={0.4}
-          roughness={0.18}
-          clearcoat={0.4}
-          envMapIntensity={1.4}
+          baseIntensity={0.8}
+          hoverBoost={1.9}
+          metalness={0.45}
+          roughness={0.12}
+          clearcoat={0.6}
+          envMapIntensity={2.4}
         />
       </mesh>
       <mesh scale={hovered ? 0.55 : 0.42}>
         <octahedronGeometry args={[0.42, 0]} />
-        <meshBasicMaterial color={color} transparent opacity={hovered ? 0.55 : 0.28} />
+        <meshBasicMaterial color={color} transparent opacity={hovered ? 0.7 : 0.36} />
       </mesh>
       <OrbitField count={6} radius={[0.78, 1.08]} speed={0.45} showBeams color={color} hovered={hovered}>
         {() => (
@@ -208,7 +249,7 @@ function EduEntity({ hovered, color, baseColor }) {
       {[0, 1, 2].map((i) => (
         <mesh key={i} rotation={[0, (i * Math.PI * 2) / 3, 0]}>
           <torusGeometry args={[1.05 + i * 0.1, 0.016, 8, 64]} />
-          <meshBasicMaterial color={color} transparent opacity={hovered ? 0.6 : 0.3} />
+          <meshBasicMaterial color={color} transparent opacity={hovered ? 0.75 : 0.38} />
         </mesh>
       ))}
       {hovered && (
@@ -234,16 +275,16 @@ function DesignEntity({ hovered, color, baseColor }) {
     color,
     baseColor,
     hovered,
-    baseIntensity: 0.4,
-    hoverBoost: 0.9,
-    metalness: 0.75,
-    roughness: 0.25,
-    envMapIntensity: 1.4,
+    baseIntensity: 0.85,
+    hoverBoost: 1.9,
+    metalness: 0.8,
+    roughness: 0.14,
+    envMapIntensity: 2.4,
   }
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 2.2 : 0.6} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 4.0 : 1.25} distance={5.5} decay={2} position={[0, 0, 0]} />
       <group scale={hovered ? 1.12 : 1}>
         <mesh rotation={[0, 0, Math.PI / 3]} position={[0, 0.42, 0]}>
           <boxGeometry args={[1.4, 0.16, 0.16]} />
@@ -264,18 +305,18 @@ function DesignEntity({ hovered, color, baseColor }) {
           color={color}
           baseColor={baseColor}
           hovered={hovered}
-          baseIntensity={0.35}
-          hoverBoost={1.0}
-          metalness={0.8}
-          roughness={0.2}
-          envMapIntensity={1.4}
+          baseIntensity={0.8}
+          hoverBoost={1.9}
+          metalness={0.82}
+          roughness={0.12}
+          envMapIntensity={2.4}
         />
       </mesh>
       <OrbitField count={5} radius={[0.85, 1.15]} speed={0.5} color={color} hovered={hovered}>
         {({ index }) => (
           <mesh rotation={[0, 0, index % 2 === 0 ? Math.PI / 4 : -Math.PI / 4]}>
             <planeGeometry args={[0.24, 0.32]} />
-            <meshBasicMaterial color={color} transparent opacity={hovered ? 0.45 : 0.22} side={THREE.DoubleSide} />
+            <meshBasicMaterial color={color} transparent opacity={hovered ? 0.6 : 0.32} side={THREE.DoubleSide} />
           </mesh>
         )}
       </OrbitField>
@@ -314,24 +355,24 @@ function MusicEntity({ hovered, color, baseColor }) {
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 2.4 : 0.7} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 4.2 : 1.35} distance={5.5} decay={2} position={[0, 0, 0]} />
       <mesh>
         <cylinderGeometry args={[0.75, 0.8, 0.22, 40]} />
         <HolographicMaterial
           color={color}
           baseColor={baseColor}
           hovered={hovered}
-          baseIntensity={0.35}
-          hoverBoost={1.1}
-          metalness={0.8}
-          roughness={0.25}
-          clearcoat={0.5}
-          envMapIntensity={1.4}
+          baseIntensity={0.8}
+          hoverBoost={2.0}
+          metalness={0.82}
+          roughness={0.12}
+          clearcoat={0.7}
+          envMapIntensity={2.4}
         />
       </mesh>
       <mesh position={[0, 0.12, 0]}>
         <cylinderGeometry args={[0.55, 0.55, 0.03, 40]} />
-        <meshBasicMaterial color={color} transparent opacity={hovered ? 0.55 : 0.28} />
+        <meshBasicMaterial color={color} transparent opacity={hovered ? 0.7 : 0.36} />
       </mesh>
       {pads.map((p, i) => {
         const x = Math.cos(p.angle) * p.radius
@@ -342,7 +383,7 @@ function MusicEntity({ hovered, color, baseColor }) {
             <meshStandardMaterial
               color={p.note}
               emissive={p.note}
-              emissiveIntensity={hovered ? 2.2 : 1.0}
+              emissiveIntensity={hovered ? 2.8 : 1.4}
               roughness={0.2}
               metalness={0.5}
             />
@@ -355,7 +396,7 @@ function MusicEntity({ hovered, color, baseColor }) {
           radius={r}
           tube={0.015}
           color={color}
-          opacity={hovered ? 0.65 - i * 0.15 : 0.3 - i * 0.08}
+          opacity={hovered ? 0.8 - i * 0.18 : 0.4 - i * 0.1}
           hovered={hovered}
           rotateSpeed={0.6 + i * 0.2}
         />
@@ -399,19 +440,19 @@ function MediaEntity({ hovered, color, baseColor }) {
 
   return (
     <group ref={group}>
-      <pointLight color={color} intensity={hovered ? 2.3 : 0.65} distance={5.5} decay={2} position={[0, 0, 0]} />
+      <pointLight color={color} intensity={hovered ? 4.0 : 1.25} distance={5.5} decay={2} position={[0, 0, 0]} />
       <mesh>
         <dodecahedronGeometry args={[0.48, 0]} />
         <HolographicMaterial
           color={color}
           baseColor={baseColor}
           hovered={hovered}
-          baseIntensity={0.4}
-          hoverBoost={1.1}
-          metalness={0.55}
-          roughness={0.35}
-          clearcoat={0.4}
-          envMapIntensity={1.4}
+          baseIntensity={0.85}
+          hoverBoost={2.0}
+          metalness={0.6}
+          roughness={0.18}
+          clearcoat={0.6}
+          envMapIntensity={2.4}
         />
       </mesh>
       <OrbitField count={4} radius={[0.88, 1.12]} speed={0.4} showBeams color={color} hovered={hovered}>
@@ -465,7 +506,7 @@ function MediaEntity({ hovered, color, baseColor }) {
       {[0, 1, 2].map((i) => (
         <mesh key={i} rotation={[0, (i * Math.PI * 2) / 3, 0]}>
           <torusGeometry args={[1.15 + i * 0.08, 0.018, 8, 48]} />
-          <meshBasicMaterial color={color} transparent opacity={hovered ? 0.6 : 0.3} />
+          <meshBasicMaterial color={color} transparent opacity={hovered ? 0.75 : 0.38} />
         </mesh>
       ))}
       {hovered && (
@@ -541,9 +582,10 @@ export function EntityObject({ section, position, angle }) {
     >
       <mesh position={[0, -0.95, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.45, 0.52, 32]} />
-        <meshBasicMaterial color={meta.color} transparent opacity={isFocused ? 0.75 : 0.28} />
+        <meshBasicMaterial color={meta.color} transparent opacity={isFocused ? 1.0 : 0.55} />
       </mesh>
       <EntityComponent hovered={isFocused} color={meta.color} baseColor={meta.darkColor} />
+      <SparkField count={10} radius={[0.9, 1.35]} color={meta.color} hovered={isFocused} />
       <Html center distanceFactor={8} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div
           className="text-center transition-all duration-300"

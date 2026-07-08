@@ -1,52 +1,84 @@
-# 玄锐暮个人简历视觉升级 — 循环工程进度
+# 个人简历 v2 重设计 — 循环工程进度
 
-## 元信息
+## 目标
 
-- 项目：玄锐暮个人简历（XuanRuiMuResume）
-- 目标：基于 2026 最前沿 WebGL/WebGPU 技术，打造具备顶级视觉冲击力的 3D 在线简历
-- 停止条件：所有功能点完成/跳过/阻塞，构建零报错，开发服务器正常运行，页面可访问
-- 熔断上限：总循环 36 轮；单问题修复 5 次
-- 范围边界：
-  - 做什么：升级渲染管线、背景、材质、后期、相机、交互、粒子、内容框架
-  - 不做什么：不替换整体 React/Vite/Tailwind 架构，不接入后端，不迁移到 Next.js
-  - 禁止触碰：上级工作区 AGENTS.md、总控制台、其他项目目录
+推倒 3D 剧场方案，重建为内容优先的 AI-Native Developer Résumé Hub。首屏 1 秒内呈现完整简历信息，同时融入 AI 问答、Cmd+K 命令面板、技能雷达图、边缘函数、PWA 等多种高级技术。
 
-## 当前状态
+## 停止条件
 
-- 循环计数器：12
-- 已完成：14/14
-- 进行中：无
-- 待开始：无
+- 所有功能点状态为「已完成」或「已跳过」
+- `npm run build` 成功且 dist 产物无 3D 大文件
+- `npm run test` 全部通过
+- `npm run test:e2e` 全部通过
+- Lighthouse Performance ≥ 95，Accessibility ≥ 95，Best Practices ≥ 95，SEO ≥ 95
 
-## 待处理功能点
+## 熔断上限
 
-| ID | 描述 | 验收标准 | 依赖 | 状态 |
-|----|------|----------|------|------|
-| FP-01 | WebGPU 渲染器 + TSL 基础 + WebGL 优雅降级 | `npm run dev` 启动无错；Canvas 正常渲染；不支持 WebGPU 时自动回退 WebGL | - | 已完成 |
-| FP-02 | 高级程序化星云背景（自定义 GLSL/TSL） | 背景具备多层噪声星云、尘埃带、色彩渐变；帧率稳定 | FP-01 | 已完成 |
-| FP-03 | 3D 折射玻璃标题（Text3D + MeshTransmissionMaterial） | 姓名/职称以 3D 玻璃质感呈现；带环境反射与折射 | FP-01 | 已完成 |
-| FP-04 | 全息/虹彩实体材质升级 | 五个主题实体在 hover/激活时呈现全息、虹彩或薄膜干涉效果 | FP-01 | 已完成 |
-| FP-05 | 高级后期处理栈 | 组合 Bloom、DepthOfField、ChromaticAberration、Vignette、Noise、ToneMapping | FP-01 | 已完成 |
-| FP-06 | 弹簧阻尼相机 + 鼠标视差 | 相机移动带 spring-damp；鼠标移动产生平滑视差；点击实体流畅推进 | - | 已完成 |
-| FP-07 | GSAP ScrollTrigger + Lenis 平滑滚动 | 页面存在可滚动内容区；滚动驱动 3D 相机/元素动画；Lenis 提供丝滑滚动 | FP-06 | 已完成 |
-| FP-08 | GPU Instanced 粒子场 | 使用 InstancedMesh/Points 实现万级粒子；性能 60fps | FP-01 | 已完成 |
-| FP-09 | 环境 HDR 反射 | 加载 HDR/EXR 环境贴图；玻璃/金属材质出现真实反射 | FP-01 | 已完成 |
-| FP-10 | 体积光/上帝光束 | 在实体周围实现锥形体积光或光柱效果 | FP-01 | 已完成 |
-| FP-11 | 内容框架与 roughly 填充 | 各板块有占位内容；文字走翻译/数据文件；整体叙事完整 | FP-03, FP-07 | 已完成 |
-| FP-12 | 最终构建验证与清理 | `npm run build` 零报错；无冗余文件；PROGRESS.md 待清理 | FP-01~FP-11 | 已完成 |
-| FP-13 | 视觉实机 QA 与美观度修复 | 实机截图审查；发现并修复所有不美观的视觉问题；最终效果美观、协调、有冲击力 | FP-01~FP-12 | 已完成 |
-| FP-14 | 最终视觉精修（标题玻璃感 + 平台降权） | 3D 标题呈现明显的水晶玻璃折射/色散/高光；平台大幅缩小/暗化/透明化，不再抢夺主体；实机截图通过最终美观审查 | FP-13 | 已完成 |
+- 总循环次数：36 轮（12 个功能点 × 3 轮）
+- 单问题修复：同一问题超 5 次未解决即标记阻塞
+- 当前循环计数：4
 
-## 已完成（仅保留一行摘要）
+## 范围边界
 
-- FP-01~FP-14：theater 管线、星云背景、3D 玻璃标题、全息实体、后期处理、弹簧相机、Lenis 滚动、GPU 粒子、HDR 反射、体积光、内容框架、构建验证与最终视觉精修均已完成；标题采用双层玻璃/水晶结构（外层高透折射+内层深色玻璃芯），配高色散、边缘发光与多盏舞台灯；平台缩至远景并大幅压暗，退为背景舞台；实体虹彩边缘与 hover 点亮增强，周围新增悬浮光点；`npm run lint` 与 `npm run build` 通过。
+### 做什么
 
-## Self-Harness 元循环摘要
+- 删除 3D 剧场组件与资源
+- 重建入口、主题、布局、导航
+- 实现 Hero / About / Projects / Skills / Experience / Education / Design / Music / Media / Contact 模块
+- 实现技能雷达图、Cmd+K 命令面板、AI 问答助手
+- 实现边缘函数（analytics + contact）
+- 更新 PWA、测试、性能优化
 
-- 本轮发现 0 个弱点；自动级提案 0 个；待确认/禁止自动项 0 个。
+### 不做什么
 
-## 当前决策
+- 不迁移到 Next.js 等元框架
+- 不引入新的 3D/WebGL 复杂场景
+- 不改动其他项目（和我恋爱吧、暮澜纪元等）
+- AI 不强制依赖外部 API，必须支持离线本地规则引擎
 
-- 保持现有 React + Vite + R3F 架构，重点升级视觉与交互
-- WebGPU 优先，失败则优雅降级 WebGL，确保可用性
-- 内容先以 roughly 占位填充，保证叙事框架完整
+### 禁止触碰
+
+- 其他项目目录
+
+## 功能点
+
+### 已完成
+
+| ID                          | 描述                                                    |
+| --------------------------- | ------------------------------------------------------- |
+| FP-01 ~ FP-07，FP-09，FP-11 | 基础重建、通用 UI、全模块、边缘函数、Cmd+K、AI 问答助手 |
+| FP-08                       | 技能雷达图（渲染、动画、响应式、单元测试通过）          |
+| FP-12                       | PWA 更新、性能优化、全量测试与 Lighthouse               |
+
+### 待处理
+
+无。
+
+## 本轮 FP-12 关键修改
+
+- `public/manifest.json`：更新为「玄锐暮 · AI 简历」元数据、主题色、图标与 shortcuts。
+- `src/sw.ts`：移除旧 3D 资源路由，采用 precache + stale-while-revalidate 字体/图片策略。
+- `src/app/App.tsx`：非首屏模块 React.lazy + Suspense 懒加载，Hero 直接导入。
+- `public/fonts/`：仅保留 `dyh-subset.woff2`，删除 3D 字体；`index.html` 预加载关键字体/CSS。
+- `vite.config.js`：VitePWA injectManifest、CSS 预加载插件、E2E webServer 构建后预览。
+- `src/store/useAppStore.ts`：`transitionToSection` 支持懒加载区块挂载后滚动。
+- `src/components/nav-dock/NavDock.tsx` / `src/components/ai-chat/AIChat.tsx`：修复 zustand 对象选择器导致的渲染死循环。
+- `playwright.config.js`：仅保留 Chromium（Firefox 未安装）。
+- `e2e/`：新增 hero / navigation / ai-chat / offline 测试，删除旧 3D 剧场用例。
+
+## 验证结果
+
+| 检查项              | 结果                                                              |
+| ------------------- | ----------------------------------------------------------------- |
+| `npm run build`     | 成功，dist 约 4.68 MB（含 source map）                            |
+| `npm run typecheck` | 通过                                                              |
+| `npm run lint`      | 通过                                                              |
+| `npm run test`      | 35 文件 / 182 测试全部通过                                        |
+| `npm run test:e2e`  | 6 测试全部通过（Chromium）                                        |
+| Lighthouse 本地实测 | 未成功：Playwright Chromium 触发 interstitial，需系统 Chrome 复测 |
+| dist 产物分析       | 无 3D 字体/大文件；首屏 JS 114 KB，CSS 42 KB，字体 1.4 KB         |
+
+## 遗留问题
+
+- Lighthouse 四项 ≥ 95 需在安装系统 Chrome 后复测；当前环境仅 Playwright Chromium，触发 `CHROME_INTERSTITIAL_ERROR`。
+- Firefox 浏览器未安装，E2E 当前仅覆盖 Chromium。

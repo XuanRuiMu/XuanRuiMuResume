@@ -1,0 +1,525 @@
+{
+  "pwa": {
+    "offlineTitle": "离线模式",
+    "offlineDescription": "当前处于离线模式，已启用简化渲染",
+    "updateAvailable": "发现新版本，刷新以更新",
+    "updateButton": "立即刷新",
+    "updateLater": "稍后",
+    "offlineReady": "已支持离线访问",
+    "cacheQuotaWarning": "缓存空间不足，已自动清理旧资源",
+    "errorRegister": "PWA 注册失败"
+  },
+  "loading": {
+    "title": "玄锐暮 · AI-Native 简历",
+    "tips": ["正在加载简历数据...", "正在初始化主题与布局...", "正在准备命令面板..."]
+  },
+  "intro": {
+    "enterButton": "进入简历",
+    "audioHint": "",
+    "escHint": "按 Esc 或点击右上角可再次开启本界面",
+    "hoverHint": "Hover 唤醒实体，点击进入专属空间"
+  },
+  "nav": {
+    "main": "主导航",
+    "hero": "首页",
+    "about": "关于",
+    "projects": "项目",
+    "skills": "技能",
+    "experience": "经历",
+    "education": "教育",
+    "design": "设计",
+    "music": "音乐",
+    "media": "媒体",
+    "contact": "联系"
+  },
+  "command": {
+    "title": "命令面板",
+    "open": "命令面板",
+    "placeholder": "输入命令或搜索模块...",
+    "empty": "未找到匹配命令",
+    "sections": "模块跳转",
+    "actions": "快捷操作",
+    "toggleTheme": "切换主题",
+    "copyEmail": "复制邮箱",
+    "copyGithub": "复制 GitHub",
+    "openChat": "打开 AI 助手",
+    "downloadResume": "下载简历"
+  },
+  "theme": {
+    "dark": "深色模式",
+    "light": "浅色模式",
+    "system": "跟随系统"
+  },
+  "error": {
+    "title": "页面暂时无法显示",
+    "description": "渲染过程中出现了意外错误，请尝试刷新页面。",
+    "reload": "刷新页面"
+  },
+  "footer": {
+    "copyright": "© 2026 玄锐暮. 保留所有权利。",
+    "status": "AI-Native Developer Résumé Hub · 离线可用"
+  },
+  "hero": {
+    "hint": "按 ⌘K 打开命令面板，或使用顶部导航切换模块。",
+    "valueProposition": "用工程化思维连接 Java 后端、AI Agent 与全栈开发，把复杂需求变成可交付的系统。",
+    "cta": {
+      "copyEmail": "复制邮箱",
+      "viewProjects": "查看项目",
+      "downloadResume": "下载简历",
+      "openAIChat": "AI 问答"
+    },
+    "copied": "已复制",
+    "metricsTitle": "能力指标"
+  },
+  "about": {
+    "title": "关于我",
+    "subtitle": "从代码到创作，从教学到工程的多面开发者。",
+    "intro": "我是玄锐暮，一名计算机科学与技术专业的应届本科生。过去三年，我独立主导了暮澜纪元 MMORPG 服务端、Spring Boot 管理后台、AI 总控制台等完整项目；在 B站 输出 10+ 门计算机课程，指导 50+ 位毕业生完成论文；同时也进行音乐、小说、视频等多维创作。我相信好的工程师不仅要写出能跑的代码，更要能拆解问题、持续学习与清晰表达。",
+    "metrics": {
+      "projects": { "label": "完成项目", "value": "4+" },
+      "techStack": { "label": "核心技术", "value": "8+" },
+      "courses": { "label": "发布课程", "value": "10+" },
+      "students": { "label": "论文指导", "value": "50+" }
+    }
+  },
+  "resume": {
+    "target": "目标岗位",
+    "contact": "联系方式",
+    "education": "教育背景",
+    "filename": "简历"
+  },
+  "contact": {
+    "title": "联系我",
+    "subtitle": "有合适的岗位、项目合作或技术交流，欢迎随时联系。",
+    "info": {
+      "email": "邮箱",
+      "phone": "电话",
+      "github": "GitHub",
+      "bilibili": "B站"
+    },
+    "form": {
+      "name": "你的名字",
+      "email": "你的邮箱",
+      "message": "留言内容",
+      "submit": "发送留言",
+      "sending": "发送中...",
+      "success": "留言已发送，我会尽快回复。",
+      "error": "发送失败，请稍后重试。"
+    },
+    "validation": {
+      "nameRequired": "请输入姓名",
+      "emailRequired": "请输入邮箱",
+      "emailInvalid": "邮箱格式不正确",
+      "messageRequired": "请输入留言内容",
+      "messageMin": "留言至少 10 个字符",
+      "messageMax": "留言最多 500 个字符"
+    }
+  },
+  "projects": {
+    "title": "项目作品",
+    "subtitle": "独立主导与参与的开源、工程与 AI 项目。",
+    "link": {
+      "github": "GitHub",
+      "demo": "演示"
+    }
+  },
+  "experience": {
+    "title": "经历",
+    "subtitle": "工程实践、开源贡献与教学创作的时间线。"
+  },
+  "education": {
+    "title": "教育背景",
+    "subtitle": "计算机科学与技术本科学习、课程与教学成果。",
+    "tabs": {
+      "summary": "概览",
+      "courses": "课程",
+      "achievements": "成果"
+    }
+  },
+  "design": {
+    "title": "设计",
+    "subtitle": "UI/UX、品牌视觉与 3D 表达的多维设计实践。",
+    "toolsTitle": "设计工具"
+  },
+  "music": {
+    "title": "音乐",
+    "subtitle": "从原创歌曲到程序化乐器系统的声音创作空间。",
+    "tabs": {
+      "works": "作品",
+      "tools": "工具",
+      "skills": "技能"
+    },
+    "visualizerTitle": "声场可视化"
+  },
+  "media": {
+    "title": "媒体",
+    "subtitle": "写作、视频、游戏与表演交织的多媒体创作工坊。",
+    "timelineTitle": "创作时间线"
+  },
+  "skills": {
+    "title": "技能",
+    "subtitle": "全栈工程、AI Agent 与多维度创作的综合能力分布。",
+    "radarTitle": "能力雷达",
+    "categories": {
+      "it": {
+        "label": "工程开发",
+        "description": "Java 后端、AI Agent 工具链、全栈开发与 DevOps 的工程能力。",
+        "tags": [
+          "Java 后端架构",
+          "Spring Boot / JPA / JWT",
+          "AI Agent 工具链",
+          "Python 自动化",
+          "React + Three.js",
+          "MySQL / Redis",
+          "Docker / K8s / CI/CD",
+          "RESTful API 设计"
+        ]
+      },
+      "creative": {
+        "label": "创作设计",
+        "description": "UI/UX、品牌视觉、音乐编曲与多媒体内容的创作能力。",
+        "tags": [
+          "Figma",
+          "Three.js",
+          "Tailwind CSS",
+          "UI/UX",
+          "3D 视觉",
+          "品牌设计",
+          "架子鼓",
+          "吉他",
+          "MIDI 编曲",
+          "技术写作",
+          "视频剪辑",
+          "小说创作",
+          "相声剧本",
+          "游戏策划"
+        ]
+      },
+      "soft": {
+        "label": "教学协作",
+        "description": "课程设计、论文指导、知识拆解与社群答疑的软技能。",
+        "tags": ["课程设计", "论文指导", "知识拆解", "社群答疑", "知识可视化", "技术教学"]
+      }
+    }
+  },
+  "chat": {
+    "title": "AI 助手",
+    "close": "关闭",
+    "placeholder": "输入问题，例如：你是谁 / 你的技术栈 / 介绍一下暮澜纪元",
+    "answers": {
+      "name": "我叫{name}，是一名 Java 后端 / AI 应用 / 全栈开发工程师。",
+      "target": "目标岗位包括 Java 后端开发、AI 应用开发、全栈开发与软件工程师。",
+      "contact": "邮箱是 {email}，电话是 {phone}。",
+      "projects": "我主导过暮澜纪元 MMORPG 服务端、Spring Boot 管理后台、AI 总控制台等完整项目。",
+      "skills": "主要技术栈包括 Java 25 / Spring Boot 3.4、Python、React、MySQL、Redis、Git 自动化与 AI Agent 工具链。",
+      "education": "我就读于{school}，{major}专业{degree}，预计 {period} 毕业。",
+      "fallback": "这个问题暂时不在本地知识库中，你可以通过邮件 {email} 联系我。"
+    }
+  },
+  "ai": {
+    "title": "AI 助手",
+    "close": "关闭",
+    "placeholder": "输入问题，例如：你是谁 / 你的技术栈 / 介绍一下暮澜纪元",
+    "send": "发送",
+    "loading": "AI 思考中...",
+    "error": "发送失败，请重试",
+    "empty": "有什么可以帮你的？",
+    "localMode": "当前使用本地规则引擎回答",
+    "reset": "清空对话",
+    "quickQuestions": ["你是谁", "你的技术栈", "介绍一下暮澜纪元", "联系方式"]
+  },
+  "radar": {
+    "placeholder": "技能雷达图"
+  },
+  "data": {
+    "personalInfo": {
+      "target": "Java 后端开发 / AI 应用开发 / 全栈开发 / 软件工程师",
+      "expectedCity": "天津各区域均可",
+      "availability": "随时可全职上岗"
+    },
+    "projects": {
+      "xrm": {
+        "name": "暮澜纪元 MMORPG 服务端",
+        "desc": "独立开发 120 个 Java 类的核心插件，涵盖战斗、属性、天赋、任务、社交、事件总线等完整系统。",
+        "metrics": {
+          "classes": "120+ Java 类",
+          "systems": "完整 MMORPG 系统"
+        }
+      },
+      "admin": {
+        "name": "Spring Boot 管理后台",
+        "desc": "独立开发 MMORPG 管理后台，读取 8 张 MySQL 数据表，提供 JWT 鉴权、Redis 缓存与 RESTful API。",
+        "metrics": {
+          "tables": "8 张数据表",
+          "auth": "JWT + Redis"
+        }
+      },
+      "aiConsole": {
+        "name": "AI 总控制台",
+        "desc": "2435 行 Python 系统，实现 3 仓库 Git 批量管理、7 种 AI Key 管理、8 源 API 更新器、MCP 协议测试器。",
+        "metrics": {
+          "lines": "2435 行 Python",
+          "sources": "8 源 API 更新器"
+        }
+      },
+      "slimefun": {
+        "name": "Slimefun4 开源贡献",
+        "desc": "Fork 大型开源项目，定位并修复多个 Issue 报告 Bug，提交 PR 并通过 Review 合并。",
+        "metrics": {
+          "databases": "MySQL / PostgreSQL / SQLite",
+          "contribution": "PR 已合并"
+        }
+      }
+    },
+    "skills": {
+      "it": {
+        "headline": "Agent 节点网络",
+        "intro": "以 Java 后端为核心，覆盖 AI Agent 工具链、全栈开发与 DevOps。擅长将复杂业务抽象为可扩展的架构节点。",
+        "items": {
+          "javaBackend": "Java 后端架构",
+          "springBoot": "Spring Boot / JPA / JWT",
+          "aiAgent": "AI Agent 工具链",
+          "pythonAutomation": "Python 自动化",
+          "reactThree": "React + Three.js",
+          "database": "MySQL / Redis",
+          "devOps": "Docker / K8s / CI/CD",
+          "apiDesign": "RESTful API 设计"
+        },
+        "cards": {
+          "planner": {
+            "title": "Planner",
+            "items": ["需求拆解", "架构设计", "PRD 生成", "多 Agent 协作编排"]
+          },
+          "coder": {
+            "title": "Coder",
+            "items": ["Java 25 / Spring Boot 3.4", "Python 自动化", "React + Three.js", "RESTful API 设计"]
+          },
+          "reviewer": {
+            "title": "Reviewer",
+            "items": ["代码三轴审查", "安全 Hook", "测试覆盖审计", "结构化输出校验"]
+          },
+          "debugger": {
+            "title": "Debugger",
+            "items": ["运行时日志收集", "根因深挖", "方案前置验证", "Bug 修复闭环"]
+          }
+        }
+      },
+      "education": {
+        "headline": "知识教学空间",
+        "intro": "B站 UP 主「玄锐暮」，将复杂计算机知识拆解为系统课程，持续答疑并指导毕业生论文。",
+        "items": {
+          "courseDesign": "课程设计",
+          "thesisGuidance": "论文指导",
+          "knowledgeBreakdown": "知识拆解",
+          "communityQna": "社群答疑",
+          "visualization": "知识可视化"
+        }
+      },
+      "media": {
+        "headline": "多媒体创作",
+        "intro": "文字、影像、游戏与表演交织的创作能力。",
+        "items": {
+          "techWriting": "技术写作",
+          "videoEditing": "视频剪辑",
+          "novelWriting": "小说创作",
+          "comedyWriting": "相声剧本",
+          "gameDesign": "游戏策划"
+        }
+      }
+    },
+    "design": {
+      "headline": "不可能几何空间",
+      "intro": "在功能与美感之间寻找悖论般的平衡，用冷静的视觉语言承载复杂信息。",
+      "works": {
+        "resumeTheater": {
+          "name": "简历 3D 剧场",
+          "category": "UI/UX + 3D",
+          "desc": "以剧场为载体的沉浸式个人网站，环形交互装置与镜头推进。"
+        },
+        "xrmUi": {
+          "name": "暮澜纪元 UI 体系",
+          "category": "游戏 UI",
+          "desc": "MMORPG 菜单、GUI、技能面板与品牌视觉统一设计。"
+        },
+        "aiToolchain": {
+          "name": "AI 工具链视觉",
+          "category": "品牌设计",
+          "desc": "为 85+ 自定义 Skill 设计一致的命令图标与输出卡片样式。"
+        }
+      },
+      "tools": {
+        "figma": "Figma",
+        "threejs": "Three.js",
+        "tailwind": "Tailwind CSS",
+        "uiux": "UI/UX",
+        "3d": "3D 视觉",
+        "branding": "品牌设计"
+      }
+    },
+    "music": {
+      "headline": "全息声场",
+      "intro": "从乐理到编曲，从原创作曲到程序化乐器系统，用代码与音符构建可交互的声音空间。",
+      "tracks": {
+        "escape": {
+          "name": "逃脱",
+          "type": "原创歌曲",
+          "desc": "全流程制作：定位→结构→和声→旋律→编曲→MIDI"
+        },
+        "javaInstrument": {
+          "name": "Java 乐器系统",
+          "type": "程序化音乐",
+          "desc": "MIDI 音高 + 多人合奏 + 节拍器 + 乐谱 + GUI"
+        }
+      },
+      "skills": {
+        "drums": "架子鼓",
+        "guitar": "吉他",
+        "theory": "基础乐理",
+        "kontakt": "Kontakt8 音色库",
+        "midi": "MIDI 编曲",
+        "spectrum": "频谱可视化"
+      }
+    },
+    "media": {
+      "headline": "多媒体创作工坊",
+      "intro": "文字、影像、游戏与表演交织的创作核心，记录从技术到人文的多维表达。",
+      "categories": {
+        "writing": {
+          "label": "写作",
+          "items": {
+            "novel": "暮澜纪元小说 / 编年史",
+            "blog": "技术博客与文档"
+          }
+        },
+        "comedy": {
+          "label": "相声",
+          "items": {
+            "original": "原创单口相声",
+            "voice": "角色语音差异化设计"
+          }
+        },
+        "game": {
+          "label": "游戏",
+          "items": {
+            "worlds": "8 世界 32 职业 MMORPG 设计",
+            "boss": "BOSS 技能循环与阶段切换"
+          }
+        },
+        "video": {
+          "label": "视频",
+          "items": {
+            "courses": "B站 10+ 门计算机课程",
+            "editing": "教程剪辑与知识可视化"
+          }
+        }
+      },
+      "timeline": {
+        "2022": "启动暮澜纪元项目与 B站 频道",
+        "2023": "完成 XRM 核心插件与 MMORPG 系统",
+        "2024": "构建 85+ AI Skill 工具链与多 Agent 协作体系",
+        "2025": "原创歌曲《逃脱》全流程制作"
+      }
+    },
+    "experience": {
+      "entries": {
+        "xrm": {
+          "title": "独立开发者 · 暮澜纪元 MMORPG",
+          "organization": "个人项目",
+          "period": "2022 - 至今",
+          "description": "主导 120+ Java 类服务端插件与 8 世界 32 职业 MMORPG 系统设计。"
+        },
+        "openSource": {
+          "title": "开源贡献者 · Slimefun4",
+          "organization": "开源社区",
+          "period": "2024",
+          "description": "修复 MySQL/PostgreSQL/SQLite 多数据库适配相关 Bug 并提交 PR。"
+        },
+        "teacher": {
+          "title": "教育内容创作者",
+          "organization": "B站 / QQ 学习群",
+          "period": "2022 - 至今",
+          "description": "10+ 门计算机课程，50+ 毕业生论文指导，283 人学习群答疑。"
+        },
+        "multimedia": {
+          "title": "多媒体创作者",
+          "organization": "个人创作",
+          "period": "2022 - 至今",
+          "description": "原创歌曲、小说/编年史/相声、视频教程等多维内容创作。"
+        }
+      }
+    },
+    "education": {
+      "courses": {
+        "python": {
+          "name": "Python",
+          "level": "入门到实战"
+        },
+        "c": {
+          "name": "C 语言",
+          "level": "基础与指针"
+        },
+        "network": {
+          "name": "计算机网络",
+          "level": "体系化讲解"
+        },
+        "computerOrganization": {
+          "name": "计算机组成原理",
+          "level": "硬件逻辑"
+        },
+        "algorithms": {
+          "name": "数据结构与算法",
+          "level": "核心思路"
+        },
+        "assembly": {
+          "name": "汇编语言",
+          "level": "底层原理"
+        },
+        "mysql": {
+          "name": "MySQL",
+          "level": "数据库基础"
+        }
+      },
+      "achievements": {
+        "crashCourse": "0 基础小白 8 课时极限强化方案，通过免修考试",
+        "thesis": "50+ 位毕业生论文全流程指导",
+        "community": "持续运营 QQ 学习群答疑"
+      }
+    },
+    "radar": {
+      "dimensions": {
+        "backendArchitecture": {
+          "label": "后端架构",
+          "description": "Java / Spring Boot / 数据库设计与性能优化"
+        },
+        "aiAgent": {
+          "label": "AI Agent",
+          "description": "自定义 Skill、多 Agent 协作与工具链编排"
+        },
+        "fullStack": {
+          "label": "全栈开发",
+          "description": "React / TypeScript / RESTful API 与前端工程化"
+        },
+        "devops": {
+          "label": "DevOps",
+          "description": "Docker / K8s / CI/CD 与运维自动化"
+        },
+        "techTeaching": {
+          "label": "技术教学",
+          "description": "课程设计、论文指导与社群答疑"
+        },
+        "designAesthetic": {
+          "label": "设计审美",
+          "description": "UI/UX、品牌视觉与 3D 视觉表达"
+        },
+        "musicCreation": {
+          "label": "音乐创作",
+          "description": "作曲、编曲、MIDI 与程序化乐器"
+        },
+        "contentCreation": {
+          "label": "内容创作",
+          "description": "技术写作、视频、小说与相声剧本"
+        }
+      }
+    }
+  }
+}

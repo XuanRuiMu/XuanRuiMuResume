@@ -7,7 +7,7 @@
 - 当前阶段：阶段3自主循环
 - 总循环上限：24 轮（8 个功能点 × 3）
 - 单问题修复上限：5 次
-- 当前循环次数：0
+- 当前循环次数：3
 
 ## 目标
 
@@ -53,15 +53,19 @@
 | ID    | 描述                         | 验收标准                                                                                                                                                                   | 依赖                | 状态   |
 | ----- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------ |
 | FP-01 | React 19 Compiler 与架构基线 | 启用 React Compiler；AIChat 表单改用 useActionState + useOptimistic；PWA 增加 Speculation Rules；build/test/lint 全通过                                                    | 无                  | 已完成 |
-| FP-02 | CSS 原生高级动效体系         | Card/SectionCard 使用 @container；主题切换与 AI 聊天用 View Transitions；全站 Scroll-Driven 渐入；Anchor Positioning 用于 tooltip/下拉；OKLCH 颜色体系迁移；视觉截图通过   | FP-01               | 待开始 |
-| FP-03 | 生成式 AI 助手               | chatService 支持结构化输出；新增 UI 组件注册表（ProjectCard/SkillRadar/Timeline/ContactForm）；AIChat 根据消息渲染组件；本地模式返回结构化数据；deepseek-v4 only；测试通过 | FP-01               | 待开始 |
-| FP-04 | WebGPU 3D 技能星系           | 引入 three + R3F；WebGPURenderer + TSL 着色器；Hero/技能区 3D 星座；集成 deviceCapabilities 画质分级；WebGL2/CSS 优雅降级；build/test 通过；视觉效果截图通过               | FP-01, FP-02        | 待开始 |
-| FP-05 | 全站整合与视觉验证           | 端到端 Playwright 前台测试覆盖 12+ 测试点；桌面/移动端、深浅主题截图；性能指标无回归；所有测试通过                                                                         | FP-02, FP-03, FP-04 | 待开始 |
-| FP-06 | GitHub 提交                  | 使用 总控制台.py 提交并推送；远程仓库状态正常                                                                                                                              | FP-05               | 待开始 |
+| FP-02 | CSS 原生高级动效体系         | Card/SectionCard 使用 @container；主题切换与 AI 聊天用 View Transitions；全站 Scroll-Driven 渐入；Anchor Positioning 用于 tooltip/下拉；OKLCH 颜色体系迁移；视觉截图通过   | FP-01               | 已完成 |
+| FP-03 | 生成式 AI 助手               | chatService 支持结构化输出；新增 UI 组件注册表（ProjectCard/SkillRadar/Timeline/ContactForm）；AIChat 根据消息渲染组件；本地模式返回结构化数据；deepseek-v4 only；测试通过 | FP-01               | 已完成 |
+| FP-04 | WebGPU 3D 技能星系           | 引入 three + R3F；WebGPURenderer + TSL 着色器；Hero/技能区 3D 星座；集成 deviceCapabilities 画质分级；WebGL2/CSS 优雅降级；build/test 通过；视觉效果截图通过               | FP-01, FP-02        | 已完成 |
+| FP-05 | 全站整合与视觉验证           | 端到端 Playwright 前台测试覆盖 12+ 测试点；桌面/移动端、深浅主题截图；性能指标无回归；所有测试通过                                                                         | FP-02, FP-03, FP-04 | 已完成 |
+| FP-06 | GitHub 提交                  | 使用 总控制台.py 提交并推送；远程仓库状态正常                                                                                                                              | FP-05               | 进行中 |
 
 ## 已完成（仅保留一行摘要）
 
 - FP-01 已完成：启用 React Compiler、AIChat 乐观更新、Speculation Rules 预渲染、相关测试通过。
+- FP-02 已完成：Container Queries、View Transitions、Scroll-Driven 渐入、Anchor Positioning tooltip、OKLCH 颜色迁移全部落地，lint/typecheck/test/build 通过。
+- FP-03 已完成：chatService 结构化 JSON 输出、本地 RAG 返回组件、UI 组件注册表（ProjectCard/SkillRadar/Timeline/ContactForm）、AIChat 动态渲染、deepseek-v4 only；已完成三轴审查并修复 Timeline 默认 scope 标题与内容不一致问题；FP-03 测试 50/50 通过。
+- FP-04 已完成：R3F Canvas + WebGPURenderer/WebGLRenderer 降级 + 星系场景落地，deviceCapabilities 画质分级集成；清理未使用的 SkillConstellation 死代码并修正 HeroSection 测试 mock，lint/typecheck/test/build 全通过。
+- FP-05 已完成：Playwright 前台视觉验证覆盖 13 个测试点、4 种视口/主题组合共 62 项检查、46 张截图；lint/typecheck/test/build 全通过；.gitignore 已忽略视觉验证过程截图目录。
 
 ## 当前决策
 

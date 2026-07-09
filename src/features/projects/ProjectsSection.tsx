@@ -40,7 +40,7 @@ function ProjectCard({ project }: ProjectCardProps) {
   const transform = reducedMotion ? undefined : `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
 
   return (
-    <div className="group [perspective:800px] transition-transform duration-300 hover:-translate-y-2">
+    <div className="group scroll-reveal-item [perspective:800px] transition-transform duration-300 hover:-translate-y-2">
       <div
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}

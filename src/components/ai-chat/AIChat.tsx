@@ -4,6 +4,7 @@ import { useAppStore } from '../../store/useAppStore'
 import { cn } from '../../lib/utils'
 import { t, ta } from '../../i18n/translations'
 import { useChatService } from '../../ai/chatService'
+import { UiComponentRenderer } from './UiComponentRegistry'
 import { Button } from '../ui/Button'
 import type { AiMessage } from '../../store/useAppStore'
 
@@ -67,10 +68,7 @@ export function AIChat({ className }: AIChatProps) {
     { error: null }
   )
 
-  const hasApiKey = Boolean(
-    typeof import.meta.env !== 'undefined' &&
-    (import.meta.env.VITE_DEEPSEEK_API_KEY || import.meta.env.VITE_OPENAI_API_KEY)
-  )
+  const hasApiKey = Boolean(typeof import.meta.env !== 'undefined' && import.meta.env.VITE_DEEPSEEK_API_KEY)
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -189,10 +187,16 @@ export function AIChat({ className }: AIChatProps) {
                     ? 'self-end bg-primary text-bg'
                     : 'self-start border border-border bg-surface-elevated text-text-primary'
                 )}
-                {...(message.role === 'assistant'
-                  ? { dangerouslySetInnerHTML: { __html: renderMarkdown(message.content) } }
-                  : { children: message.content })}
-              />
+              >
+                {message.role === 'assistant' ? (
+                  <>
+                    <div dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
+                    {message.component && <UiComponentRenderer component={message.component} />}
+                  </>
+                ) : (
+                  message.content
+                )}
+              </div>
             ))}
             {isPending && (
               <div className="self-start flex items-center gap-2 rounded-2xl border border-border bg-surface-elevated px-3 py-2 text-sm text-muted">

@@ -215,4 +215,78 @@ describe('AIChat', () => {
     fireEvent.click(screen.getByRole('button', { name: t('ai.close') }))
     expect(setChatOpen).toHaveBeenCalledWith(false)
   })
+
+  it('renders ProjectCard component when assistant message has structured component', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [
+            { role: 'user', content: '推荐项目' },
+            {
+              role: 'assistant',
+              content: '推荐暮澜纪元项目',
+              component: { type: 'ProjectCard', projectId: 'xrm' },
+            },
+          ],
+        })
+      )
+    )
+
+    render(<AIChat />)
+    expect(screen.getByTestId('ui-component-ProjectCard')).toBeInTheDocument()
+    expect(screen.getByText('暮澜纪元 MMORPG 服务端')).toBeInTheDocument()
+  })
+
+  it('renders SkillRadar component when assistant message asks for skills', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [
+            { role: 'user', content: '技能' },
+            { role: 'assistant', content: '这是我的能力分布', component: { type: 'SkillRadar' } },
+          ],
+        })
+      )
+    )
+
+    render(<AIChat />)
+    expect(screen.getByTestId('ui-component-SkillRadar')).toBeInTheDocument()
+  })
+
+  it('renders Timeline component when assistant message has timeline component', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [
+            { role: 'user', content: '经历' },
+            { role: 'assistant', content: '这是我的经历', component: { type: 'Timeline', scope: 'experience' } },
+          ],
+        })
+      )
+    )
+
+    render(<AIChat />)
+    expect(screen.getByTestId('ui-component-Timeline')).toBeInTheDocument()
+  })
+
+  it('renders ContactForm component when assistant message has contact component', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [
+            { role: 'user', content: '联系' },
+            { role: 'assistant', content: '请填写表单', component: { type: 'ContactForm' } },
+          ],
+        })
+      )
+    )
+
+    render(<AIChat />)
+    expect(screen.getByTestId('ui-component-ContactForm')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(t('contact.form.name'))).toBeInTheDocument()
+  })
 })

@@ -30,6 +30,38 @@
   --color-glass-border: rgba(0, 0, 0, 0.08);
 }
 
+@supports (color: oklch(from #000000 l c h)) {
+  :root {
+    --color-bg: oklch(from #0b0c15 l c h);
+    --color-surface: oklch(from #11131e l c h);
+    --color-surface-elevated: oklch(from #181b29 l c h);
+    --color-border: oklch(from #ffffff l c h / 0.1);
+    --color-primary: oklch(from #00d9ff l c h);
+    --color-secondary: oklch(from #a55eea l c h);
+    --color-accent: oklch(from #ff6b9d l c h);
+    --color-text-primary: oklch(from #f3f4f6 l c h);
+    --color-text-secondary: oklch(from #f3f4f6 l c h / 0.7);
+    --color-muted: oklch(from #f3f4f6 l c h / 0.5);
+    --color-glass: oklch(from #ffffff l c h / 0.06);
+    --color-glass-border: oklch(from #ffffff l c h / 0.12);
+  }
+
+  .light {
+    --color-bg: oklch(from #f8f9fb l c h);
+    --color-surface: oklch(from #ffffff l c h);
+    --color-surface-elevated: oklch(from #ffffff l c h);
+    --color-border: oklch(from #000000 l c h / 0.08);
+    --color-primary: oklch(from #007a99 l c h);
+    --color-secondary: oklch(from #7c3aed l c h);
+    --color-accent: oklch(from #db2777 l c h);
+    --color-text-primary: oklch(from #0b0c15 l c h);
+    --color-text-secondary: oklch(from #0b0c15 l c h / 0.82);
+    --color-muted: oklch(from #0b0c15 l c h / 0.72);
+    --color-glass: oklch(from #ffffff l c h / 0.65);
+    --color-glass-border: oklch(from #000000 l c h / 0.08);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -84,6 +116,14 @@ select:focus {
   border-color: rgba(0, 0, 0, 0.18);
 }
 
+@supports (color: oklch(from #000000 l c h)) {
+  .light input,
+  .light textarea,
+  .light select {
+    border-color: oklch(from #000000 l c h / 0.18);
+  }
+}
+
 .light input:focus,
 .light textarea:focus,
 .light select:focus {
@@ -96,6 +136,12 @@ select:focus {
   -webkit-backdrop-filter: blur(22px);
   border: 1px solid var(--color-glass-border);
   box-shadow: 0 24px 72px rgba(0, 0, 0, 0.55);
+}
+
+@supports (color: oklch(from #000000 l c h)) {
+  .glass-panel {
+    box-shadow: 0 24px 72px oklch(from #000000 l c h / 0.55);
+  }
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -114,6 +160,20 @@ select:focus {
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: rgba(128, 128, 128, 0.45);
+}
+
+@supports (color: oklch(from #808080 l c h)) {
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: oklch(from #808080 l c h / 0.08);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: oklch(from #808080 l c h / 0.3);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: oklch(from #808080 l c h / 0.45);
+  }
 }
 
 .scrollbar-hide {
@@ -166,6 +226,17 @@ select:focus {
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s infinite linear;
   border-radius: 0.5rem;
+}
+
+@supports (color: oklch(from #808080 l c h)) {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      oklch(from #808080 l c h / 0.12) 0%,
+      oklch(from #808080 l c h / 0.24) 50%,
+      oklch(from #808080 l c h / 0.12) 100%
+    );
+  }
 }
 
 @keyframes skeleton-shimmer {
@@ -238,17 +309,82 @@ select:focus {
   }
 }
 
-/* CSS Scroll-driven Animations */
-@media (prefers-reduced-motion: no-preference) {
-  .scroll-reveal {
-    animation: scroll-reveal linear both;
-    animation-timeline: view();
-    animation-range: entry 10% cover 35%;
+::view-transition-old(command-palette),
+::view-transition-new(command-palette) {
+  animation-duration: 0.35s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(command-palette) {
+  animation-name: vt-command-out;
+}
+
+::view-transition-new(command-palette) {
+  animation-name: vt-command-in;
+}
+
+@keyframes vt-command-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 
-  .scroll-parallax {
-    animation: scroll-parallax linear;
-    animation-timeline: scroll(root);
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(-12px);
+  }
+}
+
+@keyframes vt-command-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* CSS Scroll-driven Animations */
+.scroll-reveal {
+  opacity: 1;
+}
+
+.scroll-reveal-item {
+  opacity: 1;
+}
+
+.scroll-progress-bar {
+  width: var(--progress-target, 100%);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-reveal {
+      animation: scroll-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 35%;
+    }
+
+    .scroll-reveal-item {
+      animation: scroll-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 12% cover 38%;
+    }
+
+    .scroll-parallax {
+      animation: scroll-parallax linear;
+      animation-timeline: scroll(root);
+    }
+
+    .scroll-progress-bar {
+      width: 0;
+      animation: scroll-progress-grow linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 40%;
+    }
   }
 }
 
@@ -271,5 +407,144 @@ select:focus {
 
   to {
     transform: translateY(-60px);
+  }
+}
+
+@keyframes scroll-progress-grow {
+  to {
+    width: var(--progress-target, 100%);
+  }
+}
+
+/* Container Queries */
+.card-container {
+  container-type: inline-size;
+  container-name: card;
+}
+
+@container card (max-width: 220px) {
+  .card-container {
+    padding: var(--spacing-3);
+  }
+
+  .card-container .card-header {
+    margin-bottom: var(--spacing-2);
+  }
+
+  .card-container .card-footer {
+    margin-top: var(--spacing-2);
+    padding-top: var(--spacing-2);
+  }
+}
+
+@container card (min-width: 480px) {
+  .card-container {
+    padding: var(--spacing-8);
+  }
+}
+
+.section-card-container {
+  container-type: inline-size;
+  container-name: section-card;
+}
+
+@container section-card (max-width: 260px) {
+  .section-card-container {
+    padding: var(--spacing-4);
+  }
+}
+
+@container section-card (min-width: 560px) {
+  .section-card-container {
+    padding: var(--spacing-8);
+  }
+}
+
+/* Anchor Positioning */
+.nav-anchor {
+  position: relative;
+}
+
+.nav-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 60;
+}
+
+.nav-anchor:hover .nav-tooltip,
+.nav-anchor:focus-visible .nav-tooltip {
+  opacity: 1;
+}
+
+@supports (top: anchor(bottom)) {
+  .nav-tooltip {
+    top: calc(anchor(bottom) + 6px);
+    left: anchor(center);
+  }
+}
+
+/* Skill Galaxy Fallback */
+.skill-galaxy-aurora {
+  background:
+    radial-gradient(circle at 20% 30%, var(--color-primary) 0%, transparent 35%),
+    radial-gradient(circle at 80% 70%, var(--color-secondary) 0%, transparent 35%),
+    radial-gradient(circle at 50% 50%, var(--color-accent) 0%, transparent 45%);
+  filter: blur(60px);
+  animation: skill-galaxy-aurora-drift 18s ease-in-out infinite alternate;
+}
+
+.skill-galaxy-stars {
+  background-image:
+    radial-gradient(2px 2px at 20px 40px, var(--color-text-primary), transparent),
+    radial-gradient(1.5px 1.5px at 80px 120px, var(--color-primary), transparent),
+    radial-gradient(1px 1px at 160px 60px, var(--color-secondary), transparent),
+    radial-gradient(2px 2px at 240px 180px, var(--color-accent), transparent),
+    radial-gradient(1.5px 1.5px at 320px 90px, var(--color-text-primary), transparent);
+  background-size: 360px 220px;
+  opacity: 0.35;
+  animation: skill-galaxy-stars-pan 24s linear infinite;
+}
+
+.skill-galaxy-constellation {
+  background-image:
+    linear-gradient(var(--color-primary) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-primary) 1px, transparent 1px);
+  background-size: 120px 120px;
+  opacity: 0.04;
+  animation: skill-galaxy-constellation-drift 30s linear infinite;
+}
+
+@keyframes skill-galaxy-aurora-drift {
+  from {
+    transform: translate3d(-4%, -4%, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(4%, 4%, 0) scale(1.08);
+  }
+}
+
+@keyframes skill-galaxy-stars-pan {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 360px 220px;
+  }
+}
+
+@keyframes skill-galaxy-constellation-drift {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 120px 120px;
   }
 }

@@ -12,7 +12,7 @@ export function ExperienceSection() {
           {experiences.map((entry) => (
             <article key={entry.id} className="relative" aria-labelledby={entry.id}>
               <div className="absolute -left-5 top-6 h-3 w-3 -translate-x-1/2 rounded-full bg-primary" />
-              <Card>
+              <Card className="scroll-reveal-item">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
                   <h3 id={entry.id} className="text-lg font-semibold text-text-primary">
                     {t(entry.titleKey)}

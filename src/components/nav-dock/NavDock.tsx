@@ -45,13 +45,21 @@ export function NavDock() {
           key={section}
           type="button"
           onClick={() => transitionToSection(section)}
+          style={{ anchorName: `--nav-${section}` }}
           className={cn(
-            'shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+            'nav-anchor shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
             'text-text-secondary hover:text-text-primary hover:bg-surface',
             activeSection === section && 'bg-surface text-text-primary'
           )}
         >
           {sectionLabel(section)}
+          <span
+            className="nav-tooltip rounded-md border border-border bg-surface px-2 py-1 text-xs text-text-secondary shadow-lg"
+            style={{ positionAnchor: `--nav-${section}` }}
+            aria-hidden="true"
+          >
+            {sectionLabel(section)}
+          </span>
         </button>
       ))}
       <div className="mx-1 h-4 w-px shrink-0 bg-border" aria-hidden="true" />

@@ -37,14 +37,16 @@ export function SkillsSection() {
   return (
     <Section id="skills" title={t('skills.title')} subtitle={t('skills.subtitle')}>
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
-        <Card className="h-[360px]">
-          <SkillRadarChart />
+        <Card className="scroll-reveal-item">
+          <div className="h-[300px]">
+            <SkillRadarChart />
+          </div>
         </Card>
         <div className="flex flex-col gap-4">
           {分类配置集.map((分类) => {
             const 标签集 = ta(分类.标签集键)
             return (
-              <Card key={分类.id} hover>
+              <Card key={分类.id} hover className="scroll-reveal-item">
                 <h3 className="mb-2 text-lg font-medium text-text-primary">{t(分类.标签键)}</h3>
                 <p className="mb-3 text-sm text-text-secondary">{t(分类.描述键)}</p>
                 <div className="flex flex-wrap gap-2">

@@ -14,26 +14,41 @@ describe('chatService', () => {
     vi.clearAllMocks()
   })
 
-  it('returns local answer when no API key is configured', async () => {
-    const result = await sendChatMessage([{ role: 'user', content: '你是谁' }])
+  it('returns local structured answer when no API key is configured', async () => {
+    const result = await sendChatMessage([{ role: 'user', content: '你叫什么' }])
 
     expect(result.message.role).toBe('assistant')
-    expect(result.message.content).toContain('根据简历信息')
     expect(result.message.content).toContain(personalInfo.name)
+    expect(result.message.component).toBeUndefined()
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('answers contact questions locally without API key', async () => {
+  it('returns ContactForm component for contact questions locally', async () => {
     const result = await sendChatMessage([{ role: 'user', content: '怎么联系你' }])
 
     expect(result.message.content).toContain(personalInfo.email)
+    expect(result.message.component).toEqual({ type: 'ContactForm' })
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('answers project questions locally without API key', async () => {
+  it('returns ProjectCard component for project questions locally', async () => {
     const result = await sendChatMessage([{ role: 'user', content: '介绍一下暮澜纪元' }])
 
-    expect(result.message.content).toContain('暮澜纪元')
+    expect(result.message.component).toEqual({ type: 'ProjectCard', projectId: 'xrm' })
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('returns SkillRadar component for skill questions locally', async () => {
+    const result = await sendChatMessage([{ role: 'user', content: '你的技术栈' }])
+
+    expect(result.message.component).toEqual({ type: 'SkillRadar' })
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('returns Timeline component for education questions locally', async () => {
+    const result = await sendChatMessage([{ role: 'user', content: '教育背景' }])
+
+    expect(result.message.component).toEqual({ type: 'Timeline', scope: 'education' })
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
@@ -41,7 +56,7 @@ describe('chatService', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: 'DeepSeek 回答' } }],
+        choices: [{ message: { content: '{"text":"DeepSeek 回答"}' } }],
       }),
     })
 
@@ -53,26 +68,51 @@ describe('chatService', () => {
     const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
     expect(callArgs[0]).toBe('https://api.deepseek.com/v1/chat/completions')
     expect((callArgs[1].headers as Record<string, string>).Authorization).toBe('Bearer sk-test')
+    const body = JSON.parse((callArgs[1].body as string) ?? '{}')
+    expect(body.model).toBe('deepseek-v4')
+    expect(body.response_format).toEqual({ type: 'json_object' })
     expect(result.message.content).toBe('DeepSeek 回答')
   })
 
-  it('calls OpenAI API when OpenAI key is provided', async () => {
+  it('parses structured JSON response from DeepSeek', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        choices: [{ message: { content: 'OpenAI 回答' } }],
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                text: '推荐暮澜纪元项目',
+                component: { type: 'ProjectCard', projectId: 'xrm' },
+              }),
+            },
+          },
+        ],
       }),
     })
 
-    const result = await sendChatMessage([{ role: 'user', content: '你的技术栈' }], {
-      openaiApiKey: 'sk-openai',
+    const result = await sendChatMessage([{ role: 'user', content: '推荐一个项目' }], {
+      deepseekApiKey: 'sk-test',
     })
 
-    expect(mockFetch).toHaveBeenCalledTimes(1)
-    const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
-    expect(callArgs[0]).toBe('https://api.openai.com/v1/chat/completions')
-    expect((callArgs[1].headers as Record<string, string>).Authorization).toBe('Bearer sk-openai')
-    expect(result.message.content).toBe('OpenAI 回答')
+    expect(result.message.content).toBe('推荐暮澜纪元项目')
+    expect(result.message.component).toEqual({ type: 'ProjectCard', projectId: 'xrm' })
+  })
+
+  it('falls back to text when DeepSeek returns plain text', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '纯文本回答' } }],
+      }),
+    })
+
+    const result = await sendChatMessage([{ role: 'user', content: '你好' }], {
+      deepseekApiKey: 'sk-test',
+    })
+
+    expect(result.message.content).toBe('纯文本回答')
+    expect(result.message.component).toBeUndefined()
   })
 
   it('throws when LLM response is not ok', async () => {

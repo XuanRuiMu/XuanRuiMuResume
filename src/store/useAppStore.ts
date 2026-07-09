@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { PerformanceMetrics, FrameMetrics, QualityLevel } from '../domain/types'
+import type { UiComponent } from '../ai/structuredOutput'
 
 export type AppTheme = 'dark' | 'light' | 'system'
 
@@ -9,6 +10,7 @@ export type AppSection =
 export interface AiMessage {
   role: 'user' | 'assistant'
   content: string
+  component?: UiComponent
 }
 
 export interface AppState {

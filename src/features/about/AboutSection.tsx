@@ -37,7 +37,7 @@ export function AboutSection() {
   return (
     <Section id="about" title={t('about.title')} subtitle={t('about.subtitle')}>
       <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
-        <Card className="flex items-center">
+        <Card className="scroll-reveal-item flex items-center">
           <p className="text-base leading-relaxed text-text-secondary sm:text-lg">{t('about.intro')}</p>
         </Card>
 
@@ -45,7 +45,11 @@ export function AboutSection() {
           {metricConfigs.map((metric) => {
             const Icon = metric.icon
             return (
-              <Card key={metric.id} hover className="flex flex-col items-center justify-center text-center">
+              <Card
+                key={metric.id}
+                hover
+                className="scroll-reveal-item flex flex-col items-center justify-center text-center"
+              >
                 <Icon size={28} className="mb-3 text-primary" aria-hidden="true" />
                 <span className="mb-1 text-3xl font-semibold text-text-primary">{t(metric.valueKey)}</span>
                 <span className="text-sm text-muted">{t(metric.labelKey)}</span>

@@ -106,6 +106,15 @@ export async function detectWebGPUSupport(): Promise<boolean> {
   }
 }
 
+export function detectWebGL2Support(): boolean {
+  try {
+    const canvas = document.createElement('canvas')
+    return canvas.getContext('webgl2') !== null
+  } catch {
+    return false
+  }
+}
+
 export async function detectPerformanceProfile(): Promise<QualityLevel> {
   const hardware = getHardwareTier()
   const battery = await getBatteryTier()

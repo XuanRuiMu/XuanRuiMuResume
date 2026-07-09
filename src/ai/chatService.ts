@@ -2,10 +2,11 @@ import { useMutation } from '@tanstack/react-query'
 import type { AiMessage } from '../store/useAppStore'
 import { retrieveChunks } from './ragEngine'
 import { personalInfo } from '../data/personalInfo'
+import { getLocalAnswer } from './localEngine'
+import { extractJsonFromText, parseAssistantPayload, type AssistantPayload } from './structuredOutput'
 
 export interface ChatOptions {
   deepseekApiKey?: string
-  openaiApiKey?: string
   model?: string
   maxContextChunks?: number
 }
@@ -14,66 +15,55 @@ export interface ChatServiceResult {
   message: AiMessage
 }
 
-interface LLMProvider {
-  name: string
-  baseUrl: string
-  apiKey: string
-  model: string
-}
+const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
+const DEEPSEEK_DEFAULT_MODEL = 'deepseek-v4'
 
-function detectProvider(options: ChatOptions): LLMProvider | null {
-  if (options.deepseekApiKey) {
-    return {
-      name: 'deepseek',
-      baseUrl: 'https://api.deepseek.com/v1/chat/completions',
-      apiKey: options.deepseekApiKey,
-      model: options.model ?? 'deepseek-v4-pro',
-    }
-  }
+function buildSystemPrompt(context: string): string {
+  return `你是玄锐暮的简历 AI 助手，只能根据下方提供的简历上下文回答问题。如果上下文无法回答，请引导用户通过邮箱 ${personalInfo.email} 联系。
 
-  if (options.openaiApiKey) {
-    return {
-      name: 'openai',
-      baseUrl: 'https://api.openai.com/v1/chat/completions',
-      apiKey: options.openaiApiKey,
-      model: options.model ?? 'gpt-4o-mini',
-    }
-  }
-
-  return null
-}
-
-function buildLocalAnswer(question: string): AiMessage {
-  const chunks = retrieveChunks(question, 4)
-  const context = chunks.map((chunk, index) => `${index + 1}. ${chunk.content}`).join('\n')
-
-  return {
-    role: 'assistant',
-    content: `根据简历信息，为你解答「${question}」：\n\n${context}\n\n如需更详细的资料，欢迎通过邮箱 ${personalInfo.email} 联系我。`,
+你必须以 JSON 格式回复，格式如下：
+{
+  "text": "回复文本（必填）",
+  "component": {
+    "type": "ProjectCard" | "SkillRadar" | "Timeline" | "ContactForm"
+    // ProjectCard 额外字段：projectId: "xrm" | "admin" | "aiConsole" | "slimefun"
+    // SkillRadar 额外字段：category?: "it" | "creative" | "soft"
+    // Timeline 额外字段：scope?: "experience" | "media" | "education"
   }
 }
 
-async function callLLM(messages: AiMessage[], provider: LLMProvider): Promise<AiMessage> {
+component 字段可选，仅在用户询问项目、技能、经历/时间线或联系方式时返回对应组件。
+
+简历上下文：
+${context}`
+}
+
+function parseDeepSeekResponse(rawContent: string): AssistantPayload {
+  const extracted = extractJsonFromText(rawContent)
+  return parseAssistantPayload(extracted)
+}
+
+async function callDeepSeek(messages: AiMessage[], apiKey: string, model: string): Promise<AiMessage> {
   const userQuestion = messages.findLast((message) => message.role === 'user')?.content ?? ''
-  const contextChunks = retrieveChunks(userQuestion, provider.name === 'deepseek' ? 5 : 4)
+  const contextChunks = retrieveChunks(userQuestion, 5)
   const context = contextChunks.map((chunk, index) => `[${index + 1}] ${chunk.content}`).join('\n\n')
+  const systemPrompt = buildSystemPrompt(context)
 
-  const systemPrompt = `你是玄锐暮的简历 AI 助手，只能根据下方提供的简历上下文回答问题。如果上下文无法回答，请引导用户通过邮箱 ${personalInfo.email} 联系。\n\n简历上下文：\n${context}`
-
-  const response = await fetch(provider.baseUrl, {
+  const response = await fetch(DEEPSEEK_BASE_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${provider.apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: provider.model,
+      model,
       messages: [
         { role: 'system', content: systemPrompt },
         ...messages.map((message) => ({ role: message.role, content: message.content })),
       ],
       temperature: 0.6,
       max_tokens: 1024,
+      response_format: { type: 'json_object' },
     }),
   })
 
@@ -83,39 +73,36 @@ async function callLLM(messages: AiMessage[], provider: LLMProvider): Promise<Ai
   }
 
   const data = await response.json()
-  const content = data.choices?.[0]?.message?.content
+  const rawContent = data.choices?.[0]?.message?.content
 
-  if (typeof content !== 'string') {
+  if (typeof rawContent !== 'string') {
     throw new Error('LLM 返回格式异常')
   }
 
-  return { role: 'assistant', content }
+  const payload = parseDeepSeekResponse(rawContent)
+  return { role: 'assistant', content: payload.text, component: payload.component }
 }
 
-export async function sendChatMessage(
-  messages: AiMessage[],
-  options: ChatOptions = {}
-): Promise<ChatServiceResult> {
-  const provider = detectProvider(options)
+export async function sendChatMessage(messages: AiMessage[], options: ChatOptions = {}): Promise<ChatServiceResult> {
+  const apiKey = options.deepseekApiKey
 
-  if (!provider) {
+  if (!apiKey) {
     const userQuestion = messages.findLast((message) => message.role === 'user')?.content ?? ''
-    return { message: buildLocalAnswer(userQuestion) }
+    return { message: getLocalAnswer(userQuestion) }
   }
 
-  const answer = await callLLM(messages, provider)
+  const answer = await callDeepSeek(messages, apiKey, options.model ?? DEEPSEEK_DEFAULT_MODEL)
   return { message: answer }
 }
 
 export function useChatService(options: ChatOptions = {}) {
   const deepseekApiKey =
-    options.deepseekApiKey ?? (typeof import.meta.env !== 'undefined' ? import.meta.env.VITE_DEEPSEEK_API_KEY : undefined)
-  const openaiApiKey =
-    options.openaiApiKey ?? (typeof import.meta.env !== 'undefined' ? import.meta.env.VITE_OPENAI_API_KEY : undefined)
+    options.deepseekApiKey ??
+    (typeof import.meta.env !== 'undefined' ? import.meta.env.VITE_DEEPSEEK_API_KEY : undefined)
 
   return useMutation({
     mutationFn: async (messages: AiMessage[]) => {
-      return sendChatMessage(messages, { ...options, deepseekApiKey, openaiApiKey })
+      return sendChatMessage(messages, { ...options, deepseekApiKey })
     },
   })
 }

@@ -7,6 +7,7 @@ import { t, type TranslationKey } from '../../i18n/translations'
 import { personalInfo } from '../../data/personalInfo'
 import { downloadResume } from '../../lib/resume'
 import { cn } from '../../lib/utils'
+import { startViewTransition } from '../../utils/viewTransition'
 
 function sectionLabel(section: AppSection): string {
   return t(`nav.${section}` as unknown as TranslationKey)
@@ -19,26 +20,35 @@ export function CommandPalette() {
   const transitionToSection = useAppStore((state) => state.transitionToSection)
   const { theme, setTheme } = useThemeSystem()
 
+  const setOpenWithTransition = useCallback(
+    (value: boolean) => {
+      startViewTransition(() => {
+        setOpen(value)
+      })
+    },
+    [setOpen]
+  )
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
-        setOpen(!open)
+        setOpenWithTransition(!open)
       }
       if (event.key === 'Escape') {
-        setOpen(false)
+        setOpenWithTransition(false)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [open, setOpen])
+  }, [open, setOpenWithTransition])
 
   const run = useCallback(
     (action: () => void) => {
       action()
-      setOpen(false)
+      setOpenWithTransition(false)
     },
-    [setOpen]
+    [setOpenWithTransition]
   )
 
   const toggleTheme = useCallback(() => {
@@ -71,10 +81,11 @@ export function CommandPalette() {
   return (
     <div
       className="fixed inset-0 z-[80] flex items-start justify-center bg-black/60 p-4 pt-[15vh] backdrop-blur-sm"
-      onClick={() => setOpen(false)}
+      onClick={() => setOpenWithTransition(false)}
       role="dialog"
       aria-modal="true"
       aria-label={t('command.title')}
+      style={{ viewTransitionName: 'command-palette' }}
     >
       <Command
         className={cn('w-full max-w-xl overflow-hidden rounded-2xl border border-border', 'bg-surface shadow-2xl')}
@@ -97,7 +108,7 @@ export function CommandPalette() {
             {SECTION_ORDER.map((section) => (
               <Command.Item
                 key={section}
-                value={`section-${section}`}
+                value={`section-${section} ${sectionLabel(section)}`}
                 onSelect={() => run(() => transitionToSection(section))}
                 className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-text-primary transition-colors hover:bg-surface-elevated aria-selected:bg-surface-elevated"
               >

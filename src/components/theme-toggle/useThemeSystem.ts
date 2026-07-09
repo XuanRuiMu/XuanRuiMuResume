@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAppStore, type AppTheme } from '../../store/useAppStore'
+import { startViewTransition } from '../../utils/viewTransition'
 
 const STORAGE_KEY = 'xrm-theme'
 
@@ -17,11 +18,13 @@ export function useThemeSystem() {
 
   const applyTheme = useCallback((next: AppTheme) => {
     const resolved = resolveTheme(next)
-    setResolvedTheme(resolved)
-    const root = document.documentElement
-    root.classList.remove('light', 'dark')
-    root.classList.add(resolved)
-    root.style.colorScheme = resolved
+    startViewTransition(() => {
+      setResolvedTheme(resolved)
+      const root = document.documentElement
+      root.classList.remove('light', 'dark')
+      root.classList.add(resolved)
+      root.style.colorScheme = resolved
+    })
   }, [])
 
   useEffect(() => {

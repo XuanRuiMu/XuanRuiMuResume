@@ -213,6 +213,7 @@
       "projects": "我主导过暮澜纪元 MMORPG 服务端、Spring Boot 管理后台、AI 总控制台等完整项目。",
       "skills": "主要技术栈包括 Java 25 / Spring Boot 3.4、Python、React、MySQL、Redis、Git 自动化与 AI Agent 工具链。",
       "education": "我就读于{school}，{major}专业{degree}，预计 {period} 毕业。",
+      "experience": "我的工程实践经历包括独立开发暮澜纪元 MMORPG、开源贡献与教学创作。",
       "fallback": "这个问题暂时不在本地知识库中，你可以通过邮件 {email} 联系我。"
     }
   },
@@ -226,7 +227,16 @@
     "empty": "有什么可以帮你的？",
     "localMode": "当前使用本地规则引擎回答",
     "reset": "清空对话",
-    "quickQuestions": ["你是谁", "你的技术栈", "介绍一下暮澜纪元", "联系方式"]
+    "quickQuestions": ["你是谁", "你的技术栈", "介绍一下暮澜纪元", "联系方式"],
+    "component": {
+      "projectNotFound": "未找到对应项目",
+      "noSkillData": "暂无技能数据",
+      "timeline": {
+        "experience": "经历时间线",
+        "media": "媒体创作时间线",
+        "education": "教育时间线"
+      }
+    }
   },
   "radar": {
     "placeholder": "技能雷达图"

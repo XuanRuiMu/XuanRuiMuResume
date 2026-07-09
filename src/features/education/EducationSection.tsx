@@ -18,7 +18,7 @@ export function EducationSection() {
           <TabsTrigger value="achievements">{t('education.tabs.achievements')}</TabsTrigger>
         </TabsList>
         <TabsContent value="summary">
-          <Card className="max-w-2xl">
+          <Card className="scroll-reveal-item max-w-2xl">
             <div className="mb-2 text-2xl font-semibold text-text-primary">{education.summary.school}</div>
             <div className="mb-4 text-lg text-text-secondary">
               {education.summary.major} · {education.summary.degree}
@@ -29,7 +29,7 @@ export function EducationSection() {
         <TabsContent value="courses">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {education.courses.map((course) => (
-              <Card key={course.id} hover>
+              <Card key={course.id} hover className="scroll-reveal-item">
                 <div className="mb-1 font-medium text-text-primary">{t(course.nameKey)}</div>
                 <div className="text-sm text-muted">{t(course.levelKey)}</div>
               </Card>
@@ -39,7 +39,7 @@ export function EducationSection() {
         <TabsContent value="achievements">
           <div className="grid gap-4">
             {education.achievementKeys.map((key) => (
-              <Card key={key} hover>
+              <Card key={key} hover className="scroll-reveal-item">
                 <p className="text-text-secondary">{t(key)}</p>
               </Card>
             ))}

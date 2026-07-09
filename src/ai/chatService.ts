@@ -27,7 +27,7 @@ function detectProvider(options: ChatOptions): LLMProvider | null {
       name: 'deepseek',
       baseUrl: 'https://api.deepseek.com/v1/chat/completions',
       apiKey: options.deepseekApiKey,
-      model: options.model ?? 'deepseek-chat',
+      model: options.model ?? 'deepseek-v4-pro',
     }
   }
 
@@ -92,7 +92,10 @@ async function callLLM(messages: AiMessage[], provider: LLMProvider): Promise<Ai
   return { role: 'assistant', content }
 }
 
-export async function sendChatMessage(messages: AiMessage[], options: ChatOptions = {}): Promise<ChatServiceResult> {
+export async function sendChatMessage(
+  messages: AiMessage[],
+  options: ChatOptions = {}
+): Promise<ChatServiceResult> {
   const provider = detectProvider(options)
 
   if (!provider) {
@@ -106,8 +109,7 @@ export async function sendChatMessage(messages: AiMessage[], options: ChatOption
 
 export function useChatService(options: ChatOptions = {}) {
   const deepseekApiKey =
-    options.deepseekApiKey ??
-    (typeof import.meta.env !== 'undefined' ? import.meta.env.VITE_DEEPSEEK_API_KEY : undefined)
+    options.deepseekApiKey ?? (typeof import.meta.env !== 'undefined' ? import.meta.env.VITE_DEEPSEEK_API_KEY : undefined)
   const openaiApiKey =
     options.openaiApiKey ?? (typeof import.meta.env !== 'undefined' ? import.meta.env.VITE_OPENAI_API_KEY : undefined)
 

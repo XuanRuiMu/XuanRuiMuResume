@@ -20,7 +20,10 @@ async function generateIcon(size, outputName) {
 
 async function generateOgImage() {
   const outputPath = path.join(publicDir, 'og-image.png')
-  const icon = await sharp(svgBuffer).resize(160, 160, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer()
+  const icon = await sharp(svgBuffer)
+    .resize(160, 160, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer()
 
   const canvas = sharp({
     create: {

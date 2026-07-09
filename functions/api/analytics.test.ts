@@ -46,7 +46,11 @@ describe('analytics edge function', () => {
   })
 
   it('POST anonymizes IP address', async () => {
-    const request = createRequest('POST', { path: '/', timestamp: Date.now() }, { 'CF-Connecting-IP': '192.168.1.45' })
+    const request = createRequest(
+      'POST',
+      { path: '/', timestamp: Date.now() },
+      { 'CF-Connecting-IP': '192.168.1.45' }
+    )
     await onRequestPost({ request, env })
 
     const listResult = await env.ANALYTICS_KV?.list({ prefix: 'analytics:event:' })

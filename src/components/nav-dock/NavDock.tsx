@@ -39,14 +39,14 @@ export function NavDock() {
   }, [setActiveSection])
 
   return (
-    <nav className="flex items-center gap-1" aria-label={t('nav.main')}>
+    <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide" aria-label={t('nav.main')}>
       {SECTION_ORDER.map((section) => (
         <button
           key={section}
           type="button"
           onClick={() => transitionToSection(section)}
           className={cn(
-            'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+            'shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
             'text-text-secondary hover:text-text-primary hover:bg-surface',
             activeSection === section && 'bg-surface text-text-primary'
           )}
@@ -54,12 +54,12 @@ export function NavDock() {
           {sectionLabel(section)}
         </button>
       ))}
-      <div className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
+      <div className="mx-1 h-4 w-px shrink-0 bg-border" aria-hidden="true" />
       <button
         type="button"
         onClick={() => setCommandOpen(true)}
         className={cn(
-          'inline-flex items-center gap-2 rounded-full border border-border',
+          'inline-flex shrink-0 items-center gap-2 rounded-full border border-border',
           'bg-surface px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-surface-elevated'
         )}
         aria-label={t('command.open')}

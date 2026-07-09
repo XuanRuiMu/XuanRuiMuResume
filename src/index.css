@@ -23,9 +23,9 @@
   --color-primary: #007a99;
   --color-secondary: #7c3aed;
   --color-accent: #db2777;
-  --color-text-primary: #11131e;
-  --color-text-secondary: rgba(17, 19, 30, 0.7);
-  --color-muted: rgba(17, 19, 30, 0.45);
+  --color-text-primary: #0b0c15;
+  --color-text-secondary: rgba(11, 12, 21, 0.82);
+  --color-muted: rgba(11, 12, 21, 0.72);
   --color-glass: rgba(255, 255, 255, 0.65);
   --color-glass-border: rgba(0, 0, 0, 0.08);
 }
@@ -59,6 +59,37 @@ body,
   position: relative;
 }
 
+::placeholder {
+  color: var(--color-muted) !important;
+  opacity: 1 !important;
+}
+
+input,
+textarea,
+select {
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-primary);
+}
+
+.light input,
+.light textarea,
+.light select {
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+.light input:focus,
+.light textarea:focus,
+.light select:focus {
+  border-color: var(--color-primary);
+}
+
 .glass-panel {
   background: var(--color-glass);
   backdrop-filter: blur(22px);
@@ -83,6 +114,15 @@ body,
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: rgba(128, 128, 128, 0.45);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 .font-display {

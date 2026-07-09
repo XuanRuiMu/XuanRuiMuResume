@@ -10,6 +10,20 @@ interface AIChatProps {
   className?: string
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function renderMarkdown(content: string): string {
+  const escaped = escapeHtml(content)
+  return escaped
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+    .replace(/```([\s\S]*?)```/g, '<pre class="overflow-x-auto rounded-lg bg-bg p-2 text-xs"><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code class="rounded bg-bg px-1 py-0.5 text-xs">$1</code>')
+    .replace(/\n/g, '<br />')
+}
+
 export function AIChat({ className }: AIChatProps) {
   const chatOpen = useAppStore((state) => state.chatOpen)
   const setChatOpen = useAppStore((state) => state.setChatOpen)
@@ -167,9 +181,10 @@ export function AIChat({ className }: AIChatProps) {
                     ? 'self-end bg-primary text-bg'
                     : 'self-start border border-border bg-surface-elevated text-text-primary'
                 )}
-              >
-                {message.content}
-              </div>
+                {...(message.role === 'assistant'
+                  ? { dangerouslySetInnerHTML: { __html: renderMarkdown(message.content) } }
+                  : { children: message.content })}
+              />
             ))}
             {chatMutation.isPending && (
               <div className="self-start flex items-center gap-2 rounded-2xl border border-border bg-surface-elevated px-3 py-2 text-sm text-muted">

@@ -1,84 +1,43 @@
-# 个人简历 v2 重设计 — 循环工程进度
+# 个人简历 v2 前端全量实机测试 — 循环工程进度
 
 ## 目标
 
-推倒 3D 剧场方案，重建为内容优先的 AI-Native Developer Résumé Hub。首屏 1 秒内呈现完整简历信息，同时融入 AI 问答、Cmd+K 命令面板、技能雷达图、边缘函数、PWA 等多种高级技术。
+对已完成重设计的个人简历进行前台（非 headless）全量实机测试，通过截图 + 视觉识别检查每一个模块与交互，确保没有视觉/功能问题。
 
 ## 停止条件
 
-- 所有功能点状态为「已完成」或「已跳过」
-- `npm run build` 成功且 dist 产物无 3D 大文件
-- `npm run test` 全部通过
-- `npm run test:e2e` 全部通过
-- Lighthouse Performance ≥ 95，Accessibility ≥ 95，Best Practices ≥ 95，SEO ≥ 95
+- 所有模块截图完成并检查通过
+- 导航、命令面板、主题切换、AI 助手交互截图通过
+- 发现的阻塞/明显视觉问题已修复
+- `npm run build`、`npm run test`、`npm run test:e2e` 全部通过
+- 使用 `总控制台.py` 完成 GitHub 提交
+- 删除本 PROGRESS.md
 
 ## 熔断上限
 
-- 总循环次数：36 轮（12 个功能点 × 3 轮）
-- 单问题修复：同一问题超 5 次未解决即标记阻塞
-- 当前循环计数：4
+- 总循环次数：12 轮
+- 单问题修复：同一问题超过 3 次未解决即标记阻塞
 
-## 范围边界
+## 测试点（TP）
 
-### 做什么
+| ID    | 模块                               | 状态   |
+| ----- | ---------------------------------- | ------ |
+| TP-01 | Hero 首屏（姓名、岗位、CTA、指标） | 已完成 |
+| TP-02 | About（介绍、指标卡片）            | 已完成 |
+| TP-03 | Projects（项目卡片、标签、链接）   | 已完成 |
+| TP-04 | Skills（雷达图、分类标签）         | 已完成 |
+| TP-05 | Experience（经历时间线）           | 已完成 |
+| TP-06 | Education（课程、成就）            | 已完成 |
+| TP-07 | Design（设计作品/工具）            | 已完成 |
+| TP-08 | Music（作品、工具、技能）          | 已完成 |
+| TP-09 | Media（内容分类、时间线）          | 已完成 |
+| TP-10 | Contact（联系信息、表单）          | 已完成 |
+| TP-11 | 全局导航 / Cmd+K / 主题切换        | 已完成 |
+| TP-12 | AI 助手（打开、提问、回复、滚动）  | 已完成 |
 
-- 删除 3D 剧场组件与资源
-- 重建入口、主题、布局、导航
-- 实现 Hero / About / Projects / Skills / Experience / Education / Design / Music / Media / Contact 模块
-- 实现技能雷达图、Cmd+K 命令面板、AI 问答助手
-- 实现边缘函数（analytics + contact）
-- 更新 PWA、测试、性能优化
+## 实机环境
 
-### 不做什么
-
-- 不迁移到 Next.js 等元框架
-- 不引入新的 3D/WebGL 复杂场景
-- 不改动其他项目（和我恋爱吧、暮澜纪元等）
-- AI 不强制依赖外部 API，必须支持离线本地规则引擎
-
-### 禁止触碰
-
-- 其他项目目录
-
-## 功能点
-
-### 已完成
-
-| ID                          | 描述                                                    |
-| --------------------------- | ------------------------------------------------------- |
-| FP-01 ~ FP-07，FP-09，FP-11 | 基础重建、通用 UI、全模块、边缘函数、Cmd+K、AI 问答助手 |
-| FP-08                       | 技能雷达图（渲染、动画、响应式、单元测试通过）          |
-| FP-12                       | PWA 更新、性能优化、全量测试与 Lighthouse               |
-
-### 待处理
-
-无。
-
-## 本轮 FP-12 关键修改
-
-- `public/manifest.json`：更新为「玄锐暮 · AI 简历」元数据、主题色、图标与 shortcuts。
-- `src/sw.ts`：移除旧 3D 资源路由，采用 precache + stale-while-revalidate 字体/图片策略。
-- `src/app/App.tsx`：非首屏模块 React.lazy + Suspense 懒加载，Hero 直接导入。
-- `public/fonts/`：仅保留 `dyh-subset.woff2`，删除 3D 字体；`index.html` 预加载关键字体/CSS。
-- `vite.config.js`：VitePWA injectManifest、CSS 预加载插件、E2E webServer 构建后预览。
-- `src/store/useAppStore.ts`：`transitionToSection` 支持懒加载区块挂载后滚动。
-- `src/components/nav-dock/NavDock.tsx` / `src/components/ai-chat/AIChat.tsx`：修复 zustand 对象选择器导致的渲染死循环。
-- `playwright.config.js`：仅保留 Chromium（Firefox 未安装）。
-- `e2e/`：新增 hero / navigation / ai-chat / offline 测试，删除旧 3D 剧场用例。
-
-## 验证结果
-
-| 检查项              | 结果                                                              |
-| ------------------- | ----------------------------------------------------------------- |
-| `npm run build`     | 成功，dist 约 4.68 MB（含 source map）                            |
-| `npm run typecheck` | 通过                                                              |
-| `npm run lint`      | 通过                                                              |
-| `npm run test`      | 35 文件 / 182 测试全部通过                                        |
-| `npm run test:e2e`  | 6 测试全部通过（Chromium）                                        |
-| Lighthouse 本地实测 | 未成功：Playwright Chromium 触发 interstitial，需系统 Chrome 复测 |
-| dist 产物分析       | 无 3D 字体/大文件；首屏 JS 114 KB，CSS 42 KB，字体 1.4 KB         |
-
-## 遗留问题
-
-- Lighthouse 四项 ≥ 95 需在安装系统 Chrome 后复测；当前环境仅 Playwright Chromium，触发 `CHROME_INTERSTITIAL_ERROR`。
-- Firefox 浏览器未安装，E2E 当前仅覆盖 Chromium。
+- 浏览器：Chromium（前台模式）
+- 分辨率：1920×1080、375×812（移动端）
+- 地址：http://127.0.0.1:4173（preview 已运行）
+- API：DeepSeek deepseek-v4-pro（已配置 .env.local）

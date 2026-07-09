@@ -57,7 +57,7 @@
 | FP-03 | 生成式 AI 助手               | chatService 支持结构化输出；新增 UI 组件注册表（ProjectCard/SkillRadar/Timeline/ContactForm）；AIChat 根据消息渲染组件；本地模式返回结构化数据；deepseek-v4 only；测试通过 | FP-01               | 已完成 |
 | FP-04 | WebGPU 3D 技能星系           | 引入 three + R3F；WebGPURenderer + TSL 着色器；Hero/技能区 3D 星座；集成 deviceCapabilities 画质分级；WebGL2/CSS 优雅降级；build/test 通过；视觉效果截图通过               | FP-01, FP-02        | 已完成 |
 | FP-05 | 全站整合与视觉验证           | 端到端 Playwright 前台测试覆盖 12+ 测试点；桌面/移动端、深浅主题截图；性能指标无回归；所有测试通过                                                                         | FP-02, FP-03, FP-04 | 已完成 |
-| FP-06 | GitHub 提交                  | 使用 总控制台.py 提交并推送；远程仓库状态正常                                                                                                                              | FP-05               | 进行中 |
+| FP-06 | GitHub 提交                  | 使用 总控制台.py 提交并推送；远程仓库状态正常                                                                                                                              | FP-05               | 已完成 |
 
 ## 已完成（仅保留一行摘要）
 
@@ -66,6 +66,7 @@
 - FP-03 已完成：chatService 结构化 JSON 输出、本地 RAG 返回组件、UI 组件注册表（ProjectCard/SkillRadar/Timeline/ContactForm）、AIChat 动态渲染、deepseek-v4 only；已完成三轴审查并修复 Timeline 默认 scope 标题与内容不一致问题；FP-03 测试 50/50 通过。
 - FP-04 已完成：R3F Canvas + WebGPURenderer/WebGLRenderer 降级 + 星系场景落地，deviceCapabilities 画质分级集成；清理未使用的 SkillConstellation 死代码并修正 HeroSection 测试 mock，lint/typecheck/test/build 全通过。
 - FP-05 已完成：Playwright 前台视觉验证覆盖 13 个测试点、4 种视口/主题组合共 62 项检查、46 张截图；lint/typecheck/test/build 全通过；.gitignore 已忽略视觉验证过程截图目录。
+- FP-06 已完成：通过 总控制台.py 将变更提交并推送到 GitHub（XuanRuiMuResume/main），远程仓库状态正常。
 
 ## 当前决策
 

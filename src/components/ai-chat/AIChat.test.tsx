@@ -4,11 +4,12 @@ import { AIChat } from './AIChat'
 import { useAppStore } from '../../store/useAppStore'
 import { t, ta } from '../../i18n/translations'
 
-const addAiMessage = vi.fn()
-const clearAiMessages = vi.fn()
 const setChatOpen = vi.fn()
+const clearAiMessages = vi.fn()
 const mutateAsync = vi.fn()
 const mutationReset = vi.fn()
+
+let mockAiMessages: Array<{ role: 'user' | 'assistant'; content: string }> = []
 
 vi.mock('../../store/useAppStore', () => ({
   useAppStore: vi.fn(),
@@ -25,21 +26,27 @@ vi.mock('../../ai/chatService', () => ({
 
 const mockUseAppStore = useAppStore as unknown as ReturnType<typeof vi.fn>
 
+function createMockState(overrides: Record<string, unknown> = {}) {
+  return {
+    chatOpen: false,
+    setChatOpen,
+    aiMessages: mockAiMessages,
+    addAiMessage: vi.fn((message) => {
+      mockAiMessages.push(message)
+    }),
+    clearAiMessages,
+    ...overrides,
+  }
+}
+
 describe('AIChat', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAiMessages = []
     if (!Element.prototype.scrollIntoView) {
       Element.prototype.scrollIntoView = vi.fn()
     }
-    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector({
-        chatOpen: false,
-        setChatOpen,
-        aiMessages: [],
-        addAiMessage,
-        clearAiMessages,
-      })
-    )
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) => selector(createMockState()))
   })
 
   afterEach(() => {
@@ -61,13 +68,7 @@ describe('AIChat', () => {
 
   it('renders chat dialog with quick questions when open', () => {
     mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector({
-        chatOpen: true,
-        setChatOpen,
-        aiMessages: [],
-        addAiMessage,
-        clearAiMessages,
-      })
+      selector(createMockState({ chatOpen: true }))
     )
 
     render(<AIChat />)
@@ -80,17 +81,26 @@ describe('AIChat', () => {
     }
   })
 
+  it('does not send message when input is empty', async () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '   ' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    await waitFor(() => {
+      expect(mutateAsync).not.toHaveBeenCalled()
+    })
+  })
+
   it('sends message when form submitted', async () => {
     mutateAsync.mockResolvedValueOnce({ message: { role: 'assistant', content: '回答' } })
 
     mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector({
-        chatOpen: true,
-        setChatOpen,
-        aiMessages: [],
-        addAiMessage,
-        clearAiMessages,
-      })
+      selector(createMockState({ chatOpen: true }))
     )
 
     render(<AIChat />)
@@ -99,23 +109,80 @@ describe('AIChat', () => {
     fireEvent.submit(input.closest('form') as HTMLFormElement)
 
     await waitFor(() => {
-      expect(addAiMessage).toHaveBeenCalledWith({ role: 'user', content: '你是谁' })
       expect(mutateAsync).toHaveBeenCalledWith([{ role: 'user', content: '你是谁' }])
+    })
+  })
+
+  it('sends quick question when clicked', async () => {
+    mutateAsync.mockResolvedValueOnce({ message: { role: 'assistant', content: '回答' } })
+
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const quickQuestions = ta('ai.quickQuestions')
+    fireEvent.click(screen.getByText(quickQuestions[0]))
+
+    await waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalledWith([{ role: 'user', content: quickQuestions[0] }])
+    })
+  })
+
+  it('shows optimistic user message immediately and persists assistant message after success', async () => {
+    mutateAsync.mockResolvedValueOnce({ message: { role: 'assistant', content: '回答' } })
+
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '你是谁' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    await waitFor(() => {
+      expect(screen.getByText('你是谁')).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('回答')).toBeInTheDocument()
+    })
+  })
+
+  it('rolls back optimistic message and shows error on failure', async () => {
+    mutateAsync.mockRejectedValueOnce(new Error('失败'))
+
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '你是谁' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    await waitFor(() => {
+      expect(screen.getByText('你是谁')).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(t('ai.empty'))).toBeInTheDocument()
+      expect(screen.getByText(t('ai.error'))).toBeInTheDocument()
     })
   })
 
   it('renders existing messages and assistant answer', () => {
     mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector({
-        chatOpen: true,
-        setChatOpen,
-        aiMessages: [
-          { role: 'user', content: '问题' },
-          { role: 'assistant', content: '答案' },
-        ],
-        addAiMessage,
-        clearAiMessages,
-      })
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [
+            { role: 'user', content: '问题' },
+            { role: 'assistant', content: '答案' },
+          ],
+        })
+      )
     )
 
     render(<AIChat />)
@@ -125,13 +192,12 @@ describe('AIChat', () => {
 
   it('clears messages when reset button clicked', () => {
     mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector({
-        chatOpen: true,
-        setChatOpen,
-        aiMessages: [{ role: 'user', content: '问题' }],
-        addAiMessage,
-        clearAiMessages,
-      })
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [{ role: 'user', content: '问题' }],
+        })
+      )
     )
 
     render(<AIChat />)
@@ -142,13 +208,7 @@ describe('AIChat', () => {
 
   it('closes chat when close button clicked', () => {
     mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector({
-        chatOpen: true,
-        setChatOpen,
-        aiMessages: [],
-        addAiMessage,
-        clearAiMessages,
-      })
+      selector(createMockState({ chatOpen: true }))
     )
 
     render(<AIChat />)

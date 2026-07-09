@@ -1,10 +1,11 @@
-import { useRef, useState, useEffect, useCallback, type FormEvent } from 'react'
+import { useRef, useState, useEffect, useCallback, useOptimistic, useActionState, startTransition } from 'react'
 import { MessageSquare, X, Send, Loader2, RefreshCw, Sparkles } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
 import { cn } from '../../lib/utils'
 import { t, ta } from '../../i18n/translations'
 import { useChatService } from '../../ai/chatService'
 import { Button } from '../ui/Button'
+import type { AiMessage } from '../../store/useAppStore'
 
 interface AIChatProps {
   className?: string
@@ -24,6 +25,10 @@ function renderMarkdown(content: string): string {
     .replace(/\n/g, '<br />')
 }
 
+interface SendState {
+  error: string | null
+}
+
 export function AIChat({ className }: AIChatProps) {
   const chatOpen = useAppStore((state) => state.chatOpen)
   const setChatOpen = useAppStore((state) => state.setChatOpen)
@@ -35,6 +40,32 @@ export function AIChat({ className }: AIChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatMutation = useChatService()
+
+  const [optimisticMessages, addOptimisticMessage] = useOptimistic<AiMessage[], AiMessage>(
+    aiMessages,
+    (state, message) => [...state, message]
+  )
+
+  const [sendState, formAction, isPending] = useActionState<SendState, FormData>(
+    async (_prevState, formData) => {
+      const content = formData.get('message')?.toString().trim() ?? ''
+      if (!content || chatMutation.isPending) return { error: null }
+
+      const userMessage: AiMessage = { role: 'user', content }
+      addOptimisticMessage(userMessage)
+      setInput('')
+
+      try {
+        const result = await chatMutation.mutateAsync([...aiMessages, userMessage])
+        addAiMessage(userMessage)
+        addAiMessage(result.message)
+        return { error: null }
+      } catch {
+        return { error: t('ai.error') }
+      }
+    },
+    { error: null }
+  )
 
   const hasApiKey = Boolean(
     typeof import.meta.env !== 'undefined' &&
@@ -50,42 +81,18 @@ export function AIChat({ className }: AIChatProps) {
       scrollToBottom()
       inputRef.current?.focus()
     }
-  }, [chatOpen, aiMessages.length, scrollToBottom])
-
-  const handleSend = useCallback(
-    async (content: string) => {
-      const question = content.trim()
-      if (!question || chatMutation.isPending) return
-
-      addAiMessage({ role: 'user', content: question })
-      setInput('')
-
-      try {
-        const result = await chatMutation.mutateAsync([...aiMessages, { role: 'user', content: question }])
-        addAiMessage(result.message)
-      } catch {
-        addAiMessage({
-          role: 'assistant',
-          content: t('ai.error'),
-        })
-      }
-    },
-    [addAiMessage, aiMessages, chatMutation]
-  )
-
-  const handleSubmit = useCallback(
-    (event: FormEvent) => {
-      event.preventDefault()
-      handleSend(input)
-    },
-    [handleSend, input]
-  )
+  }, [chatOpen, optimisticMessages.length, scrollToBottom])
 
   const handleQuickQuestion = useCallback(
     (question: string) => {
-      handleSend(question)
+      if (isPending) return
+      const formData = new FormData()
+      formData.set('message', question)
+      startTransition(() => {
+        formAction(formData)
+      })
     },
-    [handleSend]
+    [formAction, isPending]
   )
 
   const handleReset = useCallback(() => {
@@ -154,7 +161,7 @@ export function AIChat({ className }: AIChatProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 scrollbar-thin">
-        {aiMessages.length === 0 ? (
+        {optimisticMessages.length === 0 ? (
           <div className="flex h-full flex-col justify-center gap-4">
             <p className="text-center text-sm text-muted">{t('ai.empty')}</p>
             <div className="flex flex-wrap gap-2">
@@ -162,8 +169,9 @@ export function AIChat({ className }: AIChatProps) {
                 <button
                   key={question}
                   type="button"
+                  disabled={isPending}
                   onClick={() => handleQuickQuestion(question)}
-                  className="rounded-full border border-border bg-surface-elevated px-3 py-1.5 text-xs text-text-primary transition-colors hover:border-primary hover:text-primary"
+                  className="rounded-full border border-border bg-surface-elevated px-3 py-1.5 text-xs text-text-primary transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                 >
                   {question}
                 </button>
@@ -172,7 +180,7 @@ export function AIChat({ className }: AIChatProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {aiMessages.map((message, index) => (
+            {optimisticMessages.map((message, index) => (
               <div
                 key={`${message.role}-${index}`}
                 className={cn(
@@ -186,7 +194,7 @@ export function AIChat({ className }: AIChatProps) {
                   : { children: message.content })}
               />
             ))}
-            {chatMutation.isPending && (
+            {isPending && (
               <div className="self-start flex items-center gap-2 rounded-2xl border border-border bg-surface-elevated px-3 py-2 text-sm text-muted">
                 <Loader2 size={14} className="animate-spin" />
                 {t('ai.loading')}
@@ -197,23 +205,30 @@ export function AIChat({ className }: AIChatProps) {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="border-t border-border bg-surface-elevated p-3">
+      {sendState.error && (
+        <div className="border-t border-border bg-red-500/10 px-4 py-2 text-xs text-red-400" role="alert">
+          {sendState.error}
+        </div>
+      )}
+
+      <form action={formAction} className="border-t border-border bg-surface-elevated p-3">
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}
+            name="message"
             type="text"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={t('ai.placeholder')}
             className="flex-1 rounded-full border border-border bg-bg px-4 py-2 text-sm text-text-primary outline-none placeholder:text-muted focus-visible:border-primary"
-            disabled={chatMutation.isPending}
+            disabled={isPending}
             maxLength={200}
           />
           <Button
             type="submit"
             size="sm"
-            loading={chatMutation.isPending}
-            disabled={!input.trim() || chatMutation.isPending}
+            loading={isPending}
+            disabled={!input.trim() || isPending}
             icon={<Send size={14} />}
             aria-label={t('ai.send')}
           />

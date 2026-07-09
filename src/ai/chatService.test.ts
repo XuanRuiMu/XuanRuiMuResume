@@ -115,26 +115,47 @@ describe('chatService', () => {
     expect(result.message.component).toBeUndefined()
   })
 
-  it('throws when LLM response is not ok', async () => {
+  it('falls back to local answer when LLM response is not ok (4xx)', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
       text: async () => 'Unauthorized',
     })
 
-    await expect(sendChatMessage([{ role: 'user', content: '你好' }], { deepseekApiKey: 'bad-key' })).rejects.toThrow(
-      'LLM 请求失败'
-    )
+    const result = await sendChatMessage([{ role: 'user', content: '怎么联系你' }], { deepseekApiKey: 'bad-key' })
+
+    expect(result.message.content).toContain(personalInfo.email)
+    expect(result.message.component).toEqual({ type: 'ContactForm' })
   })
 
-  it('throws when LLM response format is invalid', async () => {
+  it('falls back to local answer when LLM response is not ok (5xx)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      text: async () => 'Service Unavailable',
+    })
+
+    const result = await sendChatMessage([{ role: 'user', content: '介绍一下暮澜纪元' }], { deepseekApiKey: 'sk-test' })
+
+    expect(result.message.component).toEqual({ type: 'ProjectCard', projectId: 'xrm' })
+  })
+
+  it('falls back to local answer when LLM request times out', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('timeout'))
+
+    const result = await sendChatMessage([{ role: 'user', content: '你的技术栈' }], { deepseekApiKey: 'sk-test' })
+
+    expect(result.message.component).toEqual({ type: 'SkillRadar' })
+  })
+
+  it('falls back to local answer when LLM response format is invalid', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ choices: [] }),
     })
 
-    await expect(sendChatMessage([{ role: 'user', content: '你好' }], { deepseekApiKey: 'sk-test' })).rejects.toThrow(
-      'LLM 返回格式异常'
-    )
+    const result = await sendChatMessage([{ role: 'user', content: '教育背景' }], { deepseekApiKey: 'sk-test' })
+
+    expect(result.message.component).toEqual({ type: 'Timeline', scope: 'education' })
   })
 })

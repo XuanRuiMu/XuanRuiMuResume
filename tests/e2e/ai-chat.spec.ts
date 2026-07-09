@@ -1,11 +1,24 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('AI 助手', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('https://api.deepseek.com/v1/chat/completions', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          choices: [{ message: { content: '{"text":"我是玄锐暮的简历 AI 助手，有什么可以帮你的？"}' } }],
+        }),
+      })
+    })
+  })
+
   test('打开 AI 助手、提问并显示回答', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
 
-    const openButton = page.getByRole('button', { name: 'AI 助手' })
+    const openButton = page.getByRole('button', { name: 'AI 问答' })
     await expect(openButton).toBeVisible()
     await openButton.click()
 

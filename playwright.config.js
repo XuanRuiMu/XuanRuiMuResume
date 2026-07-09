@@ -1,16 +1,19 @@
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  snapshotPathTemplate:
+    'tests/e2e/baseline-screenshots/{projectName}/{testFilePath}/{arg}{ext}',
   use: {
     baseURL: 'http://localhost:4173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    headless: process.env.HEADLESS === 'true',
   },
   projects: [
     {
@@ -23,5 +26,8 @@ export default defineConfig({
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 180 * 1000,
+    env: {
+      VITE_DEEPSEEK_API_KEY: 'e2e-test-key',
+    },
   },
 })

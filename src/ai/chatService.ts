@@ -18,6 +18,15 @@ export interface ChatServiceResult {
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
 const DEEPSEEK_DEFAULT_MODEL = 'deepseek-v4'
 
+function 获取最后用户内容(messages: AiMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'user') {
+      return messages[i].content
+    }
+  }
+  return ''
+}
+
 function buildSystemPrompt(context: string): string {
   return `你是玄锐暮的简历 AI 助手，只能根据下方提供的简历上下文回答问题。如果上下文无法回答，请引导用户通过邮箱 ${personalInfo.email} 联系。
 
@@ -44,7 +53,7 @@ function parseDeepSeekResponse(rawContent: string): AssistantPayload {
 }
 
 async function callDeepSeek(messages: AiMessage[], apiKey: string, model: string): Promise<AiMessage> {
-  const userQuestion = messages.findLast((message) => message.role === 'user')?.content ?? ''
+  const userQuestion = 获取最后用户内容(messages)
   const contextChunks = retrieveChunks(userQuestion, 5)
   const context = contextChunks.map((chunk, index) => `[${index + 1}] ${chunk.content}`).join('\n\n')
   const systemPrompt = buildSystemPrompt(context)
@@ -85,14 +94,18 @@ async function callDeepSeek(messages: AiMessage[], apiKey: string, model: string
 
 export async function sendChatMessage(messages: AiMessage[], options: ChatOptions = {}): Promise<ChatServiceResult> {
   const apiKey = options.deepseekApiKey
+  const userQuestion = 获取最后用户内容(messages)
 
   if (!apiKey) {
-    const userQuestion = messages.findLast((message) => message.role === 'user')?.content ?? ''
     return { message: getLocalAnswer(userQuestion) }
   }
 
-  const answer = await callDeepSeek(messages, apiKey, options.model ?? DEEPSEEK_DEFAULT_MODEL)
-  return { message: answer }
+  try {
+    const answer = await callDeepSeek(messages, apiKey, options.model ?? DEEPSEEK_DEFAULT_MODEL)
+    return { message: answer }
+  } catch {
+    return { message: getLocalAnswer(userQuestion) }
+  }
 }
 
 export function useChatService(options: ChatOptions = {}) {

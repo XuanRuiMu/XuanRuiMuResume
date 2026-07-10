@@ -36,6 +36,25 @@ function useIsLightTheme(): boolean {
   return isLight
 }
 
+function useScrollProgress(): number {
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleScroll = () => {
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
+      setProgress(window.scrollY / maxScroll)
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  return progress
+}
+
 async function createGalaxyRenderer(props: Record<string, unknown>): Promise<WebGLRenderer> {
   const supportsWebGPU = await detectWebGPUSupport()
 
@@ -56,9 +75,11 @@ async function createGalaxyRenderer(props: Record<string, unknown>): Promise<Web
 
 function GalaxyScene({ 画质设置 }: 星系场景属性) {
   const groupRef = useRef<Group>(null)
-  const { pointer } = useThree()
+  const cameraRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const { pointer, camera } = useThree()
   const isLight = useIsLightTheme()
   const reducedMotion = useReducedMotion()
+  const scrollProgress = useScrollProgress()
 
   const 数据 = useMemo(() => 生成星系数据(画质设置.particleCount), [画质设置.particleCount])
 
@@ -80,9 +101,21 @@ function GalaxyScene({ 画质设置 }: 星系场景属性) {
     const group = groupRef.current
     if (!group || reducedMotion) return
 
-    group.rotation.y += delta * 0.03
-    group.rotation.x += (pointer.y * 0.08 - group.rotation.x) * 0.02
-    group.rotation.z += (pointer.x * 0.04 - group.rotation.z) * 0.02
+    const 旋转速度 = delta * 0.05
+    const 鼠标幅度X = pointer.y * 0.18
+    const 鼠标幅度Y = pointer.x * 0.12
+    const 滚动偏移 = scrollProgress * Math.PI * 0.25
+
+    group.rotation.y += 旋转速度
+    group.rotation.x += (鼠标幅度X - group.rotation.x + 滚动偏移 * 0.3) * 0.03
+    group.rotation.z += (鼠标幅度Y - group.rotation.z + 滚动偏移 * 0.2) * 0.03
+
+    const targetCameraX = pointer.x * 0.8 - scrollProgress * 1.2
+    const targetCameraY = pointer.y * 0.5 + scrollProgress * 0.6
+    cameraRef.current.x += (targetCameraX - cameraRef.current.x) * 0.04
+    cameraRef.current.y += (targetCameraY - cameraRef.current.y) * 0.04
+    camera.position.x = cameraRef.current.x
+    camera.position.y = cameraRef.current.y
   })
 
   const 环境色 = isLight ? new Color('#f8f9fb') : new Color('#0b0c15')
@@ -90,14 +123,14 @@ function GalaxyScene({ 画质设置 }: 星系场景属性) {
   return (
     <group ref={groupRef}>
       <color attach="background" args={[环境色]} />
-      <fog attach="fog" args={[环境色, 4, 18]} />
+      <fog attach="fog" args={[环境色, 4, 22]} />
 
       <points geometry={背景几何}>
         <pointsMaterial
-          size={isLight ? 0.025 : 0.035}
+          size={isLight ? 0.025 : 0.038}
           vertexColors
           transparent
-          opacity={isLight ? 0.5 : 0.85}
+          opacity={isLight ? 0.5 : 0.9}
           blending={AdditiveBlending}
           depthWrite={false}
           sizeAttenuation
@@ -108,7 +141,7 @@ function GalaxyScene({ 画质设置 }: 星系场景属性) {
         <lineBasicMaterial
           vertexColors
           transparent
-          opacity={isLight ? 0.18 : 0.35}
+          opacity={isLight ? 0.18 : 0.4}
           blending={AdditiveBlending}
           depthWrite={false}
         />
@@ -132,22 +165,25 @@ function GalaxyScene({ 画质设置 }: 星系场景属性) {
 
 interface SkillGalaxyProps {
   className?: string
+  fixed?: boolean
 }
 
-export function SkillGalaxy({ className }: SkillGalaxyProps) {
+export function SkillGalaxy({ className, fixed = false }: SkillGalaxyProps) {
   const { settings, loading } = usePerformanceProfile()
   const reducedMotion = useReducedMotion()
 
+  const 容器类名 = cn(fixed ? 'fixed inset-0' : 'absolute inset-0', 'pointer-events-none', className)
+
   if (loading) {
     return (
-      <div className={cn('absolute inset-0', className)}>
+      <div className={容器类名} style={{ willChange: 'transform' }}>
         <SkillGalaxyFallback />
       </div>
     )
   }
 
   return (
-    <div className={cn('absolute inset-0', className)}>
+    <div className={容器类名} style={{ willChange: 'transform' }}>
       <Canvas
         className="!absolute inset-0"
         dpr={settings.dpr}

@@ -12,6 +12,24 @@ if (typeof window !== 'undefined') {
   window.ResizeObserver = MockResizeObserver
 }
 
+// IntersectionObserver 在 jsdom 中不可用，提供最小实现以支持滚动触发动画测试
+class MockIntersectionObserver {
+  constructor(callback) {
+    this.callback = callback
+  }
+
+  observe(element) {
+    this.callback([{ isIntersecting: true, target: element }])
+  }
+
+  unobserve = vi.fn()
+  disconnect = vi.fn()
+}
+globalThis.IntersectionObserver = MockIntersectionObserver
+if (typeof window !== 'undefined') {
+  window.IntersectionObserver = MockIntersectionObserver
+}
+
 // jsdom 不实现 Canvas getContext，提供最小 WebGL mock 以支持 Three.js 相关组件测试
 if (typeof HTMLCanvasElement !== 'undefined') {
   const originalGetContext = HTMLCanvasElement.prototype.getContext

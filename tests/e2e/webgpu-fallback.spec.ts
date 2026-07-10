@@ -19,9 +19,8 @@ test.describe('WebGPU 不支持降级路径', () => {
 
     await expect(page.getByRole('heading', { name: '玄锐暮', level: 1 })).toBeVisible()
 
-    const hero = page.locator('#hero')
-    const canvas = hero.locator('canvas')
-    const fallback = hero.getByTestId('skill-galaxy-fallback')
+    const canvas = page.locator('canvas')
+    const fallback = page.getByTestId('skill-galaxy-fallback')
 
     await expect(async () => {
       const canvasCount = await canvas.count()

@@ -29,16 +29,21 @@ test.describe('导航与命令面板', () => {
     await expect(page.locator('#experience')).toBeInViewport()
   })
 
-  test('主题切换按钮可循环切换主题', async ({ page }) => {
+  test('主题切换按钮可打开菜单并切换主题', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
 
-    const toggle = page.getByRole('button', { name: /^深色模式|浅色模式|跟随系统$/ })
+    const toggle = page.getByRole('button', { name: '选择主题' })
     await expect(toggle).toBeVisible()
 
-    const initialLabel = await toggle.getAttribute('aria-label')
     await toggle.click()
-    const nextLabel = await toggle.getAttribute('aria-label')
-    expect(nextLabel).not.toBe(initialLabel)
+    const menu = page.getByRole('listbox', { name: '选择主题' })
+    await expect(menu).toBeVisible()
+    await expect(page.getByRole('option', { name: '深色模式' })).toBeVisible()
+
+    await page.getByRole('option', { name: '深色模式' }).click()
+    await page.waitForTimeout(500)
+    const hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'))
+    expect(hasDarkClass).toBe(true)
   })
 })

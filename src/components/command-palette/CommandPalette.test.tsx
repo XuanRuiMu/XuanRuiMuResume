@@ -6,6 +6,15 @@ import { downloadResume } from '../../lib/resume'
 import { t } from '../../i18n/translations'
 import { personalInfo } from '../../data/personalInfo'
 
+const startViewTransition = vi.fn((callback: () => void) => {
+  callback()
+  return Promise.resolve()
+})
+
+vi.mock('../../utils/viewTransition', () => ({
+  startViewTransition: (...args: unknown[]) => startViewTransition(args[0] as () => void),
+}))
+
 const setCommandOpen = vi.fn()
 const toggleChat = vi.fn()
 const transitionToSection = vi.fn()
@@ -40,6 +49,7 @@ describe('CommandPalette', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    startViewTransition.mockClear()
     vi.stubGlobal(
       'ResizeObserver',
       class ResizeObserver {
@@ -94,15 +104,17 @@ describe('CommandPalette', () => {
     render(<CommandPalette />)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(setCommandOpen).toHaveBeenCalledWith(false)
+    expect(startViewTransition).not.toHaveBeenCalled()
   })
 
   it('closes on Cmd+K shortcut when open', () => {
     render(<CommandPalette />)
     fireEvent.keyDown(window, { key: 'k', metaKey: true })
     expect(setCommandOpen).toHaveBeenCalledWith(false)
+    expect(startViewTransition).not.toHaveBeenCalled()
   })
 
-  it('opens on Ctrl+K shortcut when closed', () => {
+  it('opens on Ctrl+K shortcut when closed with view transition', () => {
     mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
       selector({
         commandOpen: false,
@@ -114,6 +126,7 @@ describe('CommandPalette', () => {
     render(<CommandPalette />)
     fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
     expect(setCommandOpen).toHaveBeenCalledWith(true)
+    expect(startViewTransition).toHaveBeenCalledOnce()
   })
 
   it('renders section navigation items', () => {

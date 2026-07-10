@@ -1,8 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore, type AppTheme } from '../../store/useAppStore'
-import { startViewTransition } from '../../utils/viewTransition'
+import {
+  startViewTransition,
+  startCircularRevealTransition,
+  type CircularRevealOrigin,
+} from '../../utils/viewTransition'
 
 const STORAGE_KEY = 'xrm-theme'
+
+export interface SetThemeOptions {
+  origin?: CircularRevealOrigin
+}
 
 function resolveTheme(theme: AppTheme): 'dark' | 'light' {
   if (theme === 'system') {
@@ -13,19 +21,31 @@ function resolveTheme(theme: AppTheme): 'dark' | 'light' {
 
 export function useThemeSystem() {
   const theme = useAppStore((state) => state.theme)
+  const reducedMotion = useAppStore((state) => state.reducedMotion)
   const setThemeStore = useAppStore((state) => state.setTheme)
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark')
+  const pendingOriginRef = useRef<CircularRevealOrigin | null>(null)
 
-  const applyTheme = useCallback((next: AppTheme) => {
-    const resolved = resolveTheme(next)
-    startViewTransition(() => {
-      setResolvedTheme(resolved)
-      const root = document.documentElement
-      root.classList.remove('light', 'dark')
-      root.classList.add(resolved)
-      root.style.colorScheme = resolved
-    })
-  }, [])
+  const applyTheme = useCallback(
+    (next: AppTheme) => {
+      const resolved = resolveTheme(next)
+      const update = () => {
+        setResolvedTheme(resolved)
+        const root = document.documentElement
+        root.classList.remove('light', 'dark')
+        root.classList.add(resolved)
+        root.style.colorScheme = resolved
+      }
+      const origin = pendingOriginRef.current
+      pendingOriginRef.current = null
+      if (origin && !reducedMotion) {
+        startCircularRevealTransition(update, origin)
+      } else {
+        startViewTransition(update)
+      }
+    },
+    [reducedMotion]
+  )
 
   useEffect(() => {
     applyTheme(theme)
@@ -54,7 +74,8 @@ export function useThemeSystem() {
   }, [setThemeStore])
 
   const setTheme = useCallback(
-    (next: AppTheme) => {
+    (next: AppTheme, options?: SetThemeOptions) => {
+      pendingOriginRef.current = options?.origin ?? null
       setThemeStore(next)
       try {
         window.localStorage.setItem(STORAGE_KEY, next)

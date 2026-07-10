@@ -1,4 +1,3 @@
-import { useState, useCallback, type MouseEvent } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { projects } from '../../data/projects'
 import type { Project } from '../../data/types'
@@ -6,7 +5,6 @@ import { Section } from '../../components/ui/Section'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
 import { Tag } from '../../components/ui/Tag'
-import { useReducedMotion } from '../../hooks/useReducedMotion'
 import { t } from '../../i18n/translations'
 
 interface ProjectCardProps {
@@ -20,67 +18,39 @@ const GithubIcon = () => (
 )
 
 function ProjectCard({ project }: ProjectCardProps) {
-  const reducedMotion = useReducedMotion()
-  const [rotateX, setRotateX] = useState(0)
-  const [rotateY, setRotateY] = useState(0)
-
-  const handleMouseMove = useCallback((event: MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const x = (event.clientX - rect.left) / rect.width - 0.5
-    const y = (event.clientY - rect.top) / rect.height - 0.5
-    setRotateX(-y * 10)
-    setRotateY(x * 10)
-  }, [])
-
-  const handleMouseLeave = useCallback(() => {
-    setRotateX(0)
-    setRotateY(0)
-  }, [])
-
-  const transform = reducedMotion ? undefined : `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
-
   return (
-    <div className="group scroll-reveal-item [perspective:800px] transition-transform duration-300 hover:-translate-y-2">
-      <div
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        style={{ transform }}
-        className="h-full transition-transform duration-150 will-change-transform"
-      >
-        <Card className="flex h-full flex-col">
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            {project.metricKeys?.map((key) => (
-              <Badge key={key} color="cyan">
-                {t(key)}
-              </Badge>
-            ))}
-          </div>
-          <h3 className="mb-2 text-xl font-semibold text-text-primary">{t(project.nameKey)}</h3>
-          <p className="mb-4 flex-1 text-sm leading-relaxed text-text-secondary">{t(project.descKey)}</p>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {project.tags.map((tag) => (
-              <Tag key={tag}>{tag}</Tag>
-            ))}
-          </div>
-          {project.links && project.links.length > 0 && (
-            <div className="flex flex-wrap gap-4 border-t border-border pt-4">
-              {project.links.map((link) => (
-                <a
-                  key={link.url}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-secondary"
-                >
-                  {link.labelKey === 'projects.link.github' ? <GithubIcon /> : <ExternalLink size={16} />}
-                  {t(link.labelKey)}
-                </a>
-              ))}
-            </div>
-          )}
-        </Card>
+    <Card tilt className="scroll-reveal-item flex h-full flex-col">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {project.metricKeys?.map((key) => (
+          <Badge key={key} color="cyan">
+            {t(key)}
+          </Badge>
+        ))}
       </div>
-    </div>
+      <h3 className="mb-2 text-xl font-semibold text-text-primary">{t(project.nameKey)}</h3>
+      <p className="mb-4 flex-1 text-sm leading-relaxed text-text-secondary">{t(project.descKey)}</p>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {project.tags.map((tag) => (
+          <Tag key={tag}>{tag}</Tag>
+        ))}
+      </div>
+      {project.links && project.links.length > 0 && (
+        <div className="flex flex-wrap gap-4 border-t border-border pt-4">
+          {project.links.map((link) => (
+            <a
+              key={link.url}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-secondary"
+            >
+              {link.labelKey === 'projects.link.github' ? <GithubIcon /> : <ExternalLink size={16} />}
+              {t(link.labelKey)}
+            </a>
+          ))}
+        </div>
+      )}
+    </Card>
   )
 }
 

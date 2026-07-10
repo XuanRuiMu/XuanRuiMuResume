@@ -90,5 +90,41 @@ for (const 视图配置 of 视觉视图配置列表) {
         }
       )
     })
+
+    test('经历区域', async ({ page }) => {
+      await page.getByRole('button', { name: '经历', exact: true }).click()
+      await expect(page.locator('#experience')).toBeInViewport()
+      // 经历时间线内容较高，移动端截图易受滚动条显隐影响，放宽像素容差
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
+      })
+      await expect(page.locator('#experience')).toHaveScreenshot(
+        `experience-${视图配置.名称}.png`,
+        {
+          ...视觉回归阈值,
+          animations: 'disabled',
+          caret: 'hide',
+          maxDiffPixels: 12000,
+        }
+      )
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
+      })
+    })
+
+    test('联系我区域', async ({ page }) => {
+      await page.getByRole('button', { name: '联系', exact: true }).click()
+      await expect(page.locator('#contact')).toBeInViewport()
+      await expect(page.locator('#contact')).toHaveScreenshot(
+        `contact-${视图配置.名称}.png`,
+        {
+          ...视觉回归阈值,
+          animations: 'disabled',
+          caret: 'hide',
+        }
+      )
+    })
   })
 }

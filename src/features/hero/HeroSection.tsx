@@ -4,7 +4,6 @@ import { personalInfo } from '../../data/personalInfo'
 import { skillMetrics } from '../../data/skillMetrics'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import { SkillGalaxy } from '../../components/skill-galaxy/SkillGalaxy'
 import { useAppStore } from '../../store/useAppStore'
 import { t } from '../../i18n/translations'
 import { downloadResume } from '../../lib/resume'
@@ -34,7 +33,6 @@ export function HeroSection() {
       className="relative flex min-h-[calc(100vh-3.5rem)] items-center overflow-hidden px-4 sm:px-6 lg:px-8"
       aria-label={t('nav.hero')}
     >
-      <SkillGalaxy className="absolute inset-0 z-0 opacity-70" />
       <div className="relative z-10 mx-auto grid w-full max-w-6xl gap-12 py-16 md:grid-cols-2 md:py-24">
         <div className="flex flex-col justify-center">
           <h1 className="mb-4 font-display text-4xl font-semibold tracking-tight text-text-primary sm:text-5xl lg:text-6xl">

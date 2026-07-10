@@ -22,9 +22,13 @@ export function CommandPalette() {
 
   const setOpenWithTransition = useCallback(
     (value: boolean) => {
-      startViewTransition(() => {
+      if (value) {
+        startViewTransition(() => {
+          setOpen(value)
+        })
+      } else {
         setOpen(value)
-      })
+      }
     },
     [setOpen]
   )

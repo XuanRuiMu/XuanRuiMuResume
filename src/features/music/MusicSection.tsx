@@ -27,7 +27,7 @@ export function MusicSection() {
         <TabsContent value="works">
           <div className="grid gap-6 sm:grid-cols-2">
             {music.tracks.map((track) => (
-              <Card key={track.id} hover className="scroll-reveal-item">
+              <Card key={track.id} hover tilt className="scroll-reveal-item">
                 <div className="mb-3 flex items-center gap-2 text-primary">
                   <Music2 size={18} aria-hidden="true" />
                   <span className="text-xs font-medium uppercase tracking-wider">{t(track.typeKey)}</span>

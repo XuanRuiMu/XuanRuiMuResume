@@ -4,6 +4,7 @@ import { ThemeToggle } from '../components/theme-toggle/ThemeToggle'
 import { CommandPalette } from '../components/command-palette/CommandPalette'
 import { AIChat } from '../components/ai-chat/AIChat'
 import { PWAStatusIndicator } from '../components/PWAStatusIndicator'
+import { SkillGalaxy } from '../components/skill-galaxy/SkillGalaxy'
 import { t } from '../i18n/translations'
 
 interface LayoutProps {
@@ -12,7 +13,8 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-bg text-text-primary">
+    <div className="relative flex min-h-screen flex-col bg-bg text-text-primary">
+      <SkillGalaxy fixed className="z-0" />
       <PWAStatusIndicator />
       <header className="fixed inset-x-0 top-0 z-50 border-b border-border glass-panel">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
@@ -23,7 +25,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </header>
 
-      <main className="flex-1 pt-14">{children}</main>
+      <main className="relative z-10 flex-1 pt-14">{children}</main>
 
       <footer className="border-t border-border bg-surface px-4 py-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 text-xs text-muted sm:flex-row">

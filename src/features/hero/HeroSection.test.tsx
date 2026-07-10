@@ -15,10 +15,6 @@ vi.mock('../../store/useAppStore', () => ({
     }),
 }))
 
-vi.mock('../../components/skill-galaxy/SkillGalaxy', () => ({
-  SkillGalaxy: () => <div data-testid="skill-galaxy" />,
-}))
-
 describe('HeroSection', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true })

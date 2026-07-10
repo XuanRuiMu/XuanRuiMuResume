@@ -32,4 +32,10 @@ describe('Card', () => {
     const { container } = render(<Card className="custom-card">content</Card>)
     expect(container.firstChild).toHaveClass('custom-card')
   })
+
+  it('applies tilt classes', () => {
+    const { container } = render(<Card tilt>content</Card>)
+    expect(container.firstChild).toHaveClass('tilt-card')
+    expect(container.firstChild).toHaveClass('will-change-transform')
+  })
 })

@@ -121,7 +121,7 @@ export function ContactSection() {
           {contactLinks.map((link) => {
             const Icon = link.icon
             return (
-              <Card key={link.id} hover className="scroll-reveal-item">
+              <Card key={link.id} hover tilt className="scroll-reveal-item">
                 <a
                   href={link.href}
                   target={link.id === 'email' ? undefined : '_blank'}
@@ -142,7 +142,7 @@ export function ContactSection() {
           })}
         </div>
 
-        <Card className="scroll-reveal-item">
+        <Card tilt className="scroll-reveal-item">
           <form onSubmit={handleSubmit} className="grid gap-5" noValidate>
             <div>
               <label htmlFor="contact-name" className="mb-1.5 block text-sm text-text-secondary">

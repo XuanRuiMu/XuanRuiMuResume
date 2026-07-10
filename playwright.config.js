@@ -21,10 +21,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build && npm run preview',
+    command: 'npx vite preview --port 4173 --strictPort',
     url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 180 * 1000,
+    reuseExistingServer: true,
+    timeout: 120 * 1000,
     env: {
       VITE_DEEPSEEK_API_KEY: 'e2e-test-key',
     },

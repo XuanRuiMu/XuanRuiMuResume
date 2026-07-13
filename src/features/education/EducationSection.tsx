@@ -3,7 +3,7 @@ import { education } from '../../data/education'
 import { Section } from '../../components/ui/Section'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs'
+import { AdvancedTabs, AdvancedTabsList, AdvancedTabsTrigger, AdvancedTabsContent } from '../../components/ui/Tabs'
 import { t } from '../../i18n/translations'
 
 export function EducationSection() {
@@ -11,13 +11,13 @@ export function EducationSection() {
 
   return (
     <Section id="education" title={t('education.title')} subtitle={t('education.subtitle')}>
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="summary">{t('education.tabs.summary')}</TabsTrigger>
-          <TabsTrigger value="courses">{t('education.tabs.courses')}</TabsTrigger>
-          <TabsTrigger value="achievements">{t('education.tabs.achievements')}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="summary">
+      <AdvancedTabs value={activeTab} onValueChange={setActiveTab}>
+        <AdvancedTabsList>
+          <AdvancedTabsTrigger value="summary">{t('education.tabs.summary')}</AdvancedTabsTrigger>
+          <AdvancedTabsTrigger value="courses">{t('education.tabs.courses')}</AdvancedTabsTrigger>
+          <AdvancedTabsTrigger value="achievements">{t('education.tabs.achievements')}</AdvancedTabsTrigger>
+        </AdvancedTabsList>
+        <AdvancedTabsContent value="summary">
           <Card tilt className="scroll-reveal-item max-w-2xl">
             <div className="mb-2 text-2xl font-semibold text-text-primary">{education.summary.school}</div>
             <div className="mb-4 text-lg text-text-secondary">
@@ -25,8 +25,8 @@ export function EducationSection() {
             </div>
             <Badge color="mint">{education.summary.period}</Badge>
           </Card>
-        </TabsContent>
-        <TabsContent value="courses">
+        </AdvancedTabsContent>
+        <AdvancedTabsContent value="courses">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {education.courses.map((course) => (
               <Card key={course.id} hover tilt className="scroll-reveal-item">
@@ -35,8 +35,8 @@ export function EducationSection() {
               </Card>
             ))}
           </div>
-        </TabsContent>
-        <TabsContent value="achievements">
+        </AdvancedTabsContent>
+        <AdvancedTabsContent value="achievements">
           <div className="grid gap-4">
             {education.achievementKeys.map((key) => (
               <Card key={key} hover tilt className="scroll-reveal-item">
@@ -44,8 +44,8 @@ export function EducationSection() {
               </Card>
             ))}
           </div>
-        </TabsContent>
-      </Tabs>
+        </AdvancedTabsContent>
+      </AdvancedTabs>
     </Section>
   )
 }

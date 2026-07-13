@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MusicSection } from './MusicSection'
 import { music } from '../../data/music'
 import { t } from '../../i18n/translations'
@@ -26,19 +26,19 @@ describe('MusicSection', () => {
     }
   })
 
-  it('switches to tools tab and renders tool tags', () => {
+  it('switches to tools tab and renders tool tags', async () => {
     render(<MusicSection />)
     fireEvent.click(screen.getByRole('tab', { name: t('music.tabs.tools') }))
     for (const key of music.toolKeys) {
-      expect(screen.getByText(t(key))).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText(t(key))).toBeInTheDocument())
     }
   })
 
-  it('switches to skills tab and renders skill tags', () => {
+  it('switches to skills tab and renders skill tags', async () => {
     render(<MusicSection />)
     fireEvent.click(screen.getByRole('tab', { name: t('music.tabs.skills') }))
     for (const key of music.skillKeys) {
-      expect(screen.getByText(t(key))).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText(t(key))).toBeInTheDocument())
     }
   })
 

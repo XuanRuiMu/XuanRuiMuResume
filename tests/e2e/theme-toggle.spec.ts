@@ -32,6 +32,11 @@ test.describe('主题切换', () => {
     await expect(page.getByRole('option', { name: '浅色模式' })).toBeVisible()
     await expect(page.getByRole('option', { name: '跟随系统' })).toBeVisible()
 
+    // 星空背景为 WebGL 实时渲染，每次加载画面不同，截图前隐藏以保证稳定
+    await page.locator('canvas').first().evaluate((canvas) => {
+      ;(canvas as HTMLCanvasElement).style.visibility = 'hidden'
+    })
+
     await expect(listbox).toHaveScreenshot('theme-menu-open.png', {
       maxDiffPixels: 50,
       threshold: 0.1,

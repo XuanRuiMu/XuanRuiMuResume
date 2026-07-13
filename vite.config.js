@@ -98,9 +98,30 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (['react', 'react-dom'].some((pkg) => id.includes(pkg))) return 'react-vendor'
-            if (['zustand', 'lucide-react'].some((pkg) => id.includes(pkg))) return 'ui-vendor'
+          if (!id.includes('node_modules')) return
+          if (['/react/', '/react-dom/', '/scheduler/'].some((prefix) => id.includes(prefix))) {
+            return 'react-vendor'
+          }
+          if (['/three/', '/@react-three/'].some((prefix) => id.includes(prefix))) {
+            return 'three-vendor'
+          }
+          if (id.includes('/framer-motion/')) return 'animation-vendor'
+          if (id.includes('/recharts/')) return 'charts-vendor'
+          if (
+            [
+              '/lucide-react/',
+              '/zustand/',
+              '/cmdk/',
+              '/@radix-ui/',
+              '/react-dialog/',
+              '/react-dismissable-layer/',
+              '/tailwind-merge/',
+            ].some((prefix) => id.includes(prefix))
+          ) {
+            return 'ui-vendor'
+          }
+          if (['/ai/', '/zod/', '/to-json-schema/'].some((prefix) => id.includes(prefix))) {
+            return 'ai-vendor'
           }
         },
       },

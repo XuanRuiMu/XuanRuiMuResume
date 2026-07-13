@@ -18,9 +18,14 @@ describe('Card', () => {
     expect(screen.getByTestId('footer')).toBeInTheDocument()
   })
 
-  it('applies glass panel class', () => {
-    const { container } = render(<Card glass>content</Card>)
+  it('applies glass panel class by default', () => {
+    const { container } = render(<Card>content</Card>)
     expect(container.firstChild).toHaveClass('glass-panel')
+  })
+
+  it('can disable glass panel class', () => {
+    const { container } = render(<Card glass={false}>content</Card>)
+    expect(container.firstChild).not.toHaveClass('glass-panel')
   })
 
   it('applies hover lift class', () => {

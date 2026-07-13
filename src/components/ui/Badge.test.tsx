@@ -9,12 +9,12 @@ describe('Badge', () => {
   })
 
   it.each([
-    ['cyan', 'bg-cyan-500/15'],
+    ['cyan', 'bg-primary/15'],
     ['orange', 'bg-orange-500/15'],
-    ['purple', 'bg-purple-500/15'],
-    ['pink', 'bg-pink-500/15'],
+    ['purple', 'bg-secondary/15'],
+    ['pink', 'bg-accent/15'],
     ['mint', 'bg-emerald-500/15'],
-    ['gray', 'bg-white/10'],
+    ['gray', 'bg-surface-elevated'],
   ] as const)('applies %s color class', (color, expectedClass) => {
     const { container } = render(<Badge color={color}>badge</Badge>)
     expect(container.firstChild).toHaveClass(expectedClass)

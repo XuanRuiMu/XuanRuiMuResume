@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { EducationSection } from './EducationSection'
 import { education } from '../../data/education'
 import { t } from '../../i18n/translations'
@@ -17,20 +17,20 @@ describe('EducationSection', () => {
     expect(screen.getByText(education.summary.period)).toBeInTheDocument()
   })
 
-  it('switches to courses tab and renders all courses', () => {
+  it('switches to courses tab and renders all courses', async () => {
     render(<EducationSection />)
     fireEvent.click(screen.getByRole('tab', { name: t('education.tabs.courses') }))
     for (const course of education.courses) {
-      expect(screen.getByText(t(course.nameKey))).toBeInTheDocument()
-      expect(screen.getByText(t(course.levelKey))).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText(t(course.nameKey))).toBeInTheDocument())
+      await waitFor(() => expect(screen.getByText(t(course.levelKey))).toBeInTheDocument())
     }
   })
 
-  it('switches to achievements tab and renders all achievements', () => {
+  it('switches to achievements tab and renders all achievements', async () => {
     render(<EducationSection />)
     fireEvent.click(screen.getByRole('tab', { name: t('education.tabs.achievements') }))
     for (const key of education.achievementKeys) {
-      expect(screen.getByText(t(key))).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText(t(key))).toBeInTheDocument())
     }
   })
 

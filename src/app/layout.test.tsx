@@ -22,9 +22,9 @@ vi.mock('../components/PWAStatusIndicator', () => ({
   PWAStatusIndicator: () => <div data-testid="pwa-status" />,
 }))
 
-vi.mock('../components/skill-galaxy/SkillGalaxy', () => ({
-  SkillGalaxy: ({ className, fixed }: { className?: string; fixed?: boolean }) => (
-    <div data-testid="skill-galaxy" data-fixed={fixed} className={className} />
+vi.mock('../components/starry-background/StarryBackground', () => ({
+  StarryBackground: ({ className }: { className?: string }) => (
+    <div data-testid="starry-background" className={className} />
   ),
 }))
 
@@ -37,8 +37,7 @@ describe('Layout', () => {
     )
 
     expect(screen.getByTestId('page-content')).toBeInTheDocument()
-    expect(screen.getByTestId('skill-galaxy')).toBeInTheDocument()
-    expect(screen.getByTestId('skill-galaxy')).toHaveAttribute('data-fixed', 'true')
+    expect(screen.getByTestId('starry-background')).toBeInTheDocument()
   })
 
   it('renders navigation, theme toggle and overlays', () => {

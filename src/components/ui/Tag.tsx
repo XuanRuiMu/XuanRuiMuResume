@@ -10,7 +10,7 @@ export function Tag({ children, className }: TagProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-md border border-border bg-surface-elevated px-2 py-0.5 text-[10px] font-medium tracking-wide text-text-secondary',
+        'inline-flex items-center rounded-md border border-border bg-surface-elevated/85 px-2 py-0.5 text-[10px] font-medium tracking-wide text-text-secondary backdrop-blur-sm',
         className
       )}
     >

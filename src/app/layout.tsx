@@ -4,7 +4,8 @@ import { ThemeToggle } from '../components/theme-toggle/ThemeToggle'
 import { CommandPalette } from '../components/command-palette/CommandPalette'
 import { AIChat } from '../components/ai-chat/AIChat'
 import { PWAStatusIndicator } from '../components/PWAStatusIndicator'
-import { SkillGalaxy } from '../components/skill-galaxy/SkillGalaxy'
+import { StarryBackground } from '../components/starry-background/StarryBackground'
+import { FantasyCursor } from '../components/fantasy-cursor/FantasyCursor'
 import { t } from '../i18n/translations'
 
 interface LayoutProps {
@@ -14,7 +15,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   return (
     <div className="relative flex min-h-screen flex-col bg-bg text-text-primary">
-      <SkillGalaxy fixed className="z-0" />
+      <StarryBackground className="z-0" />
       <PWAStatusIndicator />
       <header className="fixed inset-x-0 top-0 z-50 border-b border-border glass-panel">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
@@ -36,6 +37,7 @@ export function Layout({ children }: LayoutProps) {
 
       <CommandPalette />
       <AIChat />
+      <FantasyCursor />
     </div>
   )
 }

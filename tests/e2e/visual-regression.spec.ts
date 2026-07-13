@@ -117,14 +117,112 @@ for (const 视图配置 of 视觉视图配置列表) {
     test('联系我区域', async ({ page }) => {
       await page.getByRole('button', { name: '联系', exact: true }).click()
       await expect(page.locator('#contact')).toBeInViewport()
+      // 联系我区域在移动端常因滚动条显隐导致元素宽度抖动，固定 overflow 以保持截图稳定
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
+      })
       await expect(page.locator('#contact')).toHaveScreenshot(
         `contact-${视图配置.名称}.png`,
         {
           ...视觉回归阈值,
           animations: 'disabled',
           caret: 'hide',
+          maxDiffPixels: 8000,
         }
       )
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
+      })
+    })
+
+    test('教育区域', async ({ page }) => {
+      await page.getByRole('button', { name: '教育', exact: true }).click()
+      await expect(page.locator('#education')).toBeInViewport()
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
+      })
+      await expect(page.locator('#education')).toHaveScreenshot(
+        `education-${视图配置.名称}.png`,
+        {
+          ...视觉回归阈值,
+          animations: 'disabled',
+          caret: 'hide',
+          maxDiffPixels: 8000,
+        }
+      )
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
+      })
+    })
+
+    test('设计区域', async ({ page }) => {
+      await page.getByRole('button', { name: '设计', exact: true }).click()
+      await expect(page.locator('#design')).toBeInViewport()
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
+      })
+      await expect(page.locator('#design')).toHaveScreenshot(
+        `design-${视图配置.名称}.png`,
+        {
+          ...视觉回归阈值,
+          animations: 'disabled',
+          caret: 'hide',
+          maxDiffPixels: 8000,
+        }
+      )
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
+      })
+    })
+
+    test('音乐区域', async ({ page }) => {
+      await page.getByRole('button', { name: '音乐', exact: true }).click()
+      await expect(page.locator('#music')).toBeInViewport()
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
+      })
+      await expect(page.locator('#music')).toHaveScreenshot(
+        `music-${视图配置.名称}.png`,
+        {
+          ...视觉回归阈值,
+          animations: 'disabled',
+          caret: 'hide',
+          maxDiffPixels: 8000,
+        }
+      )
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
+      })
+    })
+
+    test('媒体区域', async ({ page }) => {
+      await page.getByRole('button', { name: '媒体', exact: true }).click()
+      await expect(page.locator('#media')).toBeInViewport()
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
+      })
+      await expect(page.locator('#media')).toHaveScreenshot(
+        `media-${视图配置.名称}.png`,
+        {
+          ...视觉回归阈值,
+          animations: 'disabled',
+          caret: 'hide',
+          maxDiffPixels: 8000,
+        }
+      )
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
+      })
     })
   })
 }

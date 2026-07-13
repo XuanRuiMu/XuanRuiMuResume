@@ -9,12 +9,12 @@ interface BadgeProps {
 
 export function Badge({ children, color = 'gray', className }: BadgeProps) {
   const colorClasses = {
-    cyan: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25',
-    orange: 'bg-orange-500/15 text-orange-400 border-orange-500/25',
-    purple: 'bg-purple-500/15 text-purple-400 border-purple-500/25',
-    pink: 'bg-pink-500/15 text-pink-400 border-pink-500/25',
-    mint: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
-    gray: 'bg-white/10 text-text-secondary border-white/15',
+    cyan: 'bg-primary/15 text-primary border-primary/25',
+    orange: 'bg-orange-500/15 text-[var(--badge-orange-text)] border-orange-500/25',
+    purple: 'bg-secondary/15 text-secondary border-secondary/25',
+    pink: 'bg-accent/15 text-accent border-accent/25',
+    mint: 'bg-emerald-500/15 text-[var(--badge-mint-text)] border-emerald-500/25',
+    gray: 'bg-surface-elevated text-text-secondary border-border',
   }
 
   return (

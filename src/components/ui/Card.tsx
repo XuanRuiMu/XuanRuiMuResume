@@ -17,7 +17,7 @@ const TILT_ROTATE_COEFFICIENT = 28
 const TILT_SCALE = 1.03
 const TILT_TRANSLATE_Z = 24
 
-export function Card({ children, header, footer, glass = false, hover = false, tilt = false, className }: CardProps) {
+export function Card({ children, header, footer, glass = true, hover = false, tilt = false, className }: CardProps) {
   const reducedMotion = useReducedMotion()
   const cardRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number>(0)
@@ -93,8 +93,9 @@ export function Card({ children, header, footer, glass = false, hover = false, t
       onMouseLeave={tiltEnabled ? handleMouseLeave : undefined}
       style={{ '--tilt-glow-x': '50%', '--tilt-glow-y': '50%' } as React.CSSProperties}
       className={cn(
-        'card-container relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-lg',
+        'card-container relative overflow-hidden rounded-2xl p-6',
         glass && 'glass-panel',
+        !glass && 'border border-border bg-surface shadow-lg',
         hover && !tiltEnabled && 'transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl',
         hover && tiltEnabled && 'hover:shadow-2xl',
         tiltEnabled && 'tilt-card transition-transform duration-150 ease-out will-change-transform',

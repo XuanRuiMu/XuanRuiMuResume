@@ -26,7 +26,7 @@ export function MediaSection() {
         ))}
       </div>
 
-      <div>
+      <Card tilt className="scroll-reveal-item">
         <h4 className="mb-4 text-sm font-medium text-muted">{t('media.timelineTitle')}</h4>
         <div className="relative pl-8 md:pl-10">
           <div className="absolute top-0 bottom-0 left-3 w-px bg-border" />
@@ -42,7 +42,7 @@ export function MediaSection() {
             ))}
           </div>
         </div>
-      </div>
+      </Card>
     </Section>
   )
 }

@@ -81,8 +81,49 @@ if (typeof HTMLCanvasElement !== 'undefined') {
         uniform1i: vi.fn(),
       }
     }
+    if (contextId === '2d') {
+      return {
+        canvas: this,
+        clearRect: vi.fn(),
+        save: vi.fn(),
+        restore: vi.fn(),
+        scale: vi.fn(),
+        translate: vi.fn(),
+        rotate: vi.fn(),
+        globalCompositeOperation: 'source-over',
+        globalAlpha: 1,
+        fillStyle: '',
+        strokeStyle: '',
+        lineWidth: 1,
+        shadowBlur: 0,
+        shadowColor: '',
+        beginPath: vi.fn(),
+        arc: vi.fn(),
+        fill: vi.fn(),
+        stroke: vi.fn(),
+        strokeRect: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+        createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+      }
+    }
     return originalGetContext.call(this, contextId, options)
   }
+}
+
+// matchMedia 在 jsdom 中不可用，提供最小 mock 以支持 prefers-reduced-motion 测试
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    configurable: true,
+    value: vi.fn().mockImplementation(() => ({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
 }
 
 // Service Worker 在 jsdom 中不可用，提供最小 mock

@@ -1,10 +1,33 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { ExperienceSection } from './ExperienceSection'
 import { experiences } from '../../data/experience'
 import { t } from '../../i18n/translations'
 
 describe('ExperienceSection', () => {
+  const originalMatchMedia = window.matchMedia
+
+  beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+  })
+
+  afterEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: originalMatchMedia,
+    })
+  })
+
   it('renders section title and subtitle', () => {
     render(<ExperienceSection />)
     expect(screen.getByRole('heading', { name: t('experience.title') })).toBeInTheDocument()
@@ -53,5 +76,33 @@ describe('ExperienceSection', () => {
   it('has experience id on section', () => {
     const { container } = render(<ExperienceSection />)
     expect(container.querySelector('section')).toHaveAttribute('id', 'experience')
+  })
+
+  it('marks timeline nodes as active when they intersect the viewport center', () => {
+    render(<ExperienceSection />)
+    const nodes = document.querySelectorAll('.timeline-node')
+    expect(nodes).toHaveLength(experiences.length)
+    for (const node of nodes) {
+      expect(node).toHaveClass('is-active')
+    }
+  })
+
+  it('does not mark nodes as active when reduced motion is preferred', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    render(<ExperienceSection />)
+    const nodes = document.querySelectorAll('.timeline-node')
+    for (const node of nodes) {
+      expect(node).not.toHaveClass('is-active')
+    }
   })
 })

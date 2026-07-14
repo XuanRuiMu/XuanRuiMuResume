@@ -13,7 +13,7 @@ export function MediaSection() {
 
       <div className="mb-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {media.categories.map((category) => (
-          <Card key={category.id} hover tilt className="scroll-reveal-item">
+          <Card key={category.id} hover tilt glass className="scroll-reveal-item">
             <h4 className="mb-3 text-lg font-semibold text-text-primary">{t(category.labelKey)}</h4>
             <ul className="space-y-2">
               {category.itemKeys.map((key) => (
@@ -26,7 +26,7 @@ export function MediaSection() {
         ))}
       </div>
 
-      <Card tilt className="scroll-reveal-item">
+      <Card hover tilt glass className="scroll-reveal-item">
         <h4 className="mb-4 text-sm font-medium text-muted">{t('media.timelineTitle')}</h4>
         <div className="relative pl-8 md:pl-10">
           <div className="absolute top-0 bottom-0 left-3 w-px bg-border" />

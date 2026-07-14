@@ -27,7 +27,7 @@ export function MusicSection() {
         <AdvancedTabsContent value="works">
           <div className="grid gap-6 sm:grid-cols-2">
             {music.tracks.map((track) => (
-              <Card key={track.id} hover tilt className="scroll-reveal-item">
+              <Card key={track.id} hover tilt glass className="scroll-reveal-item">
                 <div className="mb-3 flex items-center gap-2 text-primary">
                   <Music2 size={18} aria-hidden="true" />
                   <span className="text-xs font-medium uppercase tracking-wider">{t(track.typeKey)}</span>
@@ -61,7 +61,7 @@ export function MusicSection() {
           <Radio size={16} aria-hidden="true" />
           <span className="text-xs font-medium uppercase tracking-wider">{t('music.visualizerTitle')}</span>
         </div>
-        <Card tilt={false} hover={false} className="scroll-reveal-item">
+        <Card hover tilt glass className="scroll-reveal-item">
           <div className="flex h-24 items-end gap-1 overflow-hidden rounded-xl p-1">
             {music.launchpadNotes.map((note, index) => (
               <div

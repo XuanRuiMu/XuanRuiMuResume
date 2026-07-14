@@ -23,7 +23,7 @@ function useTimelineProgress(ref: React.RefObject<HTMLElement | null>) {
       const start = rect.top + window.scrollY - windowHeight
       const end = rect.bottom + window.scrollY
       const scrollRange = end - start
-      const current = window.scrollY + windowHeight * 0.35
+      const current = window.scrollY + windowHeight * 0.5
       const ratio = Math.min(1, Math.max(0, (current - start) / scrollRange))
 
       if (Math.abs(ratio - lastProgress) > 0.005) {
@@ -81,11 +81,40 @@ function useTimelineItems(count: number) {
   }, [count, prefersReducedMotion])
 }
 
+function useTimelineActiveNodes(count: number) {
+  const prefersReducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (prefersReducedMotion) return
+
+    const observers: IntersectionObserver[] = []
+
+    for (let index = 0; index < count; index++) {
+      const element = document.querySelector(`[data-timeline-index="${index}"] .timeline-node`)
+      if (!element) continue
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          element.classList.toggle('is-active', entry.isIntersecting)
+        },
+        { root: null, rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+      )
+      observer.observe(element)
+      observers.push(observer)
+    }
+
+    return () => {
+      for (const observer of observers) observer.disconnect()
+    }
+  }, [count, prefersReducedMotion])
+}
+
 export function ExperienceSection() {
   const timelineRef = useRef<HTMLOListElement>(null)
   const prefersReducedMotion = useReducedMotion()
   useTimelineProgress(timelineRef)
   useTimelineItems(experiences.length)
+  useTimelineActiveNodes(experiences.length)
 
   return (
     <Section id="experience" title={t('experience.title')} subtitle={t('experience.subtitle')}>
@@ -141,7 +170,7 @@ export function ExperienceSection() {
                 </Card>
               </div>
 
-              <div className="order-1 flex w-10 flex-col items-center md:order-none md:w-20 md:justify-center">
+              <div className="order-1 flex w-10 flex-col items-center md:order-none md:col-start-2 md:col-end-3 md:w-20 md:justify-center">
                 <div
                   className="timeline-node relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-bg bg-primary shadow-[0_0_16px_rgba(0,217,255,0.6)] transition-transform duration-300 group-hover:scale-125"
                   aria-hidden="true"

@@ -29,17 +29,14 @@ interface 玄幻光标配置 {
 }
 
 const 默认配置: 玄幻光标配置 = {
-  最大粒子数: 30,
-  粒子生成间隔: 16,
+  最大粒子数: 72,
+  粒子生成间隔: 10,
   画布缩放比: 1,
 }
 
 function 是否触摸设备(): boolean {
   if (typeof window === 'undefined') return false
-  const 粗指针 = window.matchMedia('(pointer: coarse)').matches
-  const 最大触摸点 = typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0
-  const 支持触摸 = typeof 最大触摸点 === 'number' && 最大触摸点 > 0
-  return 粗指针 || 支持触摸
+  return window.matchMedia('(pointer: coarse)').matches
 }
 
 function 是否输入元素(元素: EventTarget | null): boolean {
@@ -55,28 +52,30 @@ function 是否输入元素(元素: EventTarget | null): boolean {
 }
 
 function 随机颜色(): string {
-  const 颜色 = ['#00d9ff', '#a55eea', '#ff6b9d', '#ffffff', '#7ee8fa']
+  const 颜色 = ['#00d9ff', '#a55eea', '#ff6b9d', '#ffffff', '#7ee8fa', '#ffd700', '#ff9f43']
   return 颜色[Math.floor(Math.random() * 颜色.length)]
 }
 
 function 创建粒子(x: number, y: number, 移动速度: number): 粒子 {
   const 角度 = Math.random() * Math.PI * 2
-  const 速度 = Math.random() * 1.5 + 0.3 + Math.min(移动速度 * 0.05, 2)
+  const 速度 = Math.random() * 2 + 0.5 + Math.min(移动速度 * 0.08, 3)
   const 类型随机 = Math.random()
-  const 类型: 粒子['类型'] = 类型随机 > 0.85 ? '符文' : 类型随机 > 0.6 ? '星尘' : '光点'
+  const 类型: 粒子['类型'] = 类型随机 > 0.82 ? '符文' : 类型随机 > 0.55 ? '星尘' : '光点'
+  const 基础大小 =
+    类型 === '光点' ? 3 + Math.random() * 4 : 类型 === '星尘' ? 1.5 + Math.random() * 2.5 : 5 + Math.random() * 4
 
   return {
     x,
     y,
     vx: Math.cos(角度) * 速度,
-    vy: Math.sin(角度) * 速度 + 0.2,
+    vy: Math.sin(角度) * 速度 + 0.3,
     生命周期: 1,
-    最大生命周期: 0.6 + Math.random() * 0.8,
-    大小: 类型 === '光点' ? 2 + Math.random() * 3 : 类型 === '星尘' ? 1 + Math.random() * 2 : 4 + Math.random() * 3,
+    最大生命周期: 0.9 + Math.random() * 1.1,
+    大小: 基础大小,
     颜色: 随机颜色(),
     类型,
     旋转: Math.random() * Math.PI * 2,
-    旋转速度: (Math.random() - 0.5) * 0.15,
+    旋转速度: (Math.random() - 0.5) * 0.2,
   }
 }
 
@@ -88,12 +87,13 @@ export function useFantasyCursor(画布: React.RefObject<HTMLCanvasElement | nul
     可见: false,
     悬浮输入元素: false,
   })
+  const 是触摸设备引用 = useRef(是否触摸设备())
   const 粒子列表 = useRef<粒子[]>([])
   const 最后生成时间 = useRef(0)
   const 上一鼠标位置 = useRef<{ x: number; y: number } | null>(null)
   const 动画帧编号 = useRef<number | null>(null)
-  const 是触摸设备 = useRef(false)
-  const 是否启用 = !减少动画 && !是触摸设备.current
+
+  const 启用 = !减少动画 && !是触摸设备引用.current
 
   const 绘制粒子 = useCallback((上下文: CanvasRenderingContext2D, 宽度: number, 高度: number) => {
     上下文.clearRect(0, 0, 宽度, 高度)
@@ -102,10 +102,10 @@ export function useFantasyCursor(画布: React.RefObject<HTMLCanvasElement | nul
       const 粒子 = 粒子列表.current[i]
       粒子.x += 粒子.vx
       粒子.y += 粒子.vy
-      粒子.vy += 0.02
-      粒子.vx *= 0.98
-      粒子.vy *= 0.98
-      粒子.生命周期 -= 0.015
+      粒子.vy += 0.015
+      粒子.vx *= 0.985
+      粒子.vy *= 0.985
+      粒子.生命周期 -= 0.01
       粒子.旋转 += 粒子.旋转速度
 
       if (粒子.生命周期 <= 0) {
@@ -113,7 +113,8 @@ export function useFantasyCursor(画布: React.RefObject<HTMLCanvasElement | nul
         continue
       }
 
-      const 透明度 = Math.max(0, 粒子.生命周期)
+      const 进度 = 1 - 粒子.生命周期 / 粒子.最大生命周期
+      const 透明度 = Math.max(0, Math.sin((1 - 进度) * Math.PI))
       上下文.save()
       上下文.globalAlpha = 透明度
       上下文.translate(粒子.x, 粒子.y)
@@ -122,27 +123,34 @@ export function useFantasyCursor(画布: React.RefObject<HTMLCanvasElement | nul
       if (粒子.类型 === '光点') {
         const 渐变 = 上下文.createRadialGradient(0, 0, 0, 0, 0, 粒子.大小)
         渐变.addColorStop(0, 粒子.颜色)
+        渐变.addColorStop(0.45, 粒子.颜色)
         渐变.addColorStop(1, 'transparent')
         上下文.fillStyle = 渐变
+        上下文.shadowBlur = 粒子.大小 * 2
+        上下文.shadowColor = 粒子.颜色
         上下文.beginPath()
         上下文.arc(0, 0, 粒子.大小, 0, Math.PI * 2)
         上下文.fill()
       } else if (粒子.类型 === '星尘') {
         上下文.fillStyle = 粒子.颜色
+        上下文.shadowBlur = 6
+        上下文.shadowColor = 粒子.颜色
         上下文.beginPath()
         上下文.arc(0, 0, 粒子.大小 * 0.6, 0, Math.PI * 2)
         上下文.fill()
-        上下文.shadowBlur = 4
-        上下文.shadowColor = 粒子.颜色
       } else {
         上下文.strokeStyle = 粒子.颜色
-        上下文.lineWidth = 1
-        上下文.globalAlpha = 透明度 * 0.8
+        上下文.lineWidth = 1.2
+        上下文.shadowBlur = 6
+        上下文.shadowColor = 粒子.颜色
+        上下文.globalAlpha = 透明度 * 0.9
         const 符文大小 = 粒子.大小
         上下文.strokeRect(-符文大小 / 2, -符文大小 / 2, 符文大小, 符文大小)
         上下文.beginPath()
         上下文.moveTo(-符文大小 / 2, -符文大小 / 2)
         上下文.lineTo(符文大小 / 2, 符文大小 / 2)
+        上下文.moveTo(符文大小 / 2, -符文大小 / 2)
+        上下文.lineTo(-符文大小 / 2, 符文大小 / 2)
         上下文.stroke()
       }
 
@@ -185,12 +193,12 @@ export function useFantasyCursor(画布: React.RefObject<HTMLCanvasElement | nul
   }, [画布, 调整画布尺寸, 绘制粒子])
 
   useEffect(() => {
-    是触摸设备.current = 是否触摸设备()
+    是触摸设备引用.current = 是否触摸设备()
   }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (减少动画 || 是触摸设备.current) {
+    if (减少动画 || 是触摸设备引用.current) {
       if (动画帧编号.current) cancelAnimationFrame(动画帧编号.current)
       return
     }
@@ -215,7 +223,7 @@ export function useFantasyCursor(画布: React.RefObject<HTMLCanvasElement | nul
         const 移动速度 = 距离 / Math.max(当前时间 - 最后生成时间.current, 1)
 
         if (
-          距离 > 4 &&
+          距离 > 3 &&
           当前时间 - 最后生成时间.current > 配置.粒子生成间隔 &&
           粒子列表.current.length < 配置.最大粒子数
         ) {
@@ -265,7 +273,7 @@ export function useFantasyCursor(画布: React.RefObject<HTMLCanvasElement | nul
 
   return {
     光标状态,
-    启用: 是否启用,
+    启用,
     减少动画,
   }
 }

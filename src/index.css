@@ -11,8 +11,8 @@
   --color-text-primary: #f3f4f6;
   --color-text-secondary: #c2c6d4;
   --color-muted: #8b8fa3;
-  --color-glass: rgba(17, 19, 30, 0.78);
-  --color-glass-border: rgba(255, 255, 255, 0.14);
+  --color-glass: rgba(17, 19, 30, 0.98);
+  --color-glass-border: rgba(255, 255, 255, 0.22);
 }
 
 .light {
@@ -26,8 +26,8 @@
   --color-text-primary: #0b0c15;
   --color-text-secondary: #4b4f5c;
   --color-muted: #5f636f;
-  --color-glass: rgba(255, 255, 255, 0.82);
-  --color-glass-border: rgba(0, 0, 0, 0.1);
+  --color-glass: rgba(255, 255, 255, 0.98);
+  --color-glass-border: rgba(0, 0, 0, 0.16);
 }
 
 @supports (color: oklch(from #000000 l c h)) {
@@ -42,8 +42,8 @@
     --color-text-primary: oklch(from #f3f4f6 l c h);
     --color-text-secondary: oklch(from #c2c6d4 l c h);
     --color-muted: oklch(from #8b8fa3 l c h);
-    --color-glass: oklch(from #11131e l c h / 0.78);
-    --color-glass-border: oklch(from #ffffff l c h / 0.14);
+    --color-glass: oklch(from #11131e l c h / 0.98);
+    --color-glass-border: oklch(from #ffffff l c h / 0.22);
   }
 
   .light {
@@ -57,8 +57,8 @@
     --color-text-primary: oklch(from #0b0c15 l c h);
     --color-text-secondary: oklch(from #4b4f5c l c h);
     --color-muted: oklch(from #5f636f l c h);
-    --color-glass: oklch(from #ffffff l c h / 0.82);
-    --color-glass-border: oklch(from #000000 l c h / 0.1);
+    --color-glass: oklch(from #ffffff l c h / 0.98);
+    --color-glass-border: oklch(from #000000 l c h / 0.16);
   }
 }
 
@@ -185,12 +185,17 @@ select:focus {
   }
 }
 
+/* 确保 section 自身形成层叠上下文，使 section-scrim 位于星空背景之上、内容之下 */
+section {
+  isolation: isolate;
+}
+
 .section-scrim {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-bg) 96%, transparent) 0%,
-    color-mix(in srgb, var(--color-bg) 88%, transparent) 45%,
-    color-mix(in srgb, var(--color-bg) 92%, transparent) 100%
+    color-mix(in srgb, var(--color-bg) 99.6%, transparent) 0%,
+    color-mix(in srgb, var(--color-bg) 99.2%, transparent) 45%,
+    color-mix(in srgb, var(--color-bg) 99.6%, transparent) 100%
   );
 }
 
@@ -198,20 +203,24 @@ select:focus {
   .section-scrim {
     background: linear-gradient(
       180deg,
-      oklch(from var(--color-bg) l c h / 0.96) 0%,
-      oklch(from var(--color-bg) l c h / 0.88) 45%,
-      oklch(from var(--color-bg) l c h / 0.92) 100%
+      oklch(from var(--color-bg) l c h / 0.996) 0%,
+      oklch(from var(--color-bg) l c h / 0.992) 45%,
+      oklch(from var(--color-bg) l c h / 0.996) 100%
     );
   }
 }
 
 .text-shadow-readable {
-  text-shadow: 0 2px 16px color-mix(in srgb, var(--color-bg) 72%, transparent);
+  text-shadow:
+    0 1px 8px color-mix(in srgb, var(--color-bg) 98%, transparent),
+    0 2px 32px color-mix(in srgb, var(--color-bg) 95%, transparent);
 }
 
 @supports (color: oklch(from #000000 l c h)) {
   .text-shadow-readable {
-    text-shadow: 0 2px 16px oklch(from var(--color-bg) l c h / 0.72);
+    text-shadow:
+      0 1px 8px oklch(from var(--color-bg) l c h / 0.98),
+      0 2px 32px oklch(from var(--color-bg) l c h / 0.95);
   }
 }
 
@@ -504,8 +513,8 @@ html.circular-reveal-active::view-transition-old(root) {
 
 @keyframes scroll-reveal {
   from {
-    opacity: 0;
-    transform: translateY(40px);
+    opacity: 0.85;
+    transform: translateY(32px);
   }
 
   to {
@@ -634,7 +643,7 @@ html.circular-reveal-active::view-transition-old(root) {
     var(--color-accent) 95%,
     transparent 100%
   );
-  opacity: 0.35;
+  opacity: 0.5;
   border-radius: 999px;
 }
 
@@ -719,6 +728,45 @@ html.circular-reveal-active::view-transition-old(root) {
   transform: scale(1.25);
 }
 
+.timeline-node.is-active {
+  transform: scale(1.35);
+  background: var(--color-primary);
+  border-color: var(--color-bg);
+}
+
+.timeline-item:hover .timeline-node.is-active,
+.timeline-item:focus-within .timeline-node.is-active {
+  transform: scale(1.5);
+}
+
+.timeline-node.is-active::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  opacity: 0.85;
+  box-shadow:
+    0 0 16px var(--color-primary),
+    0 0 32px var(--color-secondary),
+    0 0 48px var(--color-accent);
+  animation: timeline-node-active-pulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes timeline-node-active-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
 .timeline-details {
   max-height: 4rem;
 }
@@ -777,6 +825,16 @@ html.circular-reveal-active::view-transition-old(root) {
     animation: none;
   }
 
+  .timeline-node.is-active {
+    transform: none;
+  }
+
+  .timeline-node.is-active::after {
+    animation: none;
+    opacity: 0.85;
+    transform: scale(1);
+  }
+
   .timeline-details {
     max-height: none;
   }
@@ -793,6 +851,16 @@ html.circular-reveal-active::view-transition-old(root) {
 
 .reduced-motion .timeline-node {
   animation: none;
+}
+
+.reduced-motion .timeline-node.is-active {
+  transform: none;
+}
+
+.reduced-motion .timeline-node.is-active::after {
+  animation: none;
+  opacity: 0.85;
+  transform: scale(1);
 }
 
 .reduced-motion .timeline-details {

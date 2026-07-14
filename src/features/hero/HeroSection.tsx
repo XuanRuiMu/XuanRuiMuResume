@@ -59,7 +59,7 @@ export function HeroSection() {
         </div>
 
         <div className="flex flex-col justify-center">
-          <Card glass className="font-mono text-sm">
+          <Card hover tilt glass className="font-mono text-sm">
             <div className="mb-4 flex items-center gap-2 text-muted">
               <Terminal size={16} />
               <span>{t('hero.metricsTitle')}</span>

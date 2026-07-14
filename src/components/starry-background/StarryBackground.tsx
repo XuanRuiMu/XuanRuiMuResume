@@ -105,14 +105,15 @@ const nebulaFragmentShader = `
     float n3 = fbm(uv * 1.5 + vec2(t * 0.1, -t * 0.4));
 
     float nebula = n1 * 0.5 + n2 * 0.3 + n3 * 0.2;
-    nebula = pow(nebula, 2.0);
+    nebula = smoothstep(0.1, 0.55, nebula) * 1.15;
 
     vec3 color = mix(uColor1, uColor2, n1);
-    color = mix(color, uColor3, n2 * 0.6);
+    color = mix(color, uColor3, n2 * 0.7);
 
-    float vignette = 1.0 - smoothstep(0.3, 1.2, length(uv - 0.5) * 1.4);
+    float vignette = 1.0 - smoothstep(0.25, 1.3, length(uv - 0.5) * 1.35);
+    float alpha = clamp(nebula * uIntensity * vignette, 0.0, 1.0);
 
-    gl_FragColor = vec4(color * nebula * uIntensity * vignette, 1.0);
+    gl_FragColor = vec4(color, alpha);
   }
 `
 
@@ -130,10 +131,10 @@ const starVertexShader = `
     vColor = aColor;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
 
-    float twinkle = 0.55 + 0.45 * sin(uTime * aSpeed + aPhase);
+    float twinkle = 0.6 + 0.4 * sin(uTime * aSpeed + aPhase);
     vAlpha = twinkle;
 
-    gl_PointSize = max(0.5, aSize * uPixelRatio * (300.0 / -mvPosition.z));
+    gl_PointSize = max(1.6, aSize * uPixelRatio * (560.0 / -mvPosition.z));
     gl_Position = projectionMatrix * mvPosition;
   }
 `
@@ -148,9 +149,9 @@ const starFragmentShader = `
     if (dist > 0.5) discard;
 
     float glow = 1.0 - dist * 2.0;
-    glow = pow(glow, 1.8);
+    glow = pow(glow, 1.1);
 
-    gl_FragColor = vec4(vColor, vAlpha * glow);
+    gl_FragColor = vec4(vColor * 1.35, vAlpha * glow);
   }
 `
 
@@ -206,13 +207,13 @@ function NebulaBackground({ isLight }: { isLight: boolean }) {
           color1: new Color('#e0f7ff'),
           color2: new Color('#f0e6ff'),
           color3: new Color('#ffe6f0'),
-          intensity: 0.35,
+          intensity: 0.45,
         }
       : {
-          color1: new Color('#0a1628'),
-          color2: new Color('#1a0b2e'),
-          color3: new Color('#0d2832'),
-          intensity: 0.85,
+          color1: new Color('#2a5a9c'),
+          color2: new Color('#6d3fbf'),
+          color3: new Color('#1d7a9c'),
+          intensity: 1.0,
         }
 
     return new ShaderMaterial({
@@ -226,6 +227,7 @@ function NebulaBackground({ isLight }: { isLight: boolean }) {
       vertexShader: nebulaVertexShader,
       fragmentShader: nebulaFragmentShader,
       side: DoubleSide,
+      transparent: true,
       depthWrite: false,
     })
   }, [isLight])
@@ -276,7 +278,7 @@ function MeteorLayer({ count }: { count: number }) {
 
     const mat = new ShaderMaterial({
       uniforms: {
-        uColor: { value: new Color('#ffffff') },
+        uColor: { value: new Color('#e6f7ff') },
       },
       vertexShader: `
         attribute float aAlpha;
@@ -316,7 +318,7 @@ function MeteorLayer({ count }: { count: number }) {
 
     meteorsRef.current.forEach((meteor) => {
       if (!meteor.active) {
-        if (Math.random() < delta * 0.15) {
+        if (Math.random() < delta * 0.35) {
           meteor.active = true
           meteor.life = 0
           const fresh = createMeteor()
@@ -345,7 +347,7 @@ function MeteorLayer({ count }: { count: number }) {
       meteor.positions[4] = y - meteor.velocity[1] * 0.04
       meteor.positions[5] = z - meteor.velocity[2] * 0.04
 
-      const alpha = Math.sin(progress * Math.PI)
+      const alpha = Math.sin(progress * Math.PI) * 1.0
       const index = activeCount * 6
       positionArray[index] = meteor.positions[0]
       positionArray[index + 1] = meteor.positions[1]
@@ -379,13 +381,13 @@ function StarryBackgroundScene({ qualitySettings }: StarryBackgroundSceneProps) 
   const meteorCount = qualitySettings.postProcessing ? 5 : 0
 
   const { farLayer, midLayer, nearLayer } = useMemo(() => {
-    const far = Math.round(totalCount * 0.6)
+    const far = Math.round(totalCount * 0.55)
     const mid = Math.round(totalCount * 0.3)
     const near = Math.max(0, totalCount - far - mid)
     return {
-      farLayer: createStarLayer(far, [8, 18], [0.012, 0.028], ['#ffffff', '#b0e0ff', '#e6e6fa'], 1),
-      midLayer: createStarLayer(mid, [5, 12], [0.02, 0.04], ['#00d9ff', '#a55eea', '#ff6b9d', '#ffffff'], 2),
-      nearLayer: createStarLayer(near, [3, 8], [0.03, 0.06], ['#00d9ff', '#ffffff', '#a55eea'], 3),
+      farLayer: createStarLayer(far, [8, 20], [0.028, 0.055], ['#ffffff', '#c2e9ff', '#f0e6ff'], 1),
+      midLayer: createStarLayer(mid, [5, 14], [0.038, 0.07], ['#4aefff', '#c084fc', '#ff85b3', '#ffffff'], 2),
+      nearLayer: createStarLayer(near, [3, 10], [0.055, 0.095], ['#7df3ff', '#ffffff', '#d8b4fe'], 3),
     }
   }, [totalCount])
 
@@ -414,7 +416,6 @@ function StarryBackgroundScene({ qualitySettings }: StarryBackgroundSceneProps) 
   return (
     <group ref={groupRef}>
       <color attach="background" args={[environmentColor]} />
-      <fog attach="fog" args={[environmentColor, 10, 35]} />
 
       <NebulaBackground isLight={isLight} />
       <StarLayer data={farLayer} pixelRatio={dprValue} rotationSpeed={0.002} />

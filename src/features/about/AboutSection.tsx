@@ -37,7 +37,7 @@ export function AboutSection() {
   return (
     <Section id="about" title={t('about.title')} subtitle={t('about.subtitle')}>
       <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
-        <Card tilt className="scroll-reveal-item flex items-center">
+        <Card hover tilt glass className="scroll-reveal-item flex items-center">
           <p className="text-base leading-relaxed text-text-secondary sm:text-lg">{t('about.intro')}</p>
         </Card>
 
@@ -49,6 +49,7 @@ export function AboutSection() {
                 key={metric.id}
                 hover
                 tilt
+                glass
                 className="scroll-reveal-item flex flex-col items-center justify-center text-center"
               >
                 <Icon size={28} className="mb-3 text-primary" aria-hidden="true" />

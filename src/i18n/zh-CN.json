@@ -17,7 +17,7 @@
     "enterButton": "进入简历",
     "audioHint": "",
     "escHint": "按 Esc 或点击右上角可再次开启本界面",
-    "hoverHint": "Hover 唤醒实体，点击进入专属空间"
+    "hoverHint": "悬停看看效果，点一下就进简历"
   },
   "nav": {
     "main": "主导航",
@@ -62,7 +62,7 @@
   },
   "hero": {
     "hint": "按 ⌘K 打开命令面板，或用顶部导航切换模块。",
-    "valueProposition": "做过 Minecraft MMORPG 服务端、Spring Boot 管理后台和 AI 工具链。写代码时喜欢先把问题拆小，再一段段把它跑通、测稳、维护住。",
+    "valueProposition": "写过 Minecraft MMORPG 服务端、Spring Boot 后台和 AI 工具链。遇到复杂问题，我会先拆成小模块，再逐个实现、测试、维护。",
     "cta": {
       "copyEmail": "复制邮箱",
       "viewProjects": "查看项目",
@@ -70,7 +70,7 @@
       "openAIChat": "AI 问答"
     },
     "copied": "已复制",
-    "metricsTitle": "能力指标"
+    "metricsTitle": "常用技术"
   },
   "about": {
     "title": "关于我",
@@ -172,12 +172,12 @@
   },
   "skills": {
     "title": "技能",
-    "subtitle": "全栈工程、AI Agent 和多个创作方向的能力分布，哪儿强哪儿弱一目了然。",
-    "radarTitle": "能力雷达",
+    "subtitle": "工程、AI Agent 和创作这几个方向，我大概会些什么。",
+    "radarTitle": "技能雷达",
     "categories": {
       "it": {
         "label": "工程开发",
-        "description": "Java 后端、AI Agent 工具链、全栈开发与 DevOps。",
+        "description": "写 Java 后端和 React 前端，也拿 Python 写脚本；最近在看 AI Agent 和 MCP。",
         "tags": [
           "Java 后端架构",
           "Spring Boot / JPA / JWT",
@@ -236,10 +236,10 @@
     "close": "关闭",
     "placeholder": "输入问题，例如：你是谁 / 你的技术栈 / 介绍一下暮澜纪元",
     "send": "发送",
-    "loading": "AI 思考中...",
+    "loading": "正在想...",
     "error": "发送失败，请重试",
     "empty": "有什么可以帮你的？",
-    "localMode": "当前使用本地规则引擎回答",
+    "localMode": "当前是本地自动回复",
     "reset": "清空对话",
     "quickQuestions": ["你是谁", "你的技术栈", "介绍一下暮澜纪元", "联系方式"],
     "component": {
@@ -272,7 +272,7 @@
       },
       "admin": {
         "name": "Spring Boot 管理后台",
-        "desc": "给暮澜纪元搭的管理后台，8 张 MySQL 表管玩家、物品和日志；JWT 鉴权、Redis 缓存，接口挂了 Swagger。",
+        "desc": "给暮澜纪元搭的管理后台，8 张 MySQL 表管玩家、物品和日志；JWT 鉴权、Redis 缓存，接口文档用 Swagger。",
         "metrics": {
           "tables": "8 张数据表",
           "auth": "JWT + Redis 缓存"
@@ -297,7 +297,7 @@
     },
     "skills": {
       "it": {
-        "headline": "工程能力",
+        "headline": "工程开发",
         "intro": "后端主要写 Java/Spring Boot，前端用 React，平时用 Python 脚本处理自动化；最近在折腾 AI Agent 工具链和 MCP。",
         "items": {
           "javaBackend": "Java 后端架构",
@@ -440,7 +440,7 @@
       "timeline": {
         "2022": "立项暮澜纪元，同时开始在 B站 更新计算机课程。",
         "2023": "完成职业、天赋、任务等核心系统。",
-        "2024": "搭了 85 多个 AI Skill，把多 Agent 协作跑通。",
+        "2024": "搭了 85 多个 AI Skill，让多个 Agent 能配合工作。",
         "2025": "原创歌曲《逃脱》上线，作词、作曲、编曲到母带都自己弄。"
       }
     },
@@ -496,7 +496,7 @@
         },
         "assembly": {
           "name": "汇编语言",
-          "level": "底层逻辑"
+          "level": "寄存器与指令"
         },
         "mysql": {
           "name": "MySQL",

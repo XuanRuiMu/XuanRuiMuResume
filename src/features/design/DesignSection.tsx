@@ -15,7 +15,7 @@ export function DesignSection() {
 
       <div className="mb-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {design.works.map((work) => (
-          <Card key={work.id} hover tilt className="scroll-reveal-item">
+          <Card key={work.id} hover tilt glass className="scroll-reveal-item">
             <div className="mb-3 flex items-center gap-2 text-primary">
               <Palette size={18} aria-hidden="true" />
               <span className="text-xs font-medium uppercase tracking-wider">{t(work.categoryKey)}</span>
@@ -28,7 +28,9 @@ export function DesignSection() {
 
       <Card
         header={<h4 className="text-sm font-medium text-muted">{t('design.toolsTitle')}</h4>}
+        hover
         tilt
+        glass
         className="scroll-reveal-item"
       >
         <div className="flex flex-wrap gap-2">

@@ -32,14 +32,9 @@ test.describe('AI 助手', () => {
     // 使用 Enter 发送，避免悬浮按钮/空状态覆盖导致的点击拦截
     await input.press('Enter')
 
-    // 等待 loading 出现再消失（兼容本地规则引擎与 LLM 两种模式）
-    const loading = dialog.locator('.self-start', { hasText: 'AI 思考中' })
-    await expect(loading).toBeVisible({ timeout: 10000 })
-    await expect(loading).toBeHidden({ timeout: 120000 })
-
-    // 最终回复应出现在消息列表中，且内容有意义
-    const lastAssistantMessage = dialog.locator('.self-start').last()
-    await expect(lastAssistantMessage).toBeVisible()
+    // 最终回复应出现在消息列表中，且内容有意义（loading 状态可能极短，不强求可见）
+    const lastAssistantMessage = dialog.locator('.self-start', { hasText: '我是玄锐暮的简历 AI 助手' })
+    await expect(lastAssistantMessage).toBeVisible({ timeout: 120000 })
     const text = await lastAssistantMessage.textContent()
     expect(text).not.toContain('AI 思考中')
     expect(text).not.toContain('发送失败')

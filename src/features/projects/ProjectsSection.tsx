@@ -19,7 +19,7 @@ const GithubIcon = () => (
 
 function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <Card tilt className="scroll-reveal-item flex h-full flex-col">
+    <Card hover tilt glass className="scroll-reveal-item flex h-full flex-col">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {project.metricKeys?.map((key) => (
           <Badge key={key} color="cyan">

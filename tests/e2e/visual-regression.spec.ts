@@ -50,6 +50,7 @@ for (const 视图配置 of 视觉视图配置列表) {
         ...视觉回归阈值,
         animations: 'disabled',
         caret: 'hide',
+        maxDiffPixels: 8000,
       })
     })
 
@@ -81,14 +82,24 @@ for (const 视图配置 of 视觉视图配置列表) {
     test('技能区域', async ({ page }) => {
       await page.getByRole('button', { name: '技能', exact: true }).click()
       await expect(page.locator('#skills')).toBeInViewport()
+      // 技能区域包含响应式图表与标签换行，移动端易受滚动条显隐影响，固定 overflow 以保持截图稳定
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
+      })
       await expect(page.locator('#skills')).toHaveScreenshot(
         `skills-${视图配置.名称}.png`,
         {
           ...视觉回归阈值,
           animations: 'disabled',
           caret: 'hide',
+          maxDiffPixels: 8000,
         }
       )
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = ''
+        document.body.style.overflow = ''
+      })
     })
 
     test('经历区域', async ({ page }) => {

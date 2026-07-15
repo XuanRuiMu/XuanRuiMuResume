@@ -7,7 +7,7 @@ import { useReducedMotion } from '../../hooks/useReducedMotion'
 
 const TIMELINE_PROGRESS_VAR = '--timeline-progress'
 
-function useTimelineProgress(ref: React.RefObject<HTMLElement | null>) {
+function useTimelineProgress(ref: React.RefObject<HTMLElement | null>, count: number) {
   const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
@@ -17,19 +17,26 @@ function useTimelineProgress(ref: React.RefObject<HTMLElement | null>) {
     let rafId = 0
     let lastProgress = -1
 
+    const nodes = Array.from(element.querySelectorAll<HTMLElement>('[data-timeline-index] .timeline-node'))
+
     const updateProgress = () => {
       const rect = element.getBoundingClientRect()
-      const windowHeight = window.innerHeight
-      const start = rect.top + window.scrollY - windowHeight
-      const end = rect.bottom + window.scrollY
-      const scrollRange = end - start
-      const current = window.scrollY + windowHeight * 0.5
-      const ratio = Math.min(1, Math.max(0, (current - start) / scrollRange))
+      const viewportCenter = window.innerHeight * 0.5
+      const timelineHeight = rect.height
+      const ratio = timelineHeight > 0 ? Math.min(1, Math.max(0, (viewportCenter - rect.top) / timelineHeight)) : 0
 
       if (Math.abs(ratio - lastProgress) > 0.005) {
         lastProgress = ratio
         element.style.setProperty(TIMELINE_PROGRESS_VAR, String(ratio))
       }
+
+      for (const node of nodes) {
+        const nodeRect = node.getBoundingClientRect()
+        const nodeCenter = nodeRect.top + nodeRect.height * 0.5
+        const nodeRatio = timelineHeight > 0 ? Math.min(1, Math.max(0, (nodeCenter - rect.top) / timelineHeight)) : 0
+        node.classList.toggle('is-active', ratio >= nodeRatio)
+      }
+
       rafId = 0
     }
 
@@ -47,7 +54,7 @@ function useTimelineProgress(ref: React.RefObject<HTMLElement | null>) {
       window.removeEventListener('resize', handleScroll)
       if (rafId) cancelAnimationFrame(rafId)
     }
-  }, [prefersReducedMotion, ref])
+  }, [prefersReducedMotion, ref, count])
 }
 
 function useTimelineItems(count: number) {
@@ -81,40 +88,11 @@ function useTimelineItems(count: number) {
   }, [count, prefersReducedMotion])
 }
 
-function useTimelineActiveNodes(count: number) {
-  const prefersReducedMotion = useReducedMotion()
-
-  useEffect(() => {
-    if (prefersReducedMotion) return
-
-    const observers: IntersectionObserver[] = []
-
-    for (let index = 0; index < count; index++) {
-      const element = document.querySelector(`[data-timeline-index="${index}"] .timeline-node`)
-      if (!element) continue
-
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          element.classList.toggle('is-active', entry.isIntersecting)
-        },
-        { root: null, rootMargin: '-45% 0px -45% 0px', threshold: 0 }
-      )
-      observer.observe(element)
-      observers.push(observer)
-    }
-
-    return () => {
-      for (const observer of observers) observer.disconnect()
-    }
-  }, [count, prefersReducedMotion])
-}
-
 export function ExperienceSection() {
   const timelineRef = useRef<HTMLOListElement>(null)
   const prefersReducedMotion = useReducedMotion()
-  useTimelineProgress(timelineRef)
+  useTimelineProgress(timelineRef, experiences.length)
   useTimelineItems(experiences.length)
-  useTimelineActiveNodes(experiences.length)
 
   return (
     <Section id="experience" title={t('experience.title')} subtitle={t('experience.subtitle')}>

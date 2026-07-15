@@ -62,7 +62,7 @@
   },
   "hero": {
     "hint": "按 ⌘K 打开命令面板，或用顶部导航切换模块。",
-    "valueProposition": "写过 Minecraft MMORPG 服务端、Spring Boot 后台和 AI 工具链。遇到复杂问题，我会先拆成小模块，再逐个实现、测试、维护。",
+    "valueProposition": "写过 Minecraft MMORPG 服务端、Spring Boot 后台和 AI 工具链。复杂需求我习惯先拆成小块，再逐个实现、测试、维护。",
     "cta": {
       "copyEmail": "复制邮箱",
       "viewProjects": "查看项目",
@@ -75,7 +75,7 @@
   "about": {
     "title": "关于我",
     "subtitle": "写后端、做开源、录课程，业余时间写歌和小说。",
-    "intro": "我是玄锐暮，天津仁爱学院计算机专业的应届生。三年多里，我把暮澜纪元从一个插件慢慢做成 8 世界 32 职业的 MMORPG 服务端；在 B站 录了 10 多门计算机课，也帮 50 多位毕业生改过论文。不写代码的时候，就在写歌、写小说、剪视频。我做事习惯先把结构想明白再动手，卡住了更喜欢翻源码，而不是直接找人要答案。",
+    "intro": "我是玄锐暮，天津仁爱学院计算机专业的应届生。三年多里，我把暮澜纪元从一个插件慢慢做成 8 世界 32 职业的 MMORPG 服务端；在 B站 录了 10 多门计算机课，也帮 50 多位毕业生改过论文。不写代码的时候，就在写歌、写小说、剪视频。我习惯先把结构想明白再动手，卡住了会先翻源码，而不是直接问人。",
     "metrics": {
       "projects": {
         "label": "完成项目",
@@ -191,7 +191,7 @@
       },
       "creative": {
         "label": "创作设计",
-        "description": "UI/UX、品牌视觉、音乐编曲与多媒体内容。",
+        "description": "做 UI、品牌视觉、音乐编曲，也剪视频写东西。",
         "tags": [
           "Figma",
           "Three.js",
@@ -211,7 +211,7 @@
       },
       "soft": {
         "label": "教学协作",
-        "description": "课程设计、论文指导、知识拆解与社群答疑。",
+        "description": "教课、改论文、拆知识点、群里答疑。",
         "tags": ["课程设计", "论文指导", "知识拆解", "社群答疑", "知识可视化", "技术教学"]
       }
     }
@@ -221,11 +221,11 @@
     "close": "关闭",
     "placeholder": "输入问题，例如：你是谁 / 你的技术栈 / 介绍一下暮澜纪元",
     "answers": {
-      "name": "我是{name}，主要写 Java 后端，也做 Python 自动化和 React 前端。",
-      "target": "想找 Java 后端、AI 工具开发或者全栈开发相关岗位。",
+      "name": "我叫{name}，主写 Java 后端，也写 Python 脚本和 React 前端。",
+      "target": "想找个 Java 后端、AI 工具开发或全栈的岗位。",
       "contact": "邮箱是 {email}，电话是 {phone}。",
       "projects": "做过暮澜纪元 MMORPG 服务端、Spring Boot 管理后台、AI 总控制台，也给 Slimefun4 提过 PR。",
-      "skills": "Java/Spring Boot、Python、React、MySQL、Redis，最近在折腾 AI Agent 和 MCP。",
+      "skills": "主要用 Java/Spring Boot、Python、React，也玩 MySQL、Redis，最近在折腾 AI Agent 和 MCP。",
       "education": "我就读于{school}，{major}专业{degree}，预计 {period} 毕业。",
       "experience": "独立开发暮澜纪元、给 Slimefun4 提 PR、在 B站 录课、帮毕业生改论文。",
       "fallback": "这个问题我本地没准备答案，你可以发邮件 {email} 问我。"
@@ -264,7 +264,7 @@
     "projects": {
       "xrm": {
         "name": "暮澜纪元 MMORPG 服务端",
-        "desc": "独立写的 Minecraft MMORPG 服务端插件，120 多个 Java 类，职业、天赋、任务、事件和社交系统都自己搭。",
+        "desc": "自己一个人写的 Minecraft MMORPG 服务端插件，120 多个 Java 类，职业、天赋、任务、事件和社交系统都自己搭。",
         "metrics": {
           "classes": "120+ Java 类",
           "systems": "8 世界 / 32 职业"
@@ -272,7 +272,7 @@
       },
       "admin": {
         "name": "Spring Boot 管理后台",
-        "desc": "给暮澜纪元搭的管理后台，8 张 MySQL 表管玩家、物品和日志；JWT 鉴权、Redis 缓存，接口文档用 Swagger。",
+        "desc": "给暮澜纪元做的管理后台，8 张 MySQL 表管玩家、物品和日志；JWT 鉴权、Redis 缓存，接口文档用 Swagger。",
         "metrics": {
           "tables": "8 张数据表",
           "auth": "JWT + Redis 缓存"
@@ -280,7 +280,7 @@
       },
       "aiConsole": {
         "name": "AI 总控制台",
-        "desc": "用 Python 写的 AI 工具管理台，2435 行代码，能批量拉仓库、管多家 API Key、定时更新数据源，还接进来做 MCP 测试。",
+        "desc": "用 Python 写的 AI 工具管理台，2435 行代码，能批量拉仓库、管多家 API Key、定时更新数据源，也拿来做 MCP 测试。",
         "metrics": {
           "lines": "2435 行 Python",
           "sources": "8 源数据更新"
@@ -298,7 +298,7 @@
     "skills": {
       "it": {
         "headline": "工程开发",
-        "intro": "后端主要写 Java/Spring Boot，前端用 React，平时用 Python 脚本处理自动化；最近在折腾 AI Agent 工具链和 MCP。",
+        "intro": "后端主要写 Java/Spring Boot，前端用 React，平时拿 Python 写脚本；最近在折腾 AI Agent 工具链和 MCP。",
         "items": {
           "javaBackend": "Java 后端架构",
           "springBoot": "Spring Boot / JPA / JWT",
@@ -330,7 +330,7 @@
       },
       "education": {
         "headline": "教学与内容",
-        "intro": "在 B站 开了个小频道「玄锐暮」，把操作系统、计网这些课拆成能听懂的视频，也帮毕业生捋论文思路和改格式。",
+        "intro": "在 B站 有个频道「玄锐暮」，把操作系统、计网这些课拆成能听懂的视频，也帮毕业生捋论文思路和改格式。",
         "items": {
           "courseDesign": "课程设计",
           "thesisGuidance": "论文指导",
@@ -353,7 +353,7 @@
     },
     "design": {
       "headline": "设计与视觉",
-      "intro": "做 UI 时，先让别人把信息看清楚，再聊好不好看。",
+      "intro": "做 UI 先让别人把信息看清楚，再聊好不好看。",
       "works": {
         "resumeTheater": {
           "name": "简历 3D 剧场",
@@ -382,7 +382,7 @@
     },
     "music": {
       "headline": "音乐创作",
-      "intro": "乐理和编曲都是自己摸索的，也试过用代码在 Minecraft 里生成 MIDI 乐器。",
+      "intro": "乐理和编曲都是自己瞎琢磨的，也用代码在 Minecraft 里生成过 MIDI 乐器。",
       "tracks": {
         "escape": {
           "name": "逃脱",
@@ -438,10 +438,10 @@
         }
       },
       "timeline": {
-        "2022": "立项暮澜纪元，同时开始在 B站 更新计算机课程。",
-        "2023": "完成职业、天赋、任务等核心系统。",
-        "2024": "搭了 85 多个 AI Skill，让多个 Agent 能配合工作。",
-        "2025": "原创歌曲《逃脱》上线，作词、作曲、编曲到母带都自己弄。"
+        "2022": "立项暮澜纪元，开始在 B站 更新计算机课程。",
+        "2023": "职业、天赋、任务这些核心系统基本做完。",
+        "2024": "搭了 85 多个 AI Skill，让几个 Agent 能配合工作。",
+        "2025": "原创歌曲《逃脱》上线，词曲编曲到母带都自己弄。"
       }
     },
     "experience": {
@@ -450,7 +450,7 @@
           "title": "独立开发者 · 暮澜纪元 MMORPG",
           "organization": "个人项目",
           "period": "2022 - 至今",
-          "description": "一个人扛暮澜纪元服务端，从最初一个插件写到 120 多个类，搭出 8 世界 32 职业的 MMORPG 框架。"
+          "description": "一个人做暮澜纪元服务端，从一个插件写到 120 多个类，搭出 8 世界 32 职业的 MMORPG 框架。"
         },
         "openSource": {
           "title": "开源贡献者 · Slimefun4",
@@ -504,7 +504,7 @@
         }
       },
       "achievements": {
-        "crashCourse": "给 0 基础同学做了 8 节突击课，帮他通过免修考试。",
+        "crashCourse": "给 0 基础同学做了 8 节突击课，帮他把免修考试过了。",
         "thesis": "带过 50 多位毕业生，从选题到答辩陪他们走了一遍。",
         "community": "打理 QQ 学习群，平时答疑、丢资料、聊技术。"
       }
@@ -513,35 +513,35 @@
       "dimensions": {
         "backendArchitecture": {
           "label": "后端架构",
-          "description": "Java/Spring Boot 服务端、数据库设计与 SQL 调优"
+          "description": "Java/Spring Boot 服务端、数据库设计和 SQL 调优"
         },
         "aiAgent": {
           "label": "AI Agent",
-          "description": "自定义 Skill、多 Agent 协作与 MCP 协议"
+          "description": "自定义 Skill、多 Agent 协作和 MCP 协议"
         },
         "fullStack": {
           "label": "全栈开发",
-          "description": "React/TypeScript 前端、RESTful API 与工程化"
+          "description": "React/TypeScript 前端、RESTful API 和工程化"
         },
         "devops": {
           "label": "DevOps",
-          "description": "Docker、CI/CD 与运维脚本"
+          "description": "Docker、CI/CD 和运维脚本"
         },
         "techTeaching": {
           "label": "技术教学",
-          "description": "课程设计、论文修改与社群答疑"
+          "description": "课程设计、论文修改和社群答疑"
         },
         "designAesthetic": {
           "label": "设计审美",
-          "description": "UI/UX、品牌视觉与 Three.js 3D"
+          "description": "UI/UX、品牌视觉和 Three.js 3D"
         },
         "musicCreation": {
           "label": "音乐创作",
-          "description": "作曲、编曲与程序化 MIDI"
+          "description": "作曲、编曲和程序化 MIDI"
         },
         "contentCreation": {
           "label": "内容创作",
-          "description": "技术博客、小说与视频教程"
+          "description": "技术博客、小说和视频教程"
         }
       }
     }

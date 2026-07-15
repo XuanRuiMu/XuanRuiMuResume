@@ -76,6 +76,24 @@ describe('StarryBackground', () => {
     render(<StarryBackground />)
     expect(screen.getByTestId('mock-canvas')).toBeInTheDocument()
   })
+
+  it('registers a window pointermove listener for star mouse repel', () => {
+    vi.spyOn(usePerformanceProfileModule, 'usePerformanceProfile').mockReturnValue({
+      level: 'high',
+      settings: mockHighSettings,
+      loading: false,
+    })
+
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+    const { unmount } = render(<StarryBackground />)
+
+    expect(addEventListenerSpy.mock.calls.some(([event]) => String(event) === 'pointermove')).toBe(true)
+
+    const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
+    unmount()
+
+    expect(removeEventListenerSpy.mock.calls.some(([event]) => String(event) === 'pointermove')).toBe(true)
+  })
 })
 
 describe('createStarLayer', () => {

@@ -125,4 +125,75 @@ describe('Card', () => {
     expect(container.firstChild).not.toHaveClass('tilt-card')
     expect(container.firstChild).not.toHaveClass('will-change-transform')
   })
+
+  it('continuously tracks glow position across multiple mouse moves', async () => {
+    const { container } = render(<Card tilt>content</Card>)
+    const card = container.firstChild as HTMLElement
+    const rect = {
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 100,
+      right: 200,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }
+    card.getBoundingClientRect = vi.fn(() => rect)
+
+    fireEvent.mouseEnter(card)
+    fireEvent.mouseMove(card, { clientX: 50, clientY: 25 })
+    await waitFor(() => {
+      expect(card.style.getPropertyValue('--tilt-glow-x')).toBe('25%')
+      expect(card.style.getPropertyValue('--tilt-glow-y')).toBe('25%')
+    })
+
+    fireEvent.mouseMove(card, { clientX: 150, clientY: 75 })
+    await waitFor(() => {
+      expect(card.style.getPropertyValue('--tilt-glow-x')).toBe('75%')
+      expect(card.style.getPropertyValue('--tilt-glow-y')).toBe('75%')
+    })
+  })
+
+  it('continuously updates tilt transform on repeated mouse moves', async () => {
+    const { container } = render(<Card tilt>content</Card>)
+    const card = container.firstChild as HTMLElement
+    const rect = {
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 100,
+      right: 200,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }
+    card.getBoundingClientRect = vi.fn(() => rect)
+
+    const getRotateX = (transform: string) => {
+      const match = transform.match(/rotateX\((-?[\d.]+)deg\)/)
+      return match ? parseFloat(match[1]) : 0
+    }
+    const getRotateY = (transform: string) => {
+      const match = transform.match(/rotateY\((-?[\d.]+)deg\)/)
+      return match ? parseFloat(match[1]) : 0
+    }
+
+    fireEvent.mouseEnter(card)
+    fireEvent.mouseMove(card, { clientX: 50, clientY: 25 })
+
+    await waitFor(() => {
+      expect(getRotateX(card.style.transform)).toBeGreaterThan(0)
+      expect(getRotateY(card.style.transform)).toBeLessThan(0)
+    })
+
+    fireEvent.mouseMove(card, { clientX: 150, clientY: 75 })
+
+    await waitFor(() => {
+      expect(getRotateX(card.style.transform)).toBeLessThan(0)
+      expect(getRotateY(card.style.transform)).toBeGreaterThan(0)
+    })
+  })
 })

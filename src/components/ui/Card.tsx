@@ -29,6 +29,11 @@ interface TransformState {
   translateZ: number
 }
 
+interface MousePosition {
+  x: number
+  y: number
+}
+
 const NEUTRAL_STATE: TransformState = {
   rotateX: 0,
   rotateY: 0,
@@ -38,14 +43,7 @@ const NEUTRAL_STATE: TransformState = {
   translateZ: 0,
 }
 
-const HOVER_STATE: TransformState = {
-  rotateX: 0,
-  rotateY: 0,
-  scale: TILT_SCALE,
-  translateX: 0,
-  translateY: 0,
-  translateZ: TILT_TRANSLATE_Z,
-}
+const CENTER_MOUSE: MousePosition = { x: 0.5, y: 0.5 }
 
 function lerp(start: number, end: number, factor: number): number {
   return start + (end - start) * factor
@@ -62,6 +60,19 @@ function isAtRest(current: TransformState, target: TransformState): boolean {
   )
 }
 
+function computeTargetFromMouse(mouse: MousePosition): TransformState {
+  const normalizedX = mouse.x - 0.5
+  const normalizedY = mouse.y - 0.5
+  return {
+    rotateX: -normalizedY * TILT_ROTATE_COEFFICIENT,
+    rotateY: normalizedX * TILT_ROTATE_COEFFICIENT,
+    scale: TILT_SCALE,
+    translateX: normalizedX * MAGNETIC_STRENGTH,
+    translateY: normalizedY * MAGNETIC_STRENGTH,
+    translateZ: TILT_TRANSLATE_Z,
+  }
+}
+
 export function Card({ children, header, footer, glass = true, hover = false, tilt = false, className }: CardProps) {
   const reducedMotion = useReducedMotion()
   const cardRef = useRef<HTMLDivElement>(null)
@@ -69,6 +80,8 @@ export function Card({ children, header, footer, glass = true, hover = false, ti
   const isHoveringRef = useRef(false)
   const targetRef = useRef<TransformState>({ ...NEUTRAL_STATE })
   const currentRef = useRef<TransformState>({ ...NEUTRAL_STATE })
+  const mouseRef = useRef<MousePosition>({ ...CENTER_MOUSE })
+  const rectRef = useRef<DOMRect | null>(null)
 
   const tiltEnabled = tilt && !reducedMotion
 
@@ -84,11 +97,22 @@ export function Card({ children, header, footer, glass = true, hover = false, ti
     element.style.transform = `perspective(${TILT_PERSPECTIVE}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale}) translate3d(${translateX}px, ${translateY}px, ${translateZ}px)`
   }, [])
 
+  const updateGlow = useCallback((element: HTMLDivElement, mouse: MousePosition) => {
+    element.style.setProperty('--tilt-glow-x', `${mouse.x * 100}%`)
+    element.style.setProperty('--tilt-glow-y', `${mouse.y * 100}%`)
+  }, [])
+
   const tick = useCallback(() => {
     const element = cardRef.current
     if (!element) {
       rafRef.current = 0
       return
+    }
+
+    if (isHoveringRef.current) {
+      targetRef.current = computeTargetFromMouse(mouseRef.current)
+    } else {
+      targetRef.current = { ...NEUTRAL_STATE }
     }
 
     const target = targetRef.current
@@ -103,7 +127,7 @@ export function Card({ children, header, footer, glass = true, hover = false, ti
 
     applyTransform()
 
-    if (!isAtRest(current, target)) {
+    if (isHoveringRef.current || !isAtRest(current, target)) {
       rafRef.current = requestAnimationFrame(tick)
     } else {
       rafRef.current = 0
@@ -115,46 +139,43 @@ export function Card({ children, header, footer, glass = true, hover = false, ti
     rafRef.current = requestAnimationFrame(tick)
   }, [tick])
 
+  const stopLoop = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = 0
+    }
+  }, [])
+
   const handleMouseMove = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
-      if (reducedMotion || !cardRef.current || !isHoveringRef.current) return
+      if (!tiltEnabled || !cardRef.current || !isHoveringRef.current) return
       const element = cardRef.current
-      const rect = element.getBoundingClientRect()
-      const x = (event.clientX - rect.left) / rect.width
-      const y = (event.clientY - rect.top) / rect.height
-      const normalizedX = x - 0.5
-      const normalizedY = y - 0.5
-
-      targetRef.current = {
-        rotateX: -normalizedY * TILT_ROTATE_COEFFICIENT,
-        rotateY: normalizedX * TILT_ROTATE_COEFFICIENT,
-        scale: TILT_SCALE,
-        translateX: normalizedX * MAGNETIC_STRENGTH,
-        translateY: normalizedY * MAGNETIC_STRENGTH,
-        translateZ: TILT_TRANSLATE_Z,
-      }
-
-      element.style.setProperty('--tilt-glow-x', `${x * 100}%`)
-      element.style.setProperty('--tilt-glow-y', `${y * 100}%`)
-
+      const rect = rectRef.current ?? element.getBoundingClientRect()
+      const x = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))
+      const y = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height))
+      mouseRef.current = { x, y }
+      updateGlow(element, mouseRef.current)
       startLoop()
     },
-    [reducedMotion, startLoop]
+    [tiltEnabled, startLoop, updateGlow]
   )
 
   const handleMouseEnter = useCallback(() => {
-    if (reducedMotion) return
+    if (!tiltEnabled) return
     isHoveringRef.current = true
     const element = cardRef.current
     if (!element) return
+    rectRef.current = element.getBoundingClientRect()
     element.classList.add('is-tilt-active')
-    targetRef.current = { ...HOVER_STATE }
+    mouseRef.current = { ...CENTER_MOUSE }
+    updateGlow(element, mouseRef.current)
     startLoop()
-  }, [reducedMotion, startLoop])
+  }, [tiltEnabled, startLoop, updateGlow])
 
   const handleMouseLeave = useCallback(() => {
     isHoveringRef.current = false
-    targetRef.current = { ...NEUTRAL_STATE }
+    mouseRef.current = { ...CENTER_MOUSE }
+    rectRef.current = null
     const element = cardRef.current
     if (!element) return
     element.classList.remove('is-tilt-active')
@@ -164,9 +185,9 @@ export function Card({ children, header, footer, glass = true, hover = false, ti
 
   useEffect(() => {
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      stopLoop()
     }
-  }, [])
+  }, [stopLoop])
 
   useEffect(() => {
     if (tiltEnabled) return
@@ -177,11 +198,10 @@ export function Card({ children, header, footer, glass = true, hover = false, ti
     resetGlow(element)
     targetRef.current = { ...NEUTRAL_STATE }
     currentRef.current = { ...NEUTRAL_STATE }
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current)
-      rafRef.current = 0
-    }
-  }, [tiltEnabled, resetGlow])
+    mouseRef.current = { ...CENTER_MOUSE }
+    rectRef.current = null
+    stopLoop()
+  }, [tiltEnabled, resetGlow, stopLoop])
 
   return (
     <div

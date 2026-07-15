@@ -87,47 +87,6 @@ body,
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 玄幻自定义光标：非减少动画环境下隐藏原生光标 */
-@media (prefers-reduced-motion: no-preference) {
-  body {
-    cursor: none;
-  }
-
-  input,
-  textarea,
-  select,
-  [contenteditable='true'],
-  [role='textbox'] {
-    cursor: text;
-  }
-
-  button:not(:disabled),
-  a[href],
-  [role='button']:not(:disabled) {
-    cursor: pointer;
-  }
-}
-
-/* 触摸/粗指针设备：恢复原生光标并隐藏自定义光标，避免光标消失 */
-@media (pointer: coarse) {
-  body {
-    cursor: auto;
-  }
-
-  .fantasy-cursor-canvas,
-  .fantasy-cursor-pointer {
-    display: none;
-  }
-}
-
-.fantasy-cursor-canvas {
-  will-change: transform;
-}
-
-.fantasy-cursor-pointer {
-  will-change: transform, opacity;
-}
-
 #root {
   position: relative;
 }
@@ -193,9 +152,18 @@ section {
 .section-scrim {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-bg) 99.6%, transparent) 0%,
-    color-mix(in srgb, var(--color-bg) 99.2%, transparent) 45%,
-    color-mix(in srgb, var(--color-bg) 99.6%, transparent) 100%
+    color-mix(in srgb, var(--color-bg) 78%, transparent) 0%,
+    color-mix(in srgb, var(--color-bg) 68%, transparent) 45%,
+    color-mix(in srgb, var(--color-bg) 78%, transparent) 100%
+  );
+}
+
+.light .section-scrim {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg) 86%, transparent) 0%,
+    color-mix(in srgb, var(--color-bg) 78%, transparent) 45%,
+    color-mix(in srgb, var(--color-bg) 86%, transparent) 100%
   );
 }
 
@@ -203,9 +171,18 @@ section {
   .section-scrim {
     background: linear-gradient(
       180deg,
-      oklch(from var(--color-bg) l c h / 0.996) 0%,
-      oklch(from var(--color-bg) l c h / 0.992) 45%,
-      oklch(from var(--color-bg) l c h / 0.996) 100%
+      oklch(from var(--color-bg) l c h / 0.78) 0%,
+      oklch(from var(--color-bg) l c h / 0.68) 45%,
+      oklch(from var(--color-bg) l c h / 0.78) 100%
+    );
+  }
+
+  .light .section-scrim {
+    background: linear-gradient(
+      180deg,
+      oklch(from var(--color-bg) l c h / 0.86) 0%,
+      oklch(from var(--color-bg) l c h / 0.78) 45%,
+      oklch(from var(--color-bg) l c h / 0.86) 100%
     );
   }
 }
@@ -635,15 +612,8 @@ html.circular-reveal-active::view-transition-old(root) {
   top: 0;
   bottom: 0;
   width: var(--timeline-line-width);
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    var(--color-primary) 5%,
-    var(--color-secondary) 50%,
-    var(--color-accent) 95%,
-    transparent 100%
-  );
-  opacity: 0.5;
+  background: var(--color-muted);
+  opacity: 0.35;
   border-radius: 999px;
 }
 

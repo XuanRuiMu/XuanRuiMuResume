@@ -32,4 +32,11 @@ describe('Section', () => {
     const { container } = render(<Section className="custom-section">content</Section>)
     expect(container.querySelector('section')).toHaveClass('custom-section')
   })
+
+  it('renders a translucent section-scrim overlay', () => {
+    const { container } = render(<Section>content</Section>)
+    const scrim = container.querySelector('.section-scrim')
+    expect(scrim).toBeInTheDocument()
+    expect(scrim).toHaveAttribute('aria-hidden', 'true')
+  })
 })

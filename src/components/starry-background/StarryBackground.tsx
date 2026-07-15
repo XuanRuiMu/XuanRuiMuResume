@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, ShaderMaterial } from 'three'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, ShaderMaterial, Vector2 } from 'three'
 import type { Group, Points } from 'three'
 import { cn } from '../../lib/utils'
 import { usePerformanceProfile } from '../../hooks/usePerformanceProfile'
@@ -98,21 +98,28 @@ const nebulaFragmentShader = `
 
   void main() {
     vec2 uv = vUv;
-    float t = uTime * 0.03;
+    vec2 center = uv - 0.5;
+    float r = length(center);
+    float t = uTime * 0.4;
 
-    float n1 = fbm(uv * 2.5 + vec2(t, t * 0.3));
-    float n2 = fbm(uv * 4.0 - vec2(t * 0.5, t * 0.2));
-    float n3 = fbm(uv * 1.5 + vec2(t * 0.1, -t * 0.4));
+    // Radial gradient: brightest at center, fades to black at edges
+    float radial = 1.0 - smoothstep(0.0, 0.7, r);
 
-    float nebula = n1 * 0.5 + n2 * 0.3 + n3 * 0.2;
-    nebula = smoothstep(0.1, 0.55, nebula) * 1.15;
+    // Animated wave rings expanding from the center
+    float wave = sin(r * 22.0 - t * 2.5);
+    wave = wave * 0.5 + 0.5;
+    float waveFalloff = exp(-r * 3.0);
+    float pattern = radial * (0.5 + 0.5 * wave) * waveFalloff;
 
-    vec3 color = mix(uColor1, uColor2, n1);
-    color = mix(color, uColor3, n2 * 0.7);
+    // Subtle fractal texture for organic variation
+    float n = fbm(uv * 3.5 + vec2(t * 0.08));
+    pattern *= (0.8 + 0.2 * n);
 
-    float vignette = 1.0 - smoothstep(0.25, 1.3, length(uv - 0.5) * 1.35);
-    float alpha = clamp(nebula * uIntensity * vignette, 0.0, 1.0);
+    // Color: center is blue, mid tones pick up accent, edges are dark
+    vec3 color = mix(uColor1, uColor2, radial);
+    color = mix(color, uColor3, wave * (1.0 - radial) * 0.45);
 
+    float alpha = clamp(pattern * uIntensity, 0.0, 1.0);
     gl_FragColor = vec4(color, alpha);
   }
 `
@@ -126,6 +133,9 @@ const starVertexShader = `
   varying float vAlpha;
   uniform float uTime;
   uniform float uPixelRatio;
+  uniform vec2 uMouse;
+  uniform float uRepelStrength;
+  uniform float uRepelRadius;
 
   void main() {
     vColor = aColor;
@@ -135,7 +145,18 @@ const starVertexShader = `
     vAlpha = twinkle;
 
     gl_PointSize = max(1.6, aSize * uPixelRatio * (560.0 / -mvPosition.z));
-    gl_Position = projectionMatrix * mvPosition;
+
+    // Mouse repulsion: push projected star away from cursor in clip space
+    vec4 projected = projectionMatrix * mvPosition;
+    vec2 starNdc = projected.xy / max(projected.w, 0.0001);
+    vec2 dir = starNdc - uMouse;
+    float dist = length(dir);
+    if (projected.w > 0.0 && dist > 0.001 && dist < uRepelRadius) {
+      float falloff = smoothstep(uRepelRadius, 0.0, dist);
+      projected.xy += normalize(dir) * uRepelStrength * falloff * projected.w;
+    }
+
+    gl_Position = projected;
   }
 `
 
@@ -160,6 +181,9 @@ function createStarShaderMaterial(pixelRatio: number): ShaderMaterial {
     uniforms: {
       uTime: { value: 0 },
       uPixelRatio: { value: pixelRatio },
+      uMouse: { value: new Vector2(0, 0) },
+      uRepelStrength: { value: 0 },
+      uRepelRadius: { value: 0.35 },
     },
     vertexShader: starVertexShader,
     fragmentShader: starFragmentShader,
@@ -173,9 +197,19 @@ interface StarLayerProps {
   data: StarLayerData
   pixelRatio: number
   rotationSpeed: number
+  mouseRef?: { current: { x: number; y: number } }
+  repelStrength?: number
+  repelRadius?: number
 }
 
-function StarLayer({ data, pixelRatio, rotationSpeed }: StarLayerProps) {
+function StarLayer({
+  data,
+  pixelRatio,
+  rotationSpeed,
+  mouseRef = { current: { x: 0, y: 0 } },
+  repelStrength = 0,
+  repelRadius = 0.35,
+}: StarLayerProps) {
   const pointsRef = useRef<Points>(null)
   const material = useMemo(() => createStarShaderMaterial(pixelRatio), [pixelRatio])
 
@@ -194,6 +228,9 @@ function StarLayer({ data, pixelRatio, rotationSpeed }: StarLayerProps) {
     if (!points) return
 
     material.uniforms.uTime.value += delta
+    material.uniforms.uMouse.value.set(mouseRef.current.x, mouseRef.current.y)
+    material.uniforms.uRepelStrength.value = repelStrength
+    material.uniforms.uRepelRadius.value = repelRadius
     points.rotation.y += rotationSpeed * delta
   })
 
@@ -204,16 +241,16 @@ function NebulaBackground({ isLight }: { isLight: boolean }) {
   const material = useMemo(() => {
     const colors = isLight
       ? {
-          color1: new Color('#e0f7ff'),
-          color2: new Color('#f0e6ff'),
-          color3: new Color('#ffe6f0'),
-          intensity: 0.45,
+          color1: new Color('#ffffff'),
+          color2: new Color('#7ec8ff'),
+          color3: new Color('#c4b5fd'),
+          intensity: 0.5,
         }
       : {
-          color1: new Color('#2a5a9c'),
-          color2: new Color('#6d3fbf'),
-          color3: new Color('#1d7a9c'),
-          intensity: 1.0,
+          color1: new Color('#070a12'),
+          color2: new Color('#245bb5'),
+          color3: new Color('#7c3aed'),
+          intensity: 0.9,
         }
 
     return new ShaderMaterial({
@@ -373,9 +410,21 @@ function StarryBackgroundScene({ qualitySettings }: StarryBackgroundSceneProps) 
   const isLight = useIsLightTheme()
   const reducedMotion = useReducedMotion()
   const scrollProgress = useScrollProgress()
-  const { pointer } = useThree()
   const cameraRef = useRef({ x: 0, y: 0 })
   const groupRef = useRef<Group>(null)
+  const mouseRef = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || reducedMotion) return
+
+    const handlePointerMove = (e: PointerEvent) => {
+      mouseRef.current.x = (e.clientX / window.innerWidth) * 2 - 1
+      mouseRef.current.y = -((e.clientY / window.innerHeight) * 2 - 1)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true })
+    return () => window.removeEventListener('pointermove', handlePointerMove)
+  }, [reducedMotion])
 
   const totalCount = qualitySettings.particleCount
   const meteorCount = qualitySettings.postProcessing ? 5 : 0
@@ -400,8 +449,8 @@ function StarryBackgroundScene({ qualitySettings }: StarryBackgroundSceneProps) 
     const group = groupRef.current
     if (!group || reducedMotion) return
 
-    const targetCameraX = pointer.x * 0.6 - scrollProgress * 0.5
-    const targetCameraY = pointer.y * 0.4 + scrollProgress * 0.3
+    const targetCameraX = mouseRef.current.x * 0.6 - scrollProgress * 0.5
+    const targetCameraY = mouseRef.current.y * 0.4 + scrollProgress * 0.3
 
     cameraRef.current.x += (targetCameraX - cameraRef.current.x) * 0.04
     cameraRef.current.y += (targetCameraY - cameraRef.current.y) * 0.04
@@ -413,14 +462,39 @@ function StarryBackgroundScene({ qualitySettings }: StarryBackgroundSceneProps) 
 
   const environmentColor = isLight ? new Color('#f8f9fb') : new Color('#0b0c15')
 
+  const repel = reducedMotion
+    ? { far: 0, mid: 0, near: 0, radius: 0.35 }
+    : { far: 0.02, mid: 0.05, near: 0.12, radius: 0.35 }
+
   return (
     <group ref={groupRef}>
       <color attach="background" args={[environmentColor]} />
 
       <NebulaBackground isLight={isLight} />
-      <StarLayer data={farLayer} pixelRatio={dprValue} rotationSpeed={0.002} />
-      <StarLayer data={midLayer} pixelRatio={dprValue} rotationSpeed={0.004} />
-      <StarLayer data={nearLayer} pixelRatio={dprValue} rotationSpeed={0.007} />
+      <StarLayer
+        data={farLayer}
+        pixelRatio={dprValue}
+        rotationSpeed={0.002}
+        mouseRef={mouseRef}
+        repelStrength={repel.far}
+        repelRadius={repel.radius}
+      />
+      <StarLayer
+        data={midLayer}
+        pixelRatio={dprValue}
+        rotationSpeed={0.004}
+        mouseRef={mouseRef}
+        repelStrength={repel.mid}
+        repelRadius={repel.radius}
+      />
+      <StarLayer
+        data={nearLayer}
+        pixelRatio={dprValue}
+        rotationSpeed={0.007}
+        mouseRef={mouseRef}
+        repelStrength={repel.near}
+        repelRadius={repel.radius}
+      />
       {meteorCount > 0 && <MeteorLayer count={meteorCount} />}
     </group>
   )

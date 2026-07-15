@@ -6,6 +6,8 @@ import { t } from '../../i18n/translations'
 
 describe('ExperienceSection', () => {
   const originalMatchMedia = window.matchMedia
+  const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect
+  const originalInnerHeight = window.innerHeight
 
   beforeEach(() => {
     Object.defineProperty(window, 'matchMedia', {
@@ -18,6 +20,22 @@ describe('ExperienceSection', () => {
         dispatchEvent: vi.fn(),
       })),
     })
+
+    Object.defineProperty(window, 'innerHeight', {
+      writable: true,
+      configurable: true,
+      value: 800,
+    })
+
+    Element.prototype.getBoundingClientRect = vi.fn(function (this: Element) {
+      if (this.classList.contains('timeline')) {
+        return { top: 0, left: 0, right: 0, bottom: 400, width: 0, height: 400, x: 0, y: 0 } as DOMRect
+      }
+      if (this.classList.contains('timeline-node')) {
+        return { top: 100, left: 0, right: 0, bottom: 100, width: 0, height: 0, x: 0, y: 100 } as DOMRect
+      }
+      return { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 } as DOMRect
+    }) as unknown as typeof Element.prototype.getBoundingClientRect
   })
 
   afterEach(() => {
@@ -26,6 +44,14 @@ describe('ExperienceSection', () => {
       configurable: true,
       value: originalMatchMedia,
     })
+
+    Object.defineProperty(window, 'innerHeight', {
+      writable: true,
+      configurable: true,
+      value: originalInnerHeight,
+    })
+
+    Element.prototype.getBoundingClientRect = originalGetBoundingClientRect
   })
 
   it('renders section title and subtitle', () => {
@@ -78,7 +104,7 @@ describe('ExperienceSection', () => {
     expect(container.querySelector('section')).toHaveAttribute('id', 'experience')
   })
 
-  it('marks timeline nodes as active when they intersect the viewport center', () => {
+  it('marks timeline nodes as active when timeline progress reaches their position', () => {
     render(<ExperienceSection />)
     const nodes = document.querySelectorAll('.timeline-node')
     expect(nodes).toHaveLength(experiences.length)

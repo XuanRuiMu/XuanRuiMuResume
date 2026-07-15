@@ -5,7 +5,6 @@ import { CommandPalette } from '../components/command-palette/CommandPalette'
 import { AIChat } from '../components/ai-chat/AIChat'
 import { PWAStatusIndicator } from '../components/PWAStatusIndicator'
 import { StarryBackground } from '../components/starry-background/StarryBackground'
-import { FantasyCursor } from '../components/fantasy-cursor/FantasyCursor'
 import { t } from '../i18n/translations'
 
 interface LayoutProps {
@@ -37,7 +36,6 @@ export function Layout({ children }: LayoutProps) {
 
       <CommandPalette />
       <AIChat />
-      <FantasyCursor />
     </div>
   )
 }

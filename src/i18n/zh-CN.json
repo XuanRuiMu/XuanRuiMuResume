@@ -28,7 +28,6 @@
     "experience": "经历",
     "education": "教育",
     "design": "设计",
-    "music": "音乐",
     "media": "媒体",
     "contact": "联系"
   },
@@ -93,6 +92,11 @@
         "label": "论文指导",
         "value": "50+"
       }
+    },
+    "caption": {
+      "intro": "// about.intro",
+      "meta": "{ readOnly: true }",
+      "eof": "// EOF"
     }
   },
   "resume": {
@@ -148,27 +152,19 @@
       "summary": "概览",
       "courses": "课程",
       "achievements": "成果"
-    }
+    },
+    "paragraph": "我就读于天津仁爱学院计算机科学与技术专业（本科），预计 2026 年 6 月毕业。在校期间系统学习过 Python、C 语言、计算机网络、计算机组成原理、数据结构与算法、汇编语言和 MySQL 等课程；课余给零基础同学做过突击辅导，带过 50 多位毕业生的论文，也长期在 QQ 学习群里答疑和分享资料。"
   },
   "design": {
     "title": "设计",
     "subtitle": "给项目做 UI、品牌和 3D 视觉时留下的东西。",
-    "toolsTitle": "设计工具"
-  },
-  "music": {
-    "title": "音乐",
-    "subtitle": "原创歌曲、程序化乐器和编曲练习。",
-    "tabs": {
-      "works": "作品",
-      "tools": "工具",
-      "skills": "技能"
-    },
-    "visualizerTitle": "声场可视化"
+    "toolsTitle": "设计工具",
+    "canvasLabel": "生成艺术画板，点击可重新生成图案",
+    "canvasHint": "点击画板重新生成 · 移动鼠标影响流动"
   },
   "media": {
     "title": "媒体",
-    "subtitle": "小说、相声、视频课和游戏世界观。",
-    "timelineTitle": "创作时间线"
+    "subtitle": "小说、相声、视频课、音乐和游戏世界观。"
   },
   "skills": {
     "title": "技能",

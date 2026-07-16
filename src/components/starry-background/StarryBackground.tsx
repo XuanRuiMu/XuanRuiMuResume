@@ -1,16 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, DoubleSide, ShaderMaterial, Vector2 } from 'three'
-import type { Group, Points } from 'three'
+import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, ShaderMaterial } from 'three'
+import type { Group, WebGLRenderer } from 'three'
 import { cn } from '../../lib/utils'
 import { usePerformanceProfile } from '../../hooks/usePerformanceProfile'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
+import { detectWebGPUSupport } from '../../utils/deviceCapabilities'
 import { SkillGalaxyFallback } from '../skill-galaxy/SkillGalaxyFallback'
 import type { QualitySettings } from '../../domain/types'
-import { createStarLayer, type StarLayerData } from './starLayer'
+import { getDefaultGalaxyParams } from './galaxyConfig'
+import { generateSpiralGalaxy } from './galaxyGenerator'
+import { WebGLGalaxy } from './WebGLGalaxy'
+
+const WebGPUGalaxy = lazy(() => import('./WebGPUGalaxy'))
 
 interface StarryBackgroundSceneProps {
   qualitySettings: QualitySettings
+  useWebGPU: boolean
 }
 
 function useIsLightTheme(): boolean {
@@ -52,233 +58,6 @@ function useScrollProgress(): number {
   }, [])
 
   return progress
-}
-
-const nebulaVertexShader = `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`
-
-const nebulaFragmentShader = `
-  uniform float uTime;
-  uniform vec3 uColor1;
-  uniform vec3 uColor2;
-  uniform vec3 uColor3;
-  uniform float uIntensity;
-  varying vec2 vUv;
-
-  float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-  }
-
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-  }
-
-  float fbm(vec2 p) {
-    float value = 0.0;
-    float amplitude = 0.5;
-    for (int i = 0; i < 5; i++) {
-      value += amplitude * noise(p);
-      p *= 2.0;
-      amplitude *= 0.5;
-    }
-    return value;
-  }
-
-  void main() {
-    vec2 uv = vUv;
-    vec2 center = uv - 0.5;
-    float r = length(center);
-    float t = uTime * 0.4;
-
-    // Radial gradient: brightest at center, fades to black at edges
-    float radial = 1.0 - smoothstep(0.0, 0.7, r);
-
-    // Animated wave rings expanding from the center
-    float wave = sin(r * 22.0 - t * 2.5);
-    wave = wave * 0.5 + 0.5;
-    float waveFalloff = exp(-r * 3.0);
-    float pattern = radial * (0.5 + 0.5 * wave) * waveFalloff;
-
-    // Subtle fractal texture for organic variation
-    float n = fbm(uv * 3.5 + vec2(t * 0.08));
-    pattern *= (0.8 + 0.2 * n);
-
-    // Color: center is blue, mid tones pick up accent, edges are dark
-    vec3 color = mix(uColor1, uColor2, radial);
-    color = mix(color, uColor3, wave * (1.0 - radial) * 0.45);
-
-    float alpha = clamp(pattern * uIntensity, 0.0, 1.0);
-    gl_FragColor = vec4(color, alpha);
-  }
-`
-
-const starVertexShader = `
-  attribute float aSize;
-  attribute vec3 aColor;
-  attribute float aPhase;
-  attribute float aSpeed;
-  varying vec3 vColor;
-  varying float vAlpha;
-  uniform float uTime;
-  uniform float uPixelRatio;
-  uniform vec2 uMouse;
-  uniform float uRepelStrength;
-  uniform float uRepelRadius;
-
-  void main() {
-    vColor = aColor;
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-
-    float twinkle = 0.6 + 0.4 * sin(uTime * aSpeed + aPhase);
-    vAlpha = twinkle;
-
-    gl_PointSize = max(1.6, aSize * uPixelRatio * (560.0 / -mvPosition.z));
-
-    // Mouse repulsion: push projected star away from cursor in clip space
-    vec4 projected = projectionMatrix * mvPosition;
-    vec2 starNdc = projected.xy / max(projected.w, 0.0001);
-    vec2 dir = starNdc - uMouse;
-    float dist = length(dir);
-    if (projected.w > 0.0 && dist > 0.001 && dist < uRepelRadius) {
-      float falloff = smoothstep(uRepelRadius, 0.0, dist);
-      projected.xy += normalize(dir) * uRepelStrength * falloff * projected.w;
-    }
-
-    gl_Position = projected;
-  }
-`
-
-const starFragmentShader = `
-  varying vec3 vColor;
-  varying float vAlpha;
-
-  void main() {
-    vec2 coord = gl_PointCoord - vec2(0.5);
-    float dist = length(coord);
-    if (dist > 0.5) discard;
-
-    float glow = 1.0 - dist * 2.0;
-    glow = pow(glow, 1.1);
-
-    gl_FragColor = vec4(vColor * 1.35, vAlpha * glow);
-  }
-`
-
-function createStarShaderMaterial(pixelRatio: number): ShaderMaterial {
-  return new ShaderMaterial({
-    uniforms: {
-      uTime: { value: 0 },
-      uPixelRatio: { value: pixelRatio },
-      uMouse: { value: new Vector2(0, 0) },
-      uRepelStrength: { value: 0 },
-      uRepelRadius: { value: 0.35 },
-    },
-    vertexShader: starVertexShader,
-    fragmentShader: starFragmentShader,
-    transparent: true,
-    depthWrite: false,
-    blending: AdditiveBlending,
-  })
-}
-
-interface StarLayerProps {
-  data: StarLayerData
-  pixelRatio: number
-  rotationSpeed: number
-  mouseRef?: { current: { x: number; y: number } }
-  repelStrength?: number
-  repelRadius?: number
-}
-
-function StarLayer({
-  data,
-  pixelRatio,
-  rotationSpeed,
-  mouseRef = { current: { x: 0, y: 0 } },
-  repelStrength = 0,
-  repelRadius = 0.35,
-}: StarLayerProps) {
-  const pointsRef = useRef<Points>(null)
-  const material = useMemo(() => createStarShaderMaterial(pixelRatio), [pixelRatio])
-
-  const geometry = useMemo(() => {
-    const geo = new BufferGeometry()
-    geo.setAttribute('position', new BufferAttribute(data.positions, 3))
-    geo.setAttribute('aColor', new BufferAttribute(data.colors, 3))
-    geo.setAttribute('aSize', new BufferAttribute(data.sizes, 1))
-    geo.setAttribute('aPhase', new BufferAttribute(data.phases, 1))
-    geo.setAttribute('aSpeed', new BufferAttribute(data.speeds, 1))
-    return geo
-  }, [data])
-
-  useFrame((_, delta) => {
-    const points = pointsRef.current
-    if (!points) return
-
-    material.uniforms.uTime.value += delta
-    material.uniforms.uMouse.value.set(mouseRef.current.x, mouseRef.current.y)
-    material.uniforms.uRepelStrength.value = repelStrength
-    material.uniforms.uRepelRadius.value = repelRadius
-    points.rotation.y += rotationSpeed * delta
-  })
-
-  return <points ref={pointsRef} geometry={geometry} material={material} />
-}
-
-function NebulaBackground({ isLight }: { isLight: boolean }) {
-  const material = useMemo(() => {
-    const colors = isLight
-      ? {
-          color1: new Color('#ffffff'),
-          color2: new Color('#7ec8ff'),
-          color3: new Color('#c4b5fd'),
-          intensity: 0.5,
-        }
-      : {
-          color1: new Color('#070a12'),
-          color2: new Color('#245bb5'),
-          color3: new Color('#7c3aed'),
-          intensity: 0.9,
-        }
-
-    return new ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uColor1: { value: colors.color1 },
-        uColor2: { value: colors.color2 },
-        uColor3: { value: colors.color3 },
-        uIntensity: { value: colors.intensity },
-      },
-      vertexShader: nebulaVertexShader,
-      fragmentShader: nebulaFragmentShader,
-      side: DoubleSide,
-      transparent: true,
-      depthWrite: false,
-    })
-  }, [isLight])
-
-  useFrame((_, delta) => {
-    material.uniforms.uTime.value += delta
-  })
-
-  return (
-    <mesh position={[0, 0, -15]} scale={[40, 25, 1]}>
-      <planeGeometry args={[1, 1, 1, 1]} />
-      <primitive object={material} attach="material" />
-    </mesh>
-  )
 }
 
 interface Meteor {
@@ -355,7 +134,7 @@ function MeteorLayer({ count }: { count: number }) {
 
     meteorsRef.current.forEach((meteor) => {
       if (!meteor.active) {
-        if (Math.random() < delta * 0.35) {
+        if (Math.random() < delta * 0.08) {
           meteor.active = true
           meteor.life = 0
           const fresh = createMeteor()
@@ -406,7 +185,25 @@ function MeteorLayer({ count }: { count: number }) {
   return <lineSegments geometry={geometry} material={material} />
 }
 
-function StarryBackgroundScene({ qualitySettings }: StarryBackgroundSceneProps) {
+async function createWebGPUAwareRenderer(props: Record<string, unknown>): Promise<WebGLRenderer> {
+  const supportsWebGPU = await detectWebGPUSupport()
+
+  if (supportsWebGPU) {
+    try {
+      const { WebGPURenderer } = await import('three/webgpu')
+      const renderer = new WebGPURenderer({ ...props, antialias: true })
+      await renderer.init()
+      return renderer as unknown as WebGLRenderer
+    } catch {
+      // 降级到 WebGL
+    }
+  }
+
+  const { WebGLRenderer: FallbackRenderer } = await import('three')
+  return new FallbackRenderer({ ...props, antialias: true })
+}
+
+function StarryBackgroundScene({ qualitySettings, useWebGPU }: StarryBackgroundSceneProps) {
   const isLight = useIsLightTheme()
   const reducedMotion = useReducedMotion()
   const scrollProgress = useScrollProgress()
@@ -418,32 +215,32 @@ function StarryBackgroundScene({ qualitySettings }: StarryBackgroundSceneProps) 
     if (typeof window === 'undefined' || reducedMotion) return
 
     const handlePointerMove = (e: PointerEvent) => {
-      mouseRef.current.x = (e.clientX / window.innerWidth) * 2 - 1
-      mouseRef.current.y = -((e.clientY / window.innerHeight) * 2 - 1)
+      const x = (e.clientX / window.innerWidth) * 2 - 1
+      const y = -((e.clientY / window.innerHeight) * 2 - 1)
+      mouseRef.current.x = x
+      mouseRef.current.y = y
     }
 
     window.addEventListener('pointermove', handlePointerMove, { passive: true })
     return () => window.removeEventListener('pointermove', handlePointerMove)
   }, [reducedMotion])
 
-  const totalCount = qualitySettings.particleCount
-  const meteorCount = qualitySettings.postProcessing ? 5 : 0
-
-  const { farLayer, midLayer, nearLayer } = useMemo(() => {
-    const far = Math.round(totalCount * 0.55)
-    const mid = Math.round(totalCount * 0.3)
-    const near = Math.max(0, totalCount - far - mid)
-    return {
-      farLayer: createStarLayer(far, [8, 20], [0.028, 0.055], ['#ffffff', '#c2e9ff', '#f0e6ff'], 1),
-      midLayer: createStarLayer(mid, [5, 14], [0.038, 0.07], ['#4aefff', '#c084fc', '#ff85b3', '#ffffff'], 2),
-      nearLayer: createStarLayer(near, [3, 10], [0.055, 0.095], ['#7df3ff', '#ffffff', '#d8b4fe'], 3),
-    }
-  }, [totalCount])
-
   const dprValue = useMemo(() => {
     if (Array.isArray(qualitySettings.dpr)) return qualitySettings.dpr[0]
     return qualitySettings.dpr
   }, [qualitySettings.dpr])
+
+  const galaxyParams = useMemo(
+    () => getDefaultGalaxyParams(qualitySettings.particleCount, isLight),
+    [qualitySettings.particleCount, isLight]
+  )
+
+  const galaxyData = useMemo(
+    () => generateSpiralGalaxy(qualitySettings.particleCount, galaxyParams, 31),
+    [galaxyParams, qualitySettings.particleCount]
+  )
+
+  const wind = reducedMotion ? { strength: 0, radius: 0.4 } : { strength: 0.35, radius: 0.4 }
 
   useFrame((_, delta) => {
     const group = groupRef.current
@@ -461,40 +258,34 @@ function StarryBackgroundScene({ qualitySettings }: StarryBackgroundSceneProps) 
   })
 
   const environmentColor = isLight ? new Color('#f8f9fb') : new Color('#0b0c15')
-
-  const repel = reducedMotion
-    ? { far: 0, mid: 0, near: 0, radius: 0.35 }
-    : { far: 0.02, mid: 0.05, near: 0.12, radius: 0.35 }
+  const meteorCount = qualitySettings.postProcessing ? 5 : 0
 
   return (
     <group ref={groupRef}>
       <color attach="background" args={[environmentColor]} />
 
-      <NebulaBackground isLight={isLight} />
-      <StarLayer
-        data={farLayer}
-        pixelRatio={dprValue}
-        rotationSpeed={0.002}
-        mouseRef={mouseRef}
-        repelStrength={repel.far}
-        repelRadius={repel.radius}
-      />
-      <StarLayer
-        data={midLayer}
-        pixelRatio={dprValue}
-        rotationSpeed={0.004}
-        mouseRef={mouseRef}
-        repelStrength={repel.mid}
-        repelRadius={repel.radius}
-      />
-      <StarLayer
-        data={nearLayer}
-        pixelRatio={dprValue}
-        rotationSpeed={0.007}
-        mouseRef={mouseRef}
-        repelStrength={repel.near}
-        repelRadius={repel.radius}
-      />
+      {useWebGPU ? (
+        <Suspense fallback={null}>
+          <WebGPUGalaxy
+            data={galaxyData}
+            rotationSpeed={galaxyParams.rotationSpeed}
+            windStrength={wind.strength}
+            windRadius={wind.radius}
+            palette={galaxyParams.palette}
+            mouseRef={mouseRef}
+          />
+        </Suspense>
+      ) : (
+        <WebGLGalaxy
+          data={galaxyData}
+          pixelRatio={dprValue}
+          rotationSpeed={galaxyParams.rotationSpeed}
+          windStrength={wind.strength}
+          windRadius={wind.radius}
+          mouseRef={mouseRef}
+        />
+      )}
+
       {meteorCount > 0 && <MeteorLayer count={meteorCount} />}
     </group>
   )
@@ -507,10 +298,31 @@ interface StarryBackgroundProps {
 export function StarryBackground({ className }: StarryBackgroundProps) {
   const { settings, loading } = usePerformanceProfile()
   const reducedMotion = useReducedMotion()
+  const [useWebGPU, setUseWebGPU] = useState(false)
+  const [rendererReady, setRendererReady] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    detectWebGPUSupport()
+      .then((supported) => {
+        if (!cancelled) setUseWebGPU(supported)
+      })
+      .catch(() => {
+        if (!cancelled) setUseWebGPU(false)
+      })
+      .finally(() => {
+        if (!cancelled) setRendererReady(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const containerClassName = cn('fixed inset-0 pointer-events-none', className)
 
-  if (loading) {
+  if (loading || !rendererReady) {
     return (
       <div className={containerClassName} style={{ willChange: 'transform' }}>
         <SkillGalaxyFallback />
@@ -523,11 +335,12 @@ export function StarryBackground({ className }: StarryBackgroundProps) {
       <Canvas
         className="!absolute inset-0"
         dpr={settings.dpr}
+        gl={createWebGPUAwareRenderer}
         fallback={<SkillGalaxyFallback />}
         frameloop={reducedMotion ? 'never' : 'always'}
         camera={{ position: [0, 0, 8], fov: 60, near: 0.1, far: 40 }}
       >
-        <StarryBackgroundScene qualitySettings={settings} />
+        <StarryBackgroundScene qualitySettings={settings} useWebGPU={useWebGPU} />
       </Canvas>
     </div>
   )

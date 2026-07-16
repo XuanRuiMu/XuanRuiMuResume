@@ -8,12 +8,9 @@ interface SkillRadarProps {
 export function SkillRadar({ className }: SkillRadarProps) {
   return (
     <div
-      className={cn(
-        'flex aspect-square items-center justify-center rounded-2xl border border-border bg-surface p-6',
-        className
-      )}
+      className={cn('flex aspect-square items-center justify-center rounded-2xl border border-border p-6', className)}
     >
-      <p className="text-sm text-muted">{t('radar.placeholder')}</p>
+      <p className="text-sm text-muted text-shadow-readable">{t('radar.placeholder')}</p>
     </div>
   )
 }

@@ -16,7 +16,7 @@ export function Layout({ children }: LayoutProps) {
     <div className="relative flex min-h-screen flex-col bg-bg text-text-primary">
       <StarryBackground className="z-0" />
       <PWAStatusIndicator />
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-border glass-panel">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <NavDock />
           <div className="flex items-center gap-2">
@@ -27,8 +27,8 @@ export function Layout({ children }: LayoutProps) {
 
       <main className="relative z-10 flex-1 pt-14">{children}</main>
 
-      <footer className="border-t border-border bg-surface px-4 py-6">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 text-xs text-muted sm:flex-row">
+      <footer className="border-t border-border px-4 py-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 text-xs text-muted text-shadow-readable sm:flex-row">
           <span>{t('footer.copyright')}</span>
           <span>{t('footer.status')}</span>
         </div>

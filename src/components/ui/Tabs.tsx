@@ -137,10 +137,7 @@ export function AdvancedTabsList({ children, className }: TabsListProps) {
     <div
       role="tablist"
       onKeyDown={handleKeyDown}
-      className={cn(
-        'advanced-tabs-list inline-flex gap-1 rounded-full border border-border bg-surface/90 p-1 backdrop-blur-xl',
-        className
-      )}
+      className={cn('advanced-tabs-list inline-flex gap-1 rounded-full border border-border p-1', className)}
     >
       {children}
     </div>

@@ -5,7 +5,7 @@ import type { UiComponent } from '../ai/structuredOutput'
 export type AppTheme = 'dark' | 'light' | 'system'
 
 export type AppSection =
-  'hero' | 'about' | 'projects' | 'skills' | 'experience' | 'education' | 'design' | 'music' | 'media' | 'contact'
+  'hero' | 'about' | 'projects' | 'skills' | 'experience' | 'education' | 'design' | 'media' | 'contact'
 
 export interface AiMessage {
   role: 'user' | 'assistant'
@@ -56,7 +56,6 @@ export const SECTION_ORDER: AppSection[] = [
   'experience',
   'education',
   'design',
-  'music',
   'media',
   'contact',
 ]
@@ -69,7 +68,6 @@ export const SECTIONS: Record<string, AppSection> = {
   EXPERIENCE: 'experience',
   EDUCATION: 'education',
   DESIGN: 'design',
-  MUSIC: 'music',
   MEDIA: 'media',
   CONTACT: 'contact',
 }

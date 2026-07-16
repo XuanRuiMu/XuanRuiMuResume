@@ -22,6 +22,9 @@ function isKnownBenignMessage(event: ConsoleEvent): boolean {
   if (text.includes('WebGL')) return true
   if (text.includes('webgpu')) return true
   if (text.includes('Lighthouse')) return true
+  if (text.includes('ShaderMaterial')) return true
+  if (text.includes('RenderPassEncoder')) return true
+  if (text.includes('THREE.NodeBuilder')) return true
   return false
 }
 

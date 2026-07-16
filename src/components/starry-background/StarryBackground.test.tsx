@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { StarryBackground } from './StarryBackground'
 import { createStarLayer } from './starLayer'
 import * as usePerformanceProfileModule from '../../hooks/usePerformanceProfile'
 import * as useReducedMotionModule from '../../hooks/useReducedMotion'
+import * as deviceCapabilitiesModule from '../../utils/deviceCapabilities'
 
 vi.mock('@react-three/fiber', () => ({
   Canvas: ({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) => (
@@ -41,6 +42,7 @@ describe('StarryBackground', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.spyOn(useReducedMotionModule, 'useReducedMotion').mockReturnValue(false)
+    vi.spyOn(deviceCapabilitiesModule, 'detectWebGPUSupport').mockResolvedValue(false)
   })
 
   it('renders fallback while performance profile is loading', () => {
@@ -54,7 +56,7 @@ describe('StarryBackground', () => {
     expect(screen.getByTestId('skill-galaxy-fallback')).toBeInTheDocument()
   })
 
-  it('renders canvas when performance profile is ready', () => {
+  it('renders canvas when performance profile is ready', async () => {
     vi.spyOn(usePerformanceProfileModule, 'usePerformanceProfile').mockReturnValue({
       level: 'high',
       settings: mockHighSettings,
@@ -62,10 +64,12 @@ describe('StarryBackground', () => {
     })
 
     render(<StarryBackground className="test-class" />)
-    expect(screen.getByTestId('mock-canvas')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-canvas')).toBeInTheDocument()
+    })
   })
 
-  it('uses reduced motion preference to stop frame loop', () => {
+  it('uses reduced motion preference to stop frame loop', async () => {
     vi.spyOn(useReducedMotionModule, 'useReducedMotion').mockReturnValue(true)
     vi.spyOn(usePerformanceProfileModule, 'usePerformanceProfile').mockReturnValue({
       level: 'low',
@@ -74,10 +78,12 @@ describe('StarryBackground', () => {
     })
 
     render(<StarryBackground />)
-    expect(screen.getByTestId('mock-canvas')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-canvas')).toBeInTheDocument()
+    })
   })
 
-  it('registers a window pointermove listener for star mouse repel', () => {
+  it('registers a window pointermove listener for star mouse repel', async () => {
     vi.spyOn(usePerformanceProfileModule, 'usePerformanceProfile').mockReturnValue({
       level: 'high',
       settings: mockHighSettings,
@@ -87,12 +93,48 @@ describe('StarryBackground', () => {
     const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
     const { unmount } = render(<StarryBackground />)
 
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-canvas')).toBeInTheDocument()
+    })
+
     expect(addEventListenerSpy.mock.calls.some(([event]) => String(event) === 'pointermove')).toBe(true)
 
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
     unmount()
 
     expect(removeEventListenerSpy.mock.calls.some(([event]) => String(event) === 'pointermove')).toBe(true)
+  })
+
+  it('does not register pointermove listener when reduced motion is enabled', async () => {
+    vi.spyOn(useReducedMotionModule, 'useReducedMotion').mockReturnValue(true)
+    vi.spyOn(usePerformanceProfileModule, 'usePerformanceProfile').mockReturnValue({
+      level: 'high',
+      settings: mockHighSettings,
+      loading: false,
+    })
+
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+    render(<StarryBackground />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-canvas')).toBeInTheDocument()
+    })
+
+    expect(addEventListenerSpy.mock.calls.some(([event]) => String(event) === 'pointermove')).toBe(false)
+  })
+
+  it('selects WebGPU path when device supports WebGPU', async () => {
+    vi.spyOn(deviceCapabilitiesModule, 'detectWebGPUSupport').mockResolvedValue(true)
+    vi.spyOn(usePerformanceProfileModule, 'usePerformanceProfile').mockReturnValue({
+      level: 'high',
+      settings: mockHighSettings,
+      loading: false,
+    })
+
+    render(<StarryBackground />)
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-canvas')).toBeInTheDocument()
+    })
   })
 })
 

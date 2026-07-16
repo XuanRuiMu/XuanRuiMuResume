@@ -11,10 +11,7 @@ export function SectionCard({ id, children, className }: SectionCardProps) {
   return (
     <section
       id={id}
-      className={cn(
-        'section-card-container rounded-2xl border border-border bg-surface p-6 shadow-lg transition-colors',
-        className
-      )}
+      className={cn('section-card-container rounded-2xl border border-border p-6 transition-colors', className)}
     >
       {children}
     </section>

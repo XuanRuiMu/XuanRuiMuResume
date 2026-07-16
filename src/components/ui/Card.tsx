@@ -73,7 +73,7 @@ function computeTargetFromMouse(mouse: MousePosition): TransformState {
   }
 }
 
-export function Card({ children, header, footer, glass = true, hover = false, tilt = false, className }: CardProps) {
+export function Card({ children, header, footer, glass: _glass, hover = false, tilt = false, className }: CardProps) {
   const reducedMotion = useReducedMotion()
   const cardRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number>(0)
@@ -211,10 +211,8 @@ export function Card({ children, header, footer, glass = true, hover = false, ti
       onMouseLeave={tiltEnabled ? handleMouseLeave : undefined}
       style={{ '--tilt-glow-x': '50%', '--tilt-glow-y': '50%' } as React.CSSProperties}
       className={cn(
-        'card-container relative overflow-hidden rounded-2xl p-6',
-        glass && 'glass-panel',
-        !glass && 'border border-border bg-surface shadow-lg',
-        hover && !tiltEnabled && 'transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl',
+        'card-container relative overflow-hidden rounded-2xl border border-border p-6',
+        hover && !tiltEnabled && 'transition-transform duration-300 hover:-translate-y-1',
         hover && tiltEnabled && 'hover:shadow-2xl',
         tiltEnabled && 'tilt-card will-change-transform',
         className

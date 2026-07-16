@@ -12,7 +12,6 @@ interface SectionProps {
 export function Section({ id, title, subtitle, children, className }: SectionProps) {
   return (
     <section id={id} className={cn('scroll-reveal relative py-16 md:py-24 px-4 sm:px-6 lg:px-8', className)}>
-      <div className="section-scrim pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
       <div className="relative mx-auto max-w-6xl">
         {(title || subtitle) && (
           <div className="scroll-reveal-item mb-10 md:mb-14">

@@ -108,7 +108,7 @@ export function ExperienceSection() {
             <li
               key={entry.id}
               data-timeline-index={index}
-              className={`timeline-item group grid grid-cols-[auto_1fr] gap-4 md:grid-cols-[1fr_auto_1fr] md:gap-6 ${
+              className={`timeline-item grid grid-cols-[auto_1fr] gap-4 md:grid-cols-[1fr_auto_1fr] md:gap-6 ${
                 prefersReducedMotion ? 'is-visible' : ''
               }`}
               aria-labelledby={`experience-title-${entry.id}`}
@@ -118,11 +118,11 @@ export function ExperienceSection() {
                   isEven ? 'md:col-start-1 md:col-end-2 md:row-start-1' : 'md:col-start-3 md:col-end-4 md:row-start-1'
                 }`}
               >
-                <Card hover tilt className="group">
+                <Card className="group">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <h3
                       id={`experience-title-${entry.id}`}
-                      className="text-lg font-semibold text-text-primary md:text-xl"
+                      className="text-lg font-semibold text-text-primary text-shadow-readable md:text-xl"
                     >
                       {t(entry.titleKey)}
                     </h3>
@@ -139,7 +139,7 @@ export function ExperienceSection() {
                     {entry.descriptionKeys.map((key) => (
                       <li
                         key={key}
-                        className="relative pl-4 text-sm leading-relaxed text-text-secondary before:absolute before:left-0 before:top-2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-primary/70"
+                        className="relative pl-4 text-sm leading-relaxed text-text-secondary text-shadow-readable before:absolute before:left-0 before:top-2 before:h-1.5 before:w-1.5 before:rounded-full before:bg-primary/70"
                       >
                         {t(key)}
                       </li>
@@ -150,7 +150,7 @@ export function ExperienceSection() {
 
               <div className="order-1 flex w-10 flex-col items-center md:order-none md:col-start-2 md:col-end-3 md:w-20 md:justify-center">
                 <div
-                  className="timeline-node relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-bg bg-primary shadow-[0_0_16px_rgba(0,217,255,0.6)] transition-transform duration-300 group-hover:scale-125"
+                  className="timeline-node relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-bg bg-muted transition-transform duration-300"
                   aria-hidden="true"
                 >
                   <span className="h-2 w-2 rounded-full bg-bg" />

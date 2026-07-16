@@ -22,18 +22,7 @@ const setTheme = vi.fn()
 
 vi.mock('../../store/useAppStore', () => ({
   useAppStore: vi.fn(),
-  SECTION_ORDER: [
-    'hero',
-    'about',
-    'projects',
-    'skills',
-    'experience',
-    'education',
-    'design',
-    'music',
-    'media',
-    'contact',
-  ],
+  SECTION_ORDER: ['hero', 'about', 'projects', 'skills', 'experience', 'education', 'design', 'media', 'contact'],
 }))
 
 vi.mock('../theme-toggle/useThemeSystem', () => ({

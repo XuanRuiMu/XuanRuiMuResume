@@ -113,6 +113,30 @@ describe('ExperienceSection', () => {
     }
   })
 
+  it('does not mark nodes as active when timeline progress is below their position', () => {
+    Object.defineProperty(window, 'innerHeight', {
+      writable: true,
+      configurable: true,
+      value: 400,
+    })
+
+    Element.prototype.getBoundingClientRect = vi.fn(function (this: Element) {
+      if (this.classList.contains('timeline')) {
+        return { top: 0, left: 0, right: 0, bottom: 400, width: 0, height: 400, x: 0, y: 0 } as DOMRect
+      }
+      if (this.classList.contains('timeline-node')) {
+        return { top: 300, left: 0, right: 0, bottom: 300, width: 0, height: 0, x: 0, y: 300 } as DOMRect
+      }
+      return { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 } as DOMRect
+    }) as unknown as typeof Element.prototype.getBoundingClientRect
+
+    render(<ExperienceSection />)
+    const nodes = document.querySelectorAll('.timeline-node')
+    for (const node of nodes) {
+      expect(node).not.toHaveClass('is-active')
+    }
+  })
+
   it('does not mark nodes as active when reduced motion is preferred', () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,

@@ -121,7 +121,7 @@ export function ContactSection() {
           {contactLinks.map((link) => {
             const Icon = link.icon
             return (
-              <Card key={link.id} hover tilt glass className="scroll-reveal-item">
+              <Card key={link.id} glass className="scroll-reveal-item">
                 <a
                   href={link.href}
                   target={link.id === 'email' ? undefined : '_blank'}
@@ -132,8 +132,8 @@ export function ContactSection() {
                     <Icon />
                   </div>
                   <div>
-                    <p className="text-sm text-muted">{link.label}</p>
-                    <p className="font-medium text-text-primary">{link.value}</p>
+                    <p className="text-sm text-muted text-shadow-readable">{link.label}</p>
+                    <p className="font-medium text-text-primary text-shadow-readable">{link.value}</p>
                   </div>
                   {link.id !== 'email' && <ExternalLink size={16} className="ml-auto text-muted" aria-hidden="true" />}
                 </a>

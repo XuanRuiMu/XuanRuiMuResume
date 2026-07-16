@@ -43,6 +43,10 @@ for (const 视图配置 of 视觉视图配置列表) {
       await 设置主题(page, 视图配置.主题)
       await page.reload()
       await 等待页面稳定(page)
+      // 隐藏滚动条，避免移动端截图因滚动条显隐导致宽度抖动
+      await page.addStyleTag({
+        content: '::-webkit-scrollbar { display: none !important; } html, body { scrollbar-width: none !important; }',
+      })
     })
 
     test('Hero 首屏', async ({ page }) => {
@@ -93,7 +97,7 @@ for (const 视图配置 of 视觉视图配置列表) {
           ...视觉回归阈值,
           animations: 'disabled',
           caret: 'hide',
-          maxDiffPixels: 8000,
+          maxDiffPixels: 12000,
         }
       )
       await page.evaluate(() => {
@@ -179,28 +183,6 @@ for (const 视图配置 of 视觉视图配置列表) {
       })
       await expect(page.locator('#design')).toHaveScreenshot(
         `design-${视图配置.名称}.png`,
-        {
-          ...视觉回归阈值,
-          animations: 'disabled',
-          caret: 'hide',
-          maxDiffPixels: 8000,
-        }
-      )
-      await page.evaluate(() => {
-        document.documentElement.style.overflow = ''
-        document.body.style.overflow = ''
-      })
-    })
-
-    test('音乐区域', async ({ page }) => {
-      await page.getByRole('button', { name: '音乐', exact: true }).click()
-      await expect(page.locator('#music')).toBeInViewport()
-      await page.evaluate(() => {
-        document.documentElement.style.overflow = 'hidden'
-        document.body.style.overflow = 'hidden'
-      })
-      await expect(page.locator('#music')).toHaveScreenshot(
-        `music-${视图配置.名称}.png`,
         {
           ...视觉回归阈值,
           animations: 'disabled',

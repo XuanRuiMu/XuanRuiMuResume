@@ -38,8 +38,10 @@ export function HeroSection() {
           <h1 className="mb-4 font-display text-4xl font-semibold tracking-tight text-text-primary sm:text-5xl lg:text-6xl">
             {personalInfo.name}
           </h1>
-          <p className="mb-4 text-lg font-medium text-primary sm:text-xl">{t(personalInfo.targetKey)}</p>
-          <p className="mb-8 max-w-lg text-base leading-relaxed text-text-secondary sm:text-lg">
+          <p className="mb-4 text-lg font-medium text-primary text-shadow-readable sm:text-xl">
+            {t(personalInfo.targetKey)}
+          </p>
+          <p className="mb-8 max-w-lg text-base leading-relaxed text-text-secondary text-shadow-readable sm:text-lg">
             {t('hero.valueProposition')}
           </p>
           <div className="flex flex-wrap gap-3">
@@ -59,7 +61,7 @@ export function HeroSection() {
         </div>
 
         <div className="flex flex-col justify-center">
-          <Card hover tilt glass className="font-mono text-sm">
+          <Card glass className="font-mono text-sm">
             <div className="mb-4 flex items-center gap-2 text-muted">
               <Terminal size={16} />
               <span>{t('hero.metricsTitle')}</span>
@@ -67,7 +69,7 @@ export function HeroSection() {
             <div className="grid gap-3">
               {skillMetrics.slice(0, 5).map((metric) => (
                 <div key={metric.dimensionKey} className="flex items-center gap-3">
-                  <span className="flex-1 text-text-secondary">{t(metric.dimensionKey)}</span>
+                  <span className="flex-1 text-text-secondary text-shadow-readable">{t(metric.dimensionKey)}</span>
                   <div className="h-2 w-24 overflow-hidden rounded-full bg-surface-elevated sm:w-32">
                     <div
                       className="scroll-progress-bar h-full rounded-full bg-gradient-to-r from-primary to-secondary"

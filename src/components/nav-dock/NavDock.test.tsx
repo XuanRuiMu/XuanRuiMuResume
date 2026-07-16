@@ -15,18 +15,7 @@ vi.mock('../../store/useAppStore', () => ({
       setCommandOpen,
       setActiveSection,
     }),
-  SECTION_ORDER: [
-    'hero',
-    'about',
-    'projects',
-    'skills',
-    'experience',
-    'education',
-    'design',
-    'music',
-    'media',
-    'contact',
-  ],
+  SECTION_ORDER: ['hero', 'about', 'projects', 'skills', 'experience', 'education', 'design', 'media', 'contact'],
 }))
 
 describe('NavDock', () => {
@@ -54,7 +43,6 @@ describe('NavDock', () => {
     expect(screen.getByRole('button', { name: t('nav.experience') })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: t('nav.education') })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: t('nav.design') })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: t('nav.music') })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: t('nav.media') })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: t('nav.contact') })).toBeInTheDocument()
   })

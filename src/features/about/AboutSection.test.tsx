@@ -4,40 +4,43 @@ import { AboutSection } from './AboutSection'
 import { t } from '../../i18n/translations'
 
 describe('AboutSection', () => {
-  it('renders section title and subtitle', () => {
+  it('renders section title', () => {
     render(<AboutSection />)
     expect(screen.getByRole('heading', { name: t('about.title') })).toBeInTheDocument()
-    expect(screen.getByText(t('about.subtitle'))).toBeInTheDocument()
   })
 
-  it('renders personal intro', () => {
+  it('does not render subtitle', () => {
     render(<AboutSection />)
-    expect(screen.getByText(t('about.intro'))).toBeInTheDocument()
+    expect(screen.queryByText(t('about.subtitle'))).not.toBeInTheDocument()
   })
 
-  it('renders all metric cards', () => {
+  it('renders personal intro across code-style lines', () => {
+    const { container } = render(<AboutSection />)
+    const wanZhengJianJie = t('about.intro')
+    const duanLuo = Array.from(container.querySelectorAll('p'))
+    const xuanRanWenBen = duanLuo.map((p) => p.textContent?.trim() ?? '').join('')
+    expect(xuanRanWenBen).toBe(wanZhengJianJie)
+  })
+
+  it('does not render metric cards', () => {
     render(<AboutSection />)
-    const metrics: Array<{
-      valueKey:
-        | 'about.metrics.projects.value'
-        | 'about.metrics.techStack.value'
-        | 'about.metrics.courses.value'
-        | 'about.metrics.students.value'
-      labelKey:
-        | 'about.metrics.projects.label'
-        | 'about.metrics.techStack.label'
-        | 'about.metrics.courses.label'
-        | 'about.metrics.students.label'
-    }> = [
-      { valueKey: 'about.metrics.projects.value', labelKey: 'about.metrics.projects.label' },
-      { valueKey: 'about.metrics.techStack.value', labelKey: 'about.metrics.techStack.label' },
-      { valueKey: 'about.metrics.courses.value', labelKey: 'about.metrics.courses.label' },
-      { valueKey: 'about.metrics.students.value', labelKey: 'about.metrics.students.label' },
-    ]
-    for (const metric of metrics) {
-      expect(screen.getByText(t(metric.valueKey))).toBeInTheDocument()
-      expect(screen.getByText(t(metric.labelKey))).toBeInTheDocument()
-    }
+    expect(screen.queryByText(t('about.metrics.projects.value'))).not.toBeInTheDocument()
+    expect(screen.queryByText(t('about.metrics.projects.label'))).not.toBeInTheDocument()
+    expect(screen.queryByText(t('about.metrics.techStack.value'))).not.toBeInTheDocument()
+    expect(screen.queryByText(t('about.metrics.courses.value'))).not.toBeInTheDocument()
+    expect(screen.queryByText(t('about.metrics.students.value'))).not.toBeInTheDocument()
+  })
+
+  it('renders code-style line numbers', () => {
+    render(<AboutSection />)
+    expect(screen.getByText('01')).toBeInTheDocument()
+    expect(screen.getByText('02')).toBeInTheDocument()
+  })
+
+  it('renders code comment markers', () => {
+    render(<AboutSection />)
+    const zhuShiFuHao = screen.getAllByText('//')
+    expect(zhuShiFuHao.length).toBeGreaterThanOrEqual(2)
   })
 
   it('has about id on section', () => {

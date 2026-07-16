@@ -44,10 +44,12 @@ describe('useAppStore', () => {
     expect(useAppStore.getState().chatOpen).toBe(true)
   })
 
-  it('should have ten sections in order', () => {
-    expect(SECTION_ORDER).toHaveLength(10)
-    expect(Object.keys(SECTIONS)).toHaveLength(10)
+  it('should have nine sections in order', () => {
+    expect(SECTION_ORDER).toHaveLength(9)
+    expect(Object.keys(SECTIONS)).toHaveLength(9)
     expect(SECTION_ORDER).toContain('skills')
+    expect(SECTION_ORDER).toContain('media')
+    expect(SECTION_ORDER).not.toContain('music')
   })
 
   it('should set performance metrics', () => {

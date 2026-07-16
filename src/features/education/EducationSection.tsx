@@ -1,51 +1,33 @@
-import { useState } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { education } from '../../data/education'
 import { Section } from '../../components/ui/Section'
-import { Card } from '../../components/ui/Card'
-import { Badge } from '../../components/ui/Badge'
-import { AdvancedTabs, AdvancedTabsList, AdvancedTabsTrigger, AdvancedTabsContent } from '../../components/ui/Tabs'
 import { t } from '../../i18n/translations'
 
 export function EducationSection() {
-  const [activeTab, setActiveTab] = useState('summary')
+  const shouldReduceMotion = useReducedMotion()
+
+  const transition = shouldReduceMotion ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' as const }
 
   return (
     <Section id="education" title={t('education.title')} subtitle={t('education.subtitle')}>
-      <AdvancedTabs value={activeTab} onValueChange={setActiveTab}>
-        <AdvancedTabsList>
-          <AdvancedTabsTrigger value="summary">{t('education.tabs.summary')}</AdvancedTabsTrigger>
-          <AdvancedTabsTrigger value="courses">{t('education.tabs.courses')}</AdvancedTabsTrigger>
-          <AdvancedTabsTrigger value="achievements">{t('education.tabs.achievements')}</AdvancedTabsTrigger>
-        </AdvancedTabsList>
-        <AdvancedTabsContent value="summary">
-          <Card hover tilt glass className="scroll-reveal-item max-w-2xl">
-            <div className="mb-2 text-2xl font-semibold text-text-primary">{education.summary.school}</div>
-            <div className="mb-4 text-lg text-text-secondary">
-              {education.summary.major} · {education.summary.degree}
-            </div>
-            <Badge color="mint">{education.summary.period}</Badge>
-          </Card>
-        </AdvancedTabsContent>
-        <AdvancedTabsContent value="courses">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {education.courses.map((course) => (
-              <Card key={course.id} hover tilt glass className="scroll-reveal-item">
-                <div className="mb-1 font-medium text-text-primary">{t(course.nameKey)}</div>
-                <div className="text-sm text-muted">{t(course.levelKey)}</div>
-              </Card>
-            ))}
+      <motion.div
+        className="scroll-reveal-item max-w-3xl"
+        initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={transition}
+      >
+        <div className="flex items-start gap-6">
+          <div className="relative flex flex-col items-center gap-2 pt-1">
+            <div className="h-3 w-3 rounded-full bg-text-primary/80" />
+            <div className="h-full w-px bg-gradient-to-b from-text-primary/40 to-transparent min-h-[4rem]" />
+            <span className="whitespace-nowrap text-xs text-text-secondary text-shadow-readable [writing-mode:vertical-rl]">
+              {education.summary.period}
+            </span>
           </div>
-        </AdvancedTabsContent>
-        <AdvancedTabsContent value="achievements">
-          <div className="grid gap-4">
-            {education.achievementKeys.map((key) => (
-              <Card key={key} hover tilt glass className="scroll-reveal-item">
-                <p className="text-text-secondary">{t(key)}</p>
-              </Card>
-            ))}
-          </div>
-        </AdvancedTabsContent>
-      </AdvancedTabs>
+          <p className="text-lg leading-relaxed text-text-primary text-shadow-readable">{t('education.paragraph')}</p>
+        </div>
+      </motion.div>
     </Section>
   )
 }

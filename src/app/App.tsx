@@ -20,9 +20,6 @@ const EducationSection = lazy(() =>
 const DesignSection = lazy(() =>
   import('../features/design/DesignSection').then((module) => ({ default: module.DesignSection }))
 )
-const MusicSection = lazy(() =>
-  import('../features/music/MusicSection').then((module) => ({ default: module.MusicSection }))
-)
 const MediaSection = lazy(() =>
   import('../features/media/MediaSection').then((module) => ({ default: module.MediaSection }))
 )
@@ -45,7 +42,6 @@ export default function App() {
         <ExperienceSection />
         <EducationSection />
         <DesignSection />
-        <MusicSection />
         <MediaSection />
         <ContactSection />
       </Suspense>

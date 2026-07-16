@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { EducationSection } from './EducationSection'
 import { education } from '../../data/education'
 import { t } from '../../i18n/translations'
@@ -11,26 +11,32 @@ describe('EducationSection', () => {
     expect(screen.getByText(t('education.subtitle'))).toBeInTheDocument()
   })
 
-  it('renders summary tab by default', () => {
+  it('renders education paragraph', () => {
     render(<EducationSection />)
-    expect(screen.getByText(education.summary.school)).toBeInTheDocument()
+    expect(screen.getByText(t('education.paragraph'))).toBeInTheDocument()
+  })
+
+  it('renders education period on timeline', () => {
+    render(<EducationSection />)
     expect(screen.getByText(education.summary.period)).toBeInTheDocument()
   })
 
-  it('switches to courses tab and renders all courses', async () => {
+  it('does not render tabs', () => {
     render(<EducationSection />)
-    fireEvent.click(screen.getByRole('tab', { name: t('education.tabs.courses') }))
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+  })
+
+  it('does not render course list', () => {
+    render(<EducationSection />)
     for (const course of education.courses) {
-      await waitFor(() => expect(screen.getByText(t(course.nameKey))).toBeInTheDocument())
-      await waitFor(() => expect(screen.getByText(t(course.levelKey))).toBeInTheDocument())
+      expect(screen.queryByText(t(course.nameKey))).not.toBeInTheDocument()
     }
   })
 
-  it('switches to achievements tab and renders all achievements', async () => {
+  it('does not render achievement cards', () => {
     render(<EducationSection />)
-    fireEvent.click(screen.getByRole('tab', { name: t('education.tabs.achievements') }))
     for (const key of education.achievementKeys) {
-      await waitFor(() => expect(screen.getByText(t(key))).toBeInTheDocument())
+      expect(screen.queryByText(t(key))).not.toBeInTheDocument()
     }
   })
 

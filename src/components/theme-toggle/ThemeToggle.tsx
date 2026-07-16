@@ -175,7 +175,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
               'absolute right-0 top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-2xl',
-              'glass-panel p-1.5'
+              'border border-border bg-surface p-1.5 shadow-lg'
             )}
           >
             {OPTIONS.map((option, index) => {

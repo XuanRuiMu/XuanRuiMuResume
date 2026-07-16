@@ -8,8 +8,6 @@
 import type * as THREE from 'three'
 
 declare module 'three/webgpu' {
-  export * from 'three'
-
   export class WebGPURenderer {
     constructor(parameters?: THREE.WebGLRendererParameters)
     init(): Promise<void>
@@ -35,13 +33,48 @@ declare module 'three/webgpu' {
   }
 }
 
+export interface TSLNode {
+  value: number | { set?: (x: number, y: number) => void; x?: number; y?: number } | unknown
+  x: TSLNode
+  y: TSLNode
+  z: TSLNode
+  w: TSLNode
+  xy: TSLNode
+  xz: TSLNode
+  yz: TSLNode
+  xyz: TSLNode
+}
+
 declare module 'three/tsl' {
-  export const time: unknown
-  export function attribute(name: string, type: string): unknown
-  export function add(...args: unknown[]): unknown
-  export function mul(...args: unknown[]): unknown
-  export function sin(arg: unknown): unknown
-  export function float(arg: unknown): unknown
-  export function vec4(...args: unknown[]): unknown
-  export function vec3(...args: unknown[]): unknown
+  export const time: TSLNode
+  export function attribute(name: string, type: string): TSLNode
+  export function add(...args: (TSLNode | number)[]): TSLNode
+  export function sub(a: TSLNode | number, b: TSLNode | number): TSLNode
+  export function mul(...args: (TSLNode | number)[]): TSLNode
+  export function div(a: TSLNode | number, b: TSLNode | number): TSLNode
+  export function sin(arg: TSLNode | number): TSLNode
+  export function cos(arg: TSLNode | number): TSLNode
+  export function pow(a: TSLNode | number, b: TSLNode | number): TSLNode
+  export function exp(arg: TSLNode | number): TSLNode
+  export function log(arg: TSLNode | number): TSLNode
+  export function atan(y: TSLNode | number, x: TSLNode | number): TSLNode
+  export function length(arg: TSLNode): TSLNode
+  export function distance(a: TSLNode, b: TSLNode): TSLNode
+  export function smoothstep(edge0: TSLNode | number, edge1: TSLNode | number, x: TSLNode | number): TSLNode
+  export function mix(a: TSLNode, b: TSLNode, t: TSLNode | number): TSLNode
+  export function clamp(x: TSLNode | number, min: TSLNode | number, max: TSLNode | number): TSLNode
+  export function fract(arg: TSLNode | number): TSLNode
+  export function mod(a: TSLNode | number, b: TSLNode | number): TSLNode
+  export function normalize(arg: TSLNode): TSLNode
+  export function max(a: TSLNode | number, b: TSLNode | number): TSLNode
+  export function min(a: TSLNode | number, b: TSLNode | number): TSLNode
+  export function float(arg: number | TSLNode): TSLNode
+  export function vec2(x: number | TSLNode, y: number | TSLNode): TSLNode
+  export function vec3(x: number | TSLNode, y?: number | TSLNode, z?: number | TSLNode): TSLNode
+  export function vec4(x: TSLNode | number, y?: TSLNode | number, z?: TSLNode | number, w?: TSLNode | number): TSLNode
+  export function uniform(node: TSLNode): TSLNode
+  export function color(value: string): TSLNode
+  export const positionLocal: TSLNode
+  export const modelViewMatrix: TSLNode
+  export const projectionMatrix: TSLNode
 }

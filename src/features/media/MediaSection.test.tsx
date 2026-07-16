@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MediaSection } from './MediaSection'
 import { media } from '../../data/media'
+import { music } from '../../data/music'
 import { t } from '../../i18n/translations'
 
 describe('MediaSection', () => {
@@ -17,7 +18,15 @@ describe('MediaSection', () => {
     expect(screen.getByText(t(media.introKey))).toBeInTheDocument()
   })
 
-  it('renders all media categories and items', () => {
+  it('renders the Java instrument track description', () => {
+    render(<MediaSection />)
+    const javaTrack = music.tracks.find((track) => track.id === 'javaInstrument')
+    expect(javaTrack).toBeDefined()
+    expect(screen.getByRole('heading', { name: t(javaTrack!.nameKey) })).toBeInTheDocument()
+    expect(screen.getByText(t(javaTrack!.descKey))).toBeInTheDocument()
+  })
+
+  it('renders all media categories and their items', () => {
     render(<MediaSection />)
     for (const category of media.categories) {
       expect(screen.getByRole('heading', { name: t(category.labelKey) })).toBeInTheDocument()
@@ -27,11 +36,11 @@ describe('MediaSection', () => {
     }
   })
 
-  it('renders timeline events', () => {
+  it('does not render the creation timeline', () => {
     render(<MediaSection />)
     for (const event of media.timeline) {
-      expect(screen.getByText(event.year)).toBeInTheDocument()
-      expect(screen.getByText(t(event.eventKey))).toBeInTheDocument()
+      expect(screen.queryByText(event.year)).not.toBeInTheDocument()
+      expect(screen.queryByText(t(event.eventKey))).not.toBeInTheDocument()
     }
   })
 

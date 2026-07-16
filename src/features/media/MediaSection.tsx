@@ -1,23 +1,35 @@
 import { media } from '../../data/media'
+import { music } from '../../data/music'
 import { Section } from '../../components/ui/Section'
 import { Card } from '../../components/ui/Card'
 import { t } from '../../i18n/translations'
 
 export function MediaSection() {
+  const javaTrack = music.tracks.find((track) => track.id === 'javaInstrument')
+
   return (
     <Section id="media" title={t('media.title')} subtitle={t('media.subtitle')}>
       <div className="mb-8 max-w-2xl">
-        <h3 className="mb-3 text-2xl font-semibold text-text-primary">{t(media.headlineKey)}</h3>
-        <p className="leading-relaxed text-text-secondary">{t(media.introKey)}</p>
+        <h3 className="mb-3 text-2xl font-semibold text-text-primary text-shadow-readable">{t(media.headlineKey)}</h3>
+        <p className="leading-relaxed text-text-secondary text-shadow-readable">{t(media.introKey)}</p>
       </div>
 
-      <div className="mb-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {javaTrack && (
+        <Card glass className="mb-10 scroll-reveal-item">
+          <h4 className="mb-2 text-lg font-semibold text-text-primary text-shadow-readable">{t(javaTrack.nameKey)}</h4>
+          <p className="text-sm leading-relaxed text-text-secondary text-shadow-readable">{t(javaTrack.descKey)}</p>
+        </Card>
+      )}
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {media.categories.map((category) => (
-          <Card key={category.id} hover tilt glass className="scroll-reveal-item">
-            <h4 className="mb-3 text-lg font-semibold text-text-primary">{t(category.labelKey)}</h4>
+          <Card key={category.id} glass className="scroll-reveal-item">
+            <h4 className="mb-3 text-lg font-semibold text-text-primary text-shadow-readable">
+              {t(category.labelKey)}
+            </h4>
             <ul className="space-y-2">
               {category.itemKeys.map((key) => (
-                <li key={key} className="text-sm leading-relaxed text-text-secondary">
+                <li key={key} className="text-sm leading-relaxed text-text-secondary text-shadow-readable">
                   {t(key)}
                 </li>
               ))}
@@ -25,24 +37,6 @@ export function MediaSection() {
           </Card>
         ))}
       </div>
-
-      <Card hover tilt glass className="scroll-reveal-item">
-        <h4 className="mb-4 text-sm font-medium text-muted">{t('media.timelineTitle')}</h4>
-        <div className="relative pl-8 md:pl-10">
-          <div className="absolute top-0 bottom-0 left-3 w-px bg-border" />
-          <div className="space-y-6">
-            {media.timeline.map((event) => (
-              <article key={event.year} className="relative">
-                <div className="absolute -left-5 top-1.5 h-3 w-3 -translate-x-1/2 rounded-full bg-primary" />
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
-                  <span className="text-sm font-semibold text-primary">{event.year}</span>
-                  <span className="text-sm text-text-secondary">{t(event.eventKey)}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </Card>
     </Section>
   )
 }

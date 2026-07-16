@@ -49,6 +49,8 @@ export const galaxyFragmentShader = `
   varying vec3 vColor;
   varying float vAlpha;
 
+  uniform float uIntensity;
+
   void main() {
     vec2 coord = gl_PointCoord - vec2(0.5);
     float dist = length(coord);
@@ -57,6 +59,6 @@ export const galaxyFragmentShader = `
     float glow = 1.0 - dist * 2.0;
     glow = pow(glow, 1.1);
 
-    gl_FragColor = vec4(vColor * 1.35, vAlpha * glow);
+    gl_FragColor = vec4(vColor * 1.35 * uIntensity, vAlpha * glow);
   }
 `

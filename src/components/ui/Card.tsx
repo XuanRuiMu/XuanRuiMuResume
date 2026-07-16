@@ -211,7 +211,7 @@ export function Card({ children, header, footer, glass: _glass, hover = false, t
       onMouseLeave={tiltEnabled ? handleMouseLeave : undefined}
       style={{ '--tilt-glow-x': '50%', '--tilt-glow-y': '50%' } as React.CSSProperties}
       className={cn(
-        'card-container relative overflow-hidden rounded-2xl border border-border p-6',
+        'card-container relative overflow-hidden rounded-2xl border border-border bg-transparent p-6',
         hover && !tiltEnabled && 'transition-transform duration-300 hover:-translate-y-1',
         hover && tiltEnabled && 'hover:shadow-2xl',
         tiltEnabled && 'tilt-card will-change-transform',

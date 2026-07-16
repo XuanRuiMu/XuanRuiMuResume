@@ -63,7 +63,7 @@ export function generateSpiralGalaxy(count: number, params: GalaxyParams, seed: 
     colors[i * 3 + 1] = c.g
     colors[i * 3 + 2] = c.b
 
-    sizes[i] = 0.025 + pseudoRandom(i, seed, 6) * 0.065 * (1 - normalizedR * 0.4)
+    sizes[i] = (0.025 + pseudoRandom(i, seed, 6) * 0.065 * (1 - normalizedR * 0.4)) * (params.sizeMultiplier ?? 1)
     phases[i] = pseudoRandom(i, seed, 7) * Math.PI * 2
     armIndices[i] = armIndex
   }

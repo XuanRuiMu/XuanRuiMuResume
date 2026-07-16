@@ -30,6 +30,7 @@ describe('WebGLGalaxy', () => {
         rotationSpeed={0.003}
         windStrength={0.35}
         windRadius={0.4}
+        intensity={1.4}
         mouseRef={mouseRef}
       />
     )
@@ -49,6 +50,7 @@ describe('WebGLGalaxy', () => {
         rotationSpeed={0.003}
         windStrength={0.35}
         windRadius={0.4}
+        intensity={1}
         mouseRef={mouseRef}
       />
     )

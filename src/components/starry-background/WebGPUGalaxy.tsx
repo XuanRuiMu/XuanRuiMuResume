@@ -35,10 +35,22 @@ interface WebGPUGalaxyProps {
   windStrength: number
   windRadius: number
   palette: GalaxyPalette
+  arms: number
+  tightness: number
+  intensity: number
+  sizeMultiplier: number
   mouseRef: { current: { x: number; y: number } }
 }
 
-function createGalaxyNodeMaterial(palette: GalaxyPalette, windStrength: number, windRadius: number) {
+function createGalaxyNodeMaterial(
+  palette: GalaxyPalette,
+  windStrength: number,
+  windRadius: number,
+  arms: number,
+  tightness: number,
+  intensity: number,
+  sizeMultiplier: number
+) {
   const uTime = uniform(float(0))
   const uMouse = uniform(vec2(0, 0))
   const uWindStrength = uniform(float(windStrength))
@@ -58,12 +70,12 @@ function createGalaxyNodeMaterial(palette: GalaxyPalette, windStrength: number, 
   const c2 = mix(c1, edgeColor, clamp(div(sub(normalizedR, float(0.4)), float(0.6)), float(0), float(1)))
 
   const angle = atan(pos.z, pos.x)
-  const arms = float(4)
-  const spiral = sin(add(mul(arms, angle), mul(log(add(r, float(1))), float(5))))
+  const armsNode = float(arms)
+  const spiral = sin(add(mul(armsNode, angle), mul(log(add(r, float(1))), float(tightness))))
   const armMask = smoothstep(float(-0.3), float(0.3), spiral)
   const brightness = mix(float(0.4), float(1), armMask)
 
-  const finalColor = mul(c2, brightness)
+  const finalColor = mul(mul(c2, brightness), float(intensity))
 
   const cameraZ = float(8)
   const fovScale = float(0.577)
@@ -93,6 +105,7 @@ function createGalaxyNodeMaterial(palette: GalaxyPalette, windStrength: number, 
   const material = new THREE.PointsNodeMaterial({
     positionNode: displacedPos as never,
     colorNode: vec4(finalColor, float(1)) as never,
+    size: 2 * sizeMultiplier,
     transparent: true,
     depthWrite: false,
     blending: AdditiveBlending,
@@ -101,12 +114,23 @@ function createGalaxyNodeMaterial(palette: GalaxyPalette, windStrength: number, 
   return { material, uniforms: { uTime, uMouse, uWindStrength, uWindRadius } }
 }
 
-export function WebGPUGalaxy({ data, rotationSpeed, windStrength, windRadius, palette, mouseRef }: WebGPUGalaxyProps) {
+export function WebGPUGalaxy({
+  data,
+  rotationSpeed,
+  windStrength,
+  windRadius,
+  palette,
+  arms,
+  tightness,
+  intensity,
+  sizeMultiplier,
+  mouseRef,
+}: WebGPUGalaxyProps) {
   const pointsRef = useRef<Points>(null)
 
   const { material, uniforms } = useMemo(
-    () => createGalaxyNodeMaterial(palette, windStrength, windRadius),
-    [palette, windStrength, windRadius]
+    () => createGalaxyNodeMaterial(palette, windStrength, windRadius, arms, tightness, intensity, sizeMultiplier),
+    [palette, windStrength, windRadius, arms, tightness, intensity, sizeMultiplier]
   )
 
   const geometry = useMemo(() => {

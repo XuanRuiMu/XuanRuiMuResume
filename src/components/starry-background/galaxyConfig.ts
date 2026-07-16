@@ -15,6 +15,8 @@ export interface GalaxyParams {
   randomScatter: number
   rotationSpeed: number
   palette: GalaxyPalette
+  intensity: number
+  sizeMultiplier: number
 }
 
 export const galaxyPalettes = {
@@ -24,23 +26,25 @@ export const galaxyPalettes = {
     edge: '#05070a',
   },
   light: {
-    center: '#dff0ff',
-    arm: '#8ec8ff',
-    edge: '#f8f9fb',
+    center: '#0077ff',
+    arm: '#4da6ff',
+    edge: '#b3d9ff',
   },
 }
 
 export function getDefaultGalaxyParams(particleCount: number, isLight: boolean): GalaxyParams {
   return {
     particleCount,
-    arms: 4,
-    tightness: 5.5,
-    armWidth: 0.55,
-    innerRadius: 1.5,
-    outerRadius: 22,
-    thickness: 2.2,
-    randomScatter: 0.35,
-    rotationSpeed: 0.003,
+    arms: 5,
+    tightness: 7.5,
+    armWidth: 0.7,
+    innerRadius: 1.0,
+    outerRadius: 13,
+    thickness: 2.5,
+    randomScatter: 0.3,
+    rotationSpeed: 0.005,
     palette: isLight ? galaxyPalettes.light : galaxyPalettes.dark,
+    intensity: isLight ? 1.4 : 1.0,
+    sizeMultiplier: isLight ? 1.6 : 1.0,
   }
 }

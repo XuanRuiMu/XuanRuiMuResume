@@ -26,5 +26,14 @@ describe('galaxyConfig', () => {
     expect(params.outerRadius).toBeGreaterThan(params.innerRadius)
     expect(params.thickness).toBeGreaterThan(0)
     expect(params.rotationSpeed).toBeGreaterThanOrEqual(0)
+    expect(params.intensity).toBeGreaterThan(0)
+    expect(params.sizeMultiplier).toBeGreaterThan(0)
+  })
+
+  it('boosts intensity and size for light theme', () => {
+    const light = getDefaultGalaxyParams(1000, true)
+    const dark = getDefaultGalaxyParams(1000, false)
+    expect(light.intensity).toBeGreaterThan(dark.intensity)
+    expect(light.sizeMultiplier).toBeGreaterThan(dark.sizeMultiplier)
   })
 })

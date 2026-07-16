@@ -118,7 +118,7 @@ export function ExperienceSection() {
                   isEven ? 'md:col-start-1 md:col-end-2 md:row-start-1' : 'md:col-start-3 md:col-end-4 md:row-start-1'
                 }`}
               >
-                <Card className="group">
+                <Card className="group border-secondary/20">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <h3
                       id={`experience-title-${entry.id}`}
@@ -127,7 +127,7 @@ export function ExperienceSection() {
                       {t(entry.titleKey)}
                     </h3>
                     {entry.organizationKey && (
-                      <span className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-muted">
+                      <span className="rounded-full border border-secondary/20 px-2.5 py-0.5 text-xs font-medium text-muted">
                         {t(entry.organizationKey)}
                       </span>
                     )}

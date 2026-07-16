@@ -15,7 +15,7 @@ export function MediaSection() {
       </div>
 
       {javaTrack && (
-        <Card glass className="mb-10 scroll-reveal-item">
+        <Card className="mb-10 scroll-reveal-item border-secondary/20">
           <h4 className="mb-2 text-lg font-semibold text-text-primary text-shadow-readable">{t(javaTrack.nameKey)}</h4>
           <p className="text-sm leading-relaxed text-text-secondary text-shadow-readable">{t(javaTrack.descKey)}</p>
         </Card>
@@ -23,7 +23,7 @@ export function MediaSection() {
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {media.categories.map((category) => (
-          <Card key={category.id} glass className="scroll-reveal-item">
+          <Card key={category.id} className="scroll-reveal-item border-secondary/20">
             <h4 className="mb-3 text-lg font-semibold text-text-primary text-shadow-readable">
               {t(category.labelKey)}
             </h4>

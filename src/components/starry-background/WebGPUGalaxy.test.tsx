@@ -58,6 +58,10 @@ describe('WebGPUGalaxy', () => {
         windStrength={0.35}
         windRadius={0.4}
         palette={params.palette}
+        arms={params.arms}
+        tightness={params.tightness}
+        intensity={params.intensity}
+        sizeMultiplier={params.sizeMultiplier}
         mouseRef={mouseRef}
       />
     )
@@ -77,6 +81,10 @@ describe('WebGPUGalaxy', () => {
         windStrength={0.35}
         windRadius={0.4}
         palette={params.palette}
+        arms={params.arms}
+        tightness={params.tightness}
+        intensity={params.intensity}
+        sizeMultiplier={params.sizeMultiplier}
         mouseRef={mouseRef}
       />
     )

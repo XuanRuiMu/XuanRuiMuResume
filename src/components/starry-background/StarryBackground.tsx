@@ -241,6 +241,7 @@ function StarryBackgroundScene({ qualitySettings, useWebGPU }: StarryBackgroundS
   )
 
   const wind = reducedMotion ? { strength: 0, radius: 0.4 } : { strength: 0.35, radius: 0.4 }
+  const galaxyRotationSpeed = reducedMotion ? 0 : galaxyParams.rotationSpeed
 
   useFrame((_, delta) => {
     const group = groupRef.current
@@ -268,10 +269,14 @@ function StarryBackgroundScene({ qualitySettings, useWebGPU }: StarryBackgroundS
         <Suspense fallback={null}>
           <WebGPUGalaxy
             data={galaxyData}
-            rotationSpeed={galaxyParams.rotationSpeed}
+            rotationSpeed={galaxyRotationSpeed}
             windStrength={wind.strength}
             windRadius={wind.radius}
             palette={galaxyParams.palette}
+            arms={galaxyParams.arms}
+            tightness={galaxyParams.tightness}
+            intensity={galaxyParams.intensity}
+            sizeMultiplier={galaxyParams.sizeMultiplier}
             mouseRef={mouseRef}
           />
         </Suspense>
@@ -279,9 +284,10 @@ function StarryBackgroundScene({ qualitySettings, useWebGPU }: StarryBackgroundS
         <WebGLGalaxy
           data={galaxyData}
           pixelRatio={dprValue}
-          rotationSpeed={galaxyParams.rotationSpeed}
+          rotationSpeed={galaxyRotationSpeed}
           windStrength={wind.strength}
           windRadius={wind.radius}
+          intensity={galaxyParams.intensity}
           mouseRef={mouseRef}
         />
       )}
@@ -338,7 +344,7 @@ export function StarryBackground({ className }: StarryBackgroundProps) {
         gl={createWebGPUAwareRenderer}
         fallback={<SkillGalaxyFallback />}
         frameloop={reducedMotion ? 'never' : 'always'}
-        camera={{ position: [0, 0, 8], fov: 60, near: 0.1, far: 40 }}
+        camera={{ position: [0, 0, 14], fov: 60, near: 0.1, far: 40 }}
       >
         <StarryBackgroundScene qualitySettings={settings} useWebGPU={useWebGPU} />
       </Canvas>

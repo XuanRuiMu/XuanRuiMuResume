@@ -11,10 +11,19 @@ interface WebGLGalaxyProps {
   rotationSpeed: number
   windStrength: number
   windRadius: number
+  intensity: number
   mouseRef: { current: { x: number; y: number } }
 }
 
-export function WebGLGalaxy({ data, pixelRatio, rotationSpeed, windStrength, windRadius, mouseRef }: WebGLGalaxyProps) {
+export function WebGLGalaxy({
+  data,
+  pixelRatio,
+  rotationSpeed,
+  windStrength,
+  windRadius,
+  intensity,
+  mouseRef,
+}: WebGLGalaxyProps) {
   const pointsRef = useRef<Points>(null)
 
   const material = useMemo(
@@ -26,6 +35,7 @@ export function WebGLGalaxy({ data, pixelRatio, rotationSpeed, windStrength, win
           uMouse: { value: [0, 0] },
           uWindStrength: { value: windStrength },
           uWindRadius: { value: windRadius },
+          uIntensity: { value: intensity },
         },
         vertexShader: galaxyVertexShader,
         fragmentShader: galaxyFragmentShader,
@@ -33,7 +43,7 @@ export function WebGLGalaxy({ data, pixelRatio, rotationSpeed, windStrength, win
         depthWrite: false,
         blending: AdditiveBlending,
       }),
-    [pixelRatio, windStrength, windRadius]
+    [pixelRatio, windStrength, windRadius, intensity]
   )
 
   const geometry = useMemo(() => {

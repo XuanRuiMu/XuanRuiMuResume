@@ -28,6 +28,9 @@ describe('galaxyConfig', () => {
     expect(params.rotationSpeed).toBeGreaterThanOrEqual(0)
     expect(params.intensity).toBeGreaterThan(0)
     expect(params.sizeMultiplier).toBeGreaterThan(0)
+    expect(params.pushStrength).toBeGreaterThan(0)
+    expect(params.pushRadius).toBeGreaterThan(0)
+    expect(params.pushDamping).toBeGreaterThan(0)
   })
 
   it('boosts intensity and size for light theme', () => {

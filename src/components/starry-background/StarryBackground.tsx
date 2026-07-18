@@ -240,7 +240,9 @@ function StarryBackgroundScene({ qualitySettings, useWebGPU }: StarryBackgroundS
     [galaxyParams, qualitySettings.particleCount]
   )
 
-  const wind = reducedMotion ? { strength: 0, radius: 0.4 } : { strength: 0.35, radius: 0.4 }
+  const push = reducedMotion
+    ? { strength: 0, radius: galaxyParams.pushRadius, damping: galaxyParams.pushDamping }
+    : { strength: galaxyParams.pushStrength, radius: galaxyParams.pushRadius, damping: galaxyParams.pushDamping }
   const galaxyRotationSpeed = reducedMotion ? 0 : galaxyParams.rotationSpeed
 
   useFrame((_, delta) => {
@@ -270,8 +272,9 @@ function StarryBackgroundScene({ qualitySettings, useWebGPU }: StarryBackgroundS
           <WebGPUGalaxy
             data={galaxyData}
             rotationSpeed={galaxyRotationSpeed}
-            windStrength={wind.strength}
-            windRadius={wind.radius}
+            pushStrength={push.strength}
+            pushRadius={push.radius}
+            pushDamping={push.damping}
             palette={galaxyParams.palette}
             arms={galaxyParams.arms}
             tightness={galaxyParams.tightness}
@@ -285,8 +288,9 @@ function StarryBackgroundScene({ qualitySettings, useWebGPU }: StarryBackgroundS
           data={galaxyData}
           pixelRatio={dprValue}
           rotationSpeed={galaxyRotationSpeed}
-          windStrength={wind.strength}
-          windRadius={wind.radius}
+          pushStrength={push.strength}
+          pushRadius={push.radius}
+          pushDamping={push.damping}
           intensity={galaxyParams.intensity}
           mouseRef={mouseRef}
         />

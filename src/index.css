@@ -875,18 +875,8 @@ html.circular-reveal-active::view-transition-old(root) {
   transform-origin: top center;
 }
 
-.note-sway {
-  animation: note-sway 3.2s ease-in-out infinite alternate;
-}
-
-@keyframes note-sway {
-  0% {
-    transform: rotate(-1.2deg);
-  }
-
-  100% {
-    transform: rotate(1.2deg);
-  }
+.note-physics {
+  will-change: transform;
 }
 
 .note-parchment {
@@ -913,7 +903,13 @@ html.circular-reveal-active::view-transition-old(root) {
 .note-parchment-content {
   position: relative;
   z-index: 1;
-  padding: 4.5rem 1rem 2.25rem;
+  padding: 34% 10% 8% 14%;
+}
+
+@media (min-width: 768px) {
+  .note-parchment-content {
+    padding: 38% 12% 10% 16%;
+  }
 }
 
 .note-text {
@@ -960,12 +956,7 @@ html.circular-reveal-active::view-transition-old(root) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .note-sway {
+  .note-physics {
     animation: none;
-  }
-
-  .note-wrapper,
-  .note-paper {
-    transform: none !important;
   }
 }

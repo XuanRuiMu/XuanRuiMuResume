@@ -9,8 +9,9 @@ interface WebGLGalaxyProps {
   data: GalaxyParticleData
   pixelRatio: number
   rotationSpeed: number
-  windStrength: number
-  windRadius: number
+  pushStrength: number
+  pushRadius: number
+  pushDamping: number
   intensity: number
   mouseRef: { current: { x: number; y: number } }
 }
@@ -19,8 +20,9 @@ export function WebGLGalaxy({
   data,
   pixelRatio,
   rotationSpeed,
-  windStrength,
-  windRadius,
+  pushStrength,
+  pushRadius,
+  pushDamping,
   intensity,
   mouseRef,
 }: WebGLGalaxyProps) {
@@ -33,8 +35,9 @@ export function WebGLGalaxy({
           uTime: { value: 0 },
           uPixelRatio: { value: pixelRatio },
           uMouse: { value: [0, 0] },
-          uWindStrength: { value: windStrength },
-          uWindRadius: { value: windRadius },
+          uPushStrength: { value: pushStrength },
+          uPushRadius: { value: pushRadius },
+          uPushDamping: { value: pushDamping },
           uIntensity: { value: intensity },
         },
         vertexShader: galaxyVertexShader,
@@ -43,7 +46,7 @@ export function WebGLGalaxy({
         depthWrite: false,
         blending: AdditiveBlending,
       }),
-    [pixelRatio, windStrength, windRadius, intensity]
+    [pixelRatio, pushStrength, pushRadius, pushDamping, intensity]
   )
 
   const geometry = useMemo(() => {

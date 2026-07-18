@@ -54,17 +54,30 @@ describe('ProjectsSection', () => {
     }
   })
 
-  it('applies sway animation class when reduced motion is not preferred', () => {
+  it('applies physics class when reduced motion is not preferred', () => {
     const { container } = render(<ProjectsSection />)
-    const swayElements = container.querySelectorAll('.note-sway')
-    expect(swayElements.length).toBe(projects.length)
+    const physicsElements = container.querySelectorAll('.note-physics')
+    expect(physicsElements.length).toBe(projects.length)
   })
 
-  it('does not apply sway animation class when reduced motion is preferred', () => {
+  it('does not apply physics class when reduced motion is preferred', () => {
     matches = true
     const { container } = render(<ProjectsSection />)
-    const swayElements = container.querySelectorAll('.note-sway')
-    expect(swayElements.length).toBe(0)
+    const physicsElements = container.querySelectorAll('.note-physics')
+    expect(physicsElements.length).toBe(0)
+  })
+
+  it('enables wind interaction when reduced motion is not preferred', () => {
+    const { container } = render(<ProjectsSection />)
+    const windElements = container.querySelectorAll('[data-feng]')
+    expect(windElements.length).toBe(projects.length)
+  })
+
+  it('disables wind interaction when reduced motion is preferred', () => {
+    matches = true
+    const { container } = render(<ProjectsSection />)
+    const windElements = container.querySelectorAll('[data-feng]')
+    expect(windElements.length).toBe(0)
   })
 
   it('renders the rope svg', () => {

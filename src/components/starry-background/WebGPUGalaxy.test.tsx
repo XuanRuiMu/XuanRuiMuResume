@@ -5,16 +5,28 @@ import { WebGPUGalaxy } from './WebGPUGalaxy'
 import { generateSpiralGalaxy } from './galaxyGenerator'
 import { getDefaultGalaxyParams } from './galaxyConfig'
 
+const { getLastPointsNodeMaterialParams, PointsNodeMaterial, useFrame } = vi.hoisted(() => {
+  let lastParams: Record<string, unknown> | null = null
+  return {
+    getLastPointsNodeMaterialParams: () => lastParams,
+    PointsNodeMaterial: vi.fn((params: Record<string, unknown>) => {
+      lastParams = params
+      return params
+    }),
+    useFrame: vi.fn((callback) => {
+      callback({ clock: { getDelta: () => 0.016 } }, 0.016)
+    }),
+  }
+})
+
 vi.mock('@react-three/fiber', () => ({
-  useFrame: vi.fn((callback) => {
-    callback({ clock: { getDelta: () => 0.016 } }, 0.016)
-  }),
+  useFrame,
   useThree: vi.fn(() => ({ pointer: { x: 0, y: 0 } })),
   Canvas: ({ children }: { children: ReactNode }) => <div data-testid="mock-canvas">{children}</div>,
 }))
 
 vi.mock('three/webgpu', () => ({
-  PointsNodeMaterial: vi.fn().mockImplementation((params) => params),
+  PointsNodeMaterial,
 }))
 
 vi.mock('three/tsl', () => ({
@@ -55,8 +67,9 @@ describe('WebGPUGalaxy', () => {
       <WebGPUGalaxy
         data={data}
         rotationSpeed={0.003}
-        windStrength={0.35}
-        windRadius={0.4}
+        pushStrength={2.0}
+        pushRadius={4.0}
+        pushDamping={3.0}
         palette={params.palette}
         arms={params.arms}
         tightness={params.tightness}
@@ -69,17 +82,18 @@ describe('WebGPUGalaxy', () => {
     expect(container.querySelector('points')).toBeInTheDocument()
   })
 
-  it('updates time and mouse uniforms each frame', () => {
+  it('builds a position node with push parameters', () => {
     const params = getDefaultGalaxyParams(100, false)
     const data = generateSpiralGalaxy(100, params, 1)
-    const mouseRef = { current: { x: 0.5, y: -0.5 } }
+    const mouseRef = { current: { x: 0, y: 0 } }
 
     render(
       <WebGPUGalaxy
         data={data}
         rotationSpeed={0.003}
-        windStrength={0.35}
-        windRadius={0.4}
+        pushStrength={2.5}
+        pushRadius={5.0}
+        pushDamping={3.5}
         palette={params.palette}
         arms={params.arms}
         tightness={params.tightness}
@@ -88,5 +102,34 @@ describe('WebGPUGalaxy', () => {
         mouseRef={mouseRef}
       />
     )
+
+    expect(PointsNodeMaterial).toHaveBeenCalled()
+    const materialParams = getLastPointsNodeMaterialParams()
+    expect(materialParams).toBeDefined()
+    expect(materialParams?.positionNode).toBeDefined()
+  })
+
+  it('registers the frame loop and builds a position node', () => {
+    const params = getDefaultGalaxyParams(100, false)
+    const data = generateSpiralGalaxy(100, params, 1)
+    const mouseRef = { current: { x: 0.5, y: -0.5 } }
+
+    render(
+      <WebGPUGalaxy
+        data={data}
+        rotationSpeed={0.003}
+        pushStrength={2.0}
+        pushRadius={4.0}
+        pushDamping={3.0}
+        palette={params.palette}
+        arms={params.arms}
+        tightness={params.tightness}
+        intensity={params.intensity}
+        sizeMultiplier={params.sizeMultiplier}
+        mouseRef={mouseRef}
+      />
+    )
+
+    expect(useFrame).toHaveBeenCalled()
   })
 })

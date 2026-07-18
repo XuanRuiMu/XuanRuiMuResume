@@ -10,33 +10,38 @@ export const galaxyVertexShader = `
   uniform float uTime;
   uniform float uPixelRatio;
   uniform vec2 uMouse;
-  uniform float uWindStrength;
-  uniform float uWindRadius;
+  uniform float uPushStrength;
+  uniform float uPushRadius;
+  uniform float uPushDamping;
 
   void main() {
     vColor = aColor;
 
     vec3 rest = aOriginalPosition;
-    vec4 mvPosition = modelViewMatrix * vec4(rest, 1.0);
-    vec4 projected = projectionMatrix * mvPosition;
-    vec2 ndc = projected.xy / max(projected.w, 0.0001);
 
-    vec2 dir = ndc - uMouse;
+    float cameraZ = 14.0;
+    float fovScale = 0.577;
+    vec2 mouseWorld = uMouse * cameraZ * fovScale;
+
+    vec2 dir = rest.xz - mouseWorld;
     float dist = length(dir);
-    float falloff = smoothstep(uWindRadius, 0.0, dist);
+    vec2 pushDir = normalize(dir + vec2(0.0001));
+
+    float influence = 1.0 - smoothstep(0.0, uPushRadius, dist);
+    vec3 push = vec3(pushDir.x, 0.0, pushDir.y) * influence * uPushStrength;
 
     float t = uTime * 3.0 + aPhase;
     float cycle = mod(t, 3.0);
-    float spring = sin(cycle * 8.0) * exp(-cycle * 1.8);
+    float spring = sin(cycle * 6.0) * exp(-cycle * uPushDamping * 0.6);
+    vec3 recovery = vec3(pushDir.x, 0.0, pushDir.y) * spring * uPushStrength * 0.25;
 
-    float wave = sin(dist * 18.0 - uTime * 5.0) * exp(-dist * 2.5);
+    float wave = sin(dist * 4.0 - uTime * 5.0) * exp(-dist * 0.8) * uPushStrength * 0.15;
+    vec3 ambient = vec3(pushDir.x, 0.0, pushDir.y) * wave;
 
-    vec2 pushDir = normalize(dir + vec2(0.0001));
-    float displacement = falloff * uWindStrength
-      + (1.0 - falloff) * spring * uWindStrength * 0.2
-      + wave * uWindStrength * 0.25;
+    vec3 displaced = rest + push + recovery + ambient;
 
-    projected.xy += pushDir * displacement * projected.w;
+    vec4 mvPosition = modelViewMatrix * vec4(displaced, 1.0);
+    vec4 projected = projectionMatrix * mvPosition;
 
     gl_PointSize = max(1.6, aSize * uPixelRatio * (560.0 / -mvPosition.z));
     gl_Position = projected;

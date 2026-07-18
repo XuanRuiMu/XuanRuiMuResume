@@ -17,6 +17,9 @@ export interface GalaxyParams {
   palette: GalaxyPalette
   intensity: number
   sizeMultiplier: number
+  pushStrength: number
+  pushRadius: number
+  pushDamping: number
 }
 
 export const galaxyPalettes = {
@@ -46,5 +49,8 @@ export function getDefaultGalaxyParams(particleCount: number, isLight: boolean):
     palette: isLight ? galaxyPalettes.light : galaxyPalettes.dark,
     intensity: isLight ? 1.4 : 1.0,
     sizeMultiplier: isLight ? 1.6 : 1.0,
+    pushStrength: 2.0,
+    pushRadius: 4.0,
+    pushDamping: 3.0,
   }
 }

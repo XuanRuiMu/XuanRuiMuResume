@@ -32,8 +32,9 @@ import type { GalaxyParticleData } from './galaxyGenerator'
 interface WebGPUGalaxyProps {
   data: GalaxyParticleData
   rotationSpeed: number
-  windStrength: number
-  windRadius: number
+  pushStrength: number
+  pushRadius: number
+  pushDamping: number
   palette: GalaxyPalette
   arms: number
   tightness: number
@@ -44,8 +45,9 @@ interface WebGPUGalaxyProps {
 
 function createGalaxyNodeMaterial(
   palette: GalaxyPalette,
-  windStrength: number,
-  windRadius: number,
+  pushStrength: number,
+  pushRadius: number,
+  pushDamping: number,
   arms: number,
   tightness: number,
   intensity: number,
@@ -53,8 +55,9 @@ function createGalaxyNodeMaterial(
 ) {
   const uTime = uniform(float(0))
   const uMouse = uniform(vec2(0, 0))
-  const uWindStrength = uniform(float(windStrength))
-  const uWindRadius = uniform(float(windRadius))
+  const uPushStrength = uniform(float(pushStrength))
+  const uPushRadius = uniform(float(pushRadius))
+  const uPushDamping = uniform(float(pushDamping))
 
   const centerColor = color(palette.center)
   const armColor = color(palette.arm)
@@ -77,30 +80,27 @@ function createGalaxyNodeMaterial(
 
   const finalColor = mul(mul(c2, brightness), float(intensity))
 
-  const cameraZ = float(8)
+  const cameraZ = float(14)
   const fovScale = float(0.577)
   const mouseWorld = mul(uMouse, mul(cameraZ, fovScale))
 
   const dir = sub(pos.xz, mouseWorld)
   const dist = length(dir)
-  const falloff = smoothstep(mul(uWindRadius, float(8)), float(0), dist)
+  const pushDir = normalize(add(dir, vec2(0.0001, 0.0001)))
+
+  const influence = sub(float(1), smoothstep(float(0), uPushRadius, dist))
+  const push = mul(pushDir, mul(influence, uPushStrength))
 
   const t = add(mul(uTime, float(3)), phase)
   const cycle = mod(t, float(3))
-  const spring = mul(sin(mul(cycle, float(8))), exp(mul(cycle, float(-1.8))))
+  const spring = mul(sin(mul(cycle, float(6))), exp(mul(cycle, mul(float(-0.6), uPushDamping))))
+  const recovery = mul(pushDir, mul(spring, mul(uPushStrength, float(0.25))))
 
-  const wave = mul(sin(sub(mul(dist, float(3)), mul(uTime, float(5)))), exp(mul(dist, float(-0.4))))
+  const wave = mul(sin(sub(mul(dist, float(4)), mul(uTime, float(5)))), exp(mul(dist, float(-0.8))))
+  const ambient = mul(pushDir, mul(wave, mul(uPushStrength, float(0.15))))
 
-  const pushDir = normalize(add(dir, vec2(0.0001, 0.0001)))
-  const displacement = mul(
-    pushDir,
-    add(
-      add(mul(falloff, uWindStrength), mul(mul(sub(float(1), falloff), spring), mul(uWindStrength, float(0.2)))),
-      mul(wave, mul(uWindStrength, float(0.25)))
-    )
-  )
-
-  const displacedPos = add(pos, vec3(displacement.x, float(0), displacement.y))
+  const displacementXZ = add(add(push, recovery), ambient)
+  const displacedPos = add(pos, vec3(displacementXZ.x, float(0), displacementXZ.y))
 
   const material = new THREE.PointsNodeMaterial({
     positionNode: displacedPos as never,
@@ -111,14 +111,15 @@ function createGalaxyNodeMaterial(
     blending: AdditiveBlending,
   })
 
-  return { material, uniforms: { uTime, uMouse, uWindStrength, uWindRadius } }
+  return { material, uniforms: { uTime, uMouse, uPushStrength, uPushRadius, uPushDamping } }
 }
 
 export function WebGPUGalaxy({
   data,
   rotationSpeed,
-  windStrength,
-  windRadius,
+  pushStrength,
+  pushRadius,
+  pushDamping,
   palette,
   arms,
   tightness,
@@ -129,8 +130,18 @@ export function WebGPUGalaxy({
   const pointsRef = useRef<Points>(null)
 
   const { material, uniforms } = useMemo(
-    () => createGalaxyNodeMaterial(palette, windStrength, windRadius, arms, tightness, intensity, sizeMultiplier),
-    [palette, windStrength, windRadius, arms, tightness, intensity, sizeMultiplier]
+    () =>
+      createGalaxyNodeMaterial(
+        palette,
+        pushStrength,
+        pushRadius,
+        pushDamping,
+        arms,
+        tightness,
+        intensity,
+        sizeMultiplier
+      ),
+    [palette, pushStrength, pushRadius, pushDamping, arms, tightness, intensity, sizeMultiplier]
   )
 
   const geometry = useMemo(() => {

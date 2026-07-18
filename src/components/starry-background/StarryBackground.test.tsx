@@ -2,10 +2,8 @@ import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { StarryBackground } from './StarryBackground'
-import { createStarLayer } from './starLayer'
 import * as usePerformanceProfileModule from '../../hooks/usePerformanceProfile'
 import * as useReducedMotionModule from '../../hooks/useReducedMotion'
-import * as deviceCapabilitiesModule from '../../utils/deviceCapabilities'
 
 vi.mock('@react-three/fiber', () => ({
   Canvas: ({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) => (
@@ -15,7 +13,13 @@ vi.mock('@react-three/fiber', () => ({
     </div>
   ),
   useFrame: vi.fn(),
-  useThree: vi.fn(() => ({ pointer: { x: 0, y: 0 } })),
+  useThree: vi.fn(() => ({
+    pointer: { x: 0, y: 0 },
+    camera: {
+      position: { x: 0, y: 0, z: 30 },
+      lookAt: vi.fn(),
+    },
+  })),
 }))
 
 const mockHighSettings = {
@@ -42,7 +46,6 @@ describe('StarryBackground', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.spyOn(useReducedMotionModule, 'useReducedMotion').mockReturnValue(false)
-    vi.spyOn(deviceCapabilitiesModule, 'detectWebGPUSupport').mockResolvedValue(false)
   })
 
   it('renders fallback while performance profile is loading', () => {
@@ -83,7 +86,7 @@ describe('StarryBackground', () => {
     })
   })
 
-  it('registers a window pointermove listener for star mouse repel', async () => {
+  it('registers a window pointermove listener for parallax', async () => {
     vi.spyOn(usePerformanceProfileModule, 'usePerformanceProfile').mockReturnValue({
       level: 'high',
       settings: mockHighSettings,
@@ -121,34 +124,5 @@ describe('StarryBackground', () => {
     })
 
     expect(addEventListenerSpy.mock.calls.some(([event]) => String(event) === 'pointermove')).toBe(false)
-  })
-
-  it('selects WebGPU path when device supports WebGPU', async () => {
-    vi.spyOn(deviceCapabilitiesModule, 'detectWebGPUSupport').mockResolvedValue(true)
-    vi.spyOn(usePerformanceProfileModule, 'usePerformanceProfile').mockReturnValue({
-      level: 'high',
-      settings: mockHighSettings,
-      loading: false,
-    })
-
-    render(<StarryBackground />)
-    await waitFor(() => {
-      expect(screen.getByTestId('mock-canvas')).toBeInTheDocument()
-    })
-  })
-})
-
-describe('createStarLayer', () => {
-  it('generates deterministic star layer data', () => {
-    const data = createStarLayer(10, [5, 10], [0.01, 0.05], ['#ffffff', '#00d9ff'], 7)
-
-    expect(data.positions.length).toBe(30)
-    expect(data.colors.length).toBe(30)
-    expect(data.sizes.length).toBe(10)
-    expect(data.phases.length).toBe(10)
-    expect(data.speeds.length).toBe(10)
-
-    const second = createStarLayer(10, [5, 10], [0.01, 0.05], ['#ffffff', '#00d9ff'], 7)
-    expect(data.positions.every((value, index) => value === second.positions[index])).toBe(true)
   })
 })

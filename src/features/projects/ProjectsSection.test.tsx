@@ -80,11 +80,25 @@ describe('ProjectsSection', () => {
     expect(windElements.length).toBe(0)
   })
 
-  it('renders the rope svg', () => {
+  it('renders a rope svg with path for each sticky note', () => {
     const { container } = render(<ProjectsSection />)
-    const rope = container.querySelector('.rope-svg')
-    expect(rope).toBeInTheDocument()
-    expect(rope?.querySelector('path')).toBeInTheDocument()
+    const ropes = container.querySelectorAll('.rope-svg')
+    expect(ropes.length).toBe(projects.length)
+    for (const rope of ropes) {
+      expect(rope.querySelector('path')).toBeInTheDocument()
+    }
+  })
+
+  it('renders a clip element for each sticky note', () => {
+    const { container } = render(<ProjectsSection />)
+    const clips = container.querySelectorAll('.note-clip')
+    expect(clips.length).toBe(projects.length)
+  })
+
+  it('anchors each note in a sized container', () => {
+    const { container } = render(<ProjectsSection />)
+    const anchors = container.querySelectorAll('.note-anchor-container')
+    expect(anchors.length).toBe(projects.length)
   })
 
   it('has projects id on section', () => {

@@ -14,49 +14,146 @@ interface StickyNoteProps {
 }
 
 const NOTE_ROTATIONS = [-2.5, 1.8, -1.2, 2.2]
-const STRING_LENGTHS = [44, 60, 36, 68]
+
+const SHENG_ZI_CHANG_DU = 64
+const SHENG_ZI_JIE_DIANS = 6
+const SHENG_ZI_ZHONG_LI = 0.45
+const SHENG_ZI_ZU_NI = 0.992
+const BIAN_QIAN_LA_LI = 4.5
+
+const HUI_FU_XI_SHU = 0.0001
+const ZU_NI_XI_SHU = 0.004
+const SHU_BIAO_YING_XIANG = 0.00012
+const FENG_CHANG_PIN_LV = 0.0015
+const FENG_CHANG_QIANG_DU = 0.000008
+const ZUI_DA_PIAN_YI = (6 * Math.PI) / 180
+
+interface ShengZiJieDian {
+  x: number
+  y: number
+  prevX: number
+  prevY: number
+}
 
 function StickyNote({ project, index, reducedMotion }: StickyNoteProps) {
   const link = project.links?.[0]
   const rotation = NOTE_ROTATIONS[index % NOTE_ROTATIONS.length]
-  const stringLength = STRING_LENGTHS[index % STRING_LENGTHS.length]
-
   const colorIndex = index % 4
 
-  const bianQianWaiKeRef = useRef<HTMLDivElement>(null)
+  const rongQiRef = useRef<HTMLDivElement>(null)
+  const pathRef = useRef<SVGPathElement>(null)
+  const clipRef = useRef<HTMLDivElement>(null)
+  const noteRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const wrapper = bianQianWaiKeRef.current
-    if (!wrapper) return
+    const rongQi = rongQiRef.current
+    const path = pathRef.current
+    const clip = clipRef.current
+    const note = noteRef.current
+    if (!rongQi || !path || !clip || !note) return
 
-    const jingZhiJiaoDu = rotation
-    wrapper.style.transform = `rotate(${jingZhiJiaoDu}deg)`
+    const rongQiKuan = rongQi.offsetWidth
+    const maoDianX = rongQiKuan / 2
+    const maoDianY = 0
+    const jieDuanChang = SHENG_ZI_CHANG_DU / SHENG_ZI_JIE_DIANS
 
-    if (reducedMotion) return
+    const jieDians: ShengZiJieDian[] = []
+    for (let i = 0; i <= SHENG_ZI_JIE_DIANS; i++) {
+      const y = maoDianY + i * jieDuanChang
+      jieDians.push({ x: maoDianX, y, prevX: maoDianX, prevY: y })
+    }
 
+    const jingZhiJiaoDuRad = (rotation * Math.PI) / 180
     const zhuangTai = {
-      jiaoDu: (jingZhiJiaoDu * Math.PI) / 180,
+      jiaoDu: jingZhiJiaoDuRad,
       jiaoSuDu: 0,
       shangCiX: 0,
       shangCiY: 0,
       shangCiShiJian: 0,
-      huoDong: false,
+    }
+
+    const huiZhiShengZi = () => {
+      if (jieDians.length < 2) return
+      let d = `M ${jieDians[0].x.toFixed(2)} ${jieDians[0].y.toFixed(2)}`
+      for (let i = 1; i < jieDians.length - 1; i++) {
+        const cur = jieDians[i]
+        const next = jieDians[i + 1]
+        const xc = (cur.x + next.x) / 2
+        const yc = (cur.y + next.y) / 2
+        d += ` Q ${cur.x.toFixed(2)} ${cur.y.toFixed(2)} ${xc.toFixed(2)} ${yc.toFixed(2)}`
+      }
+      const last = jieDians[jieDians.length - 1]
+      d += ` L ${last.x.toFixed(2)} ${last.y.toFixed(2)}`
+      path.setAttribute('d', d)
+    }
+
+    const yingYongJingZhi = () => {
+      huiZhiShengZi()
+      const last = jieDians[jieDians.length - 1]
+      const clipKuan = clip.offsetWidth || 20
+      const clipGao = clip.offsetHeight || 12
+      clip.style.transform = `translate(${(last.x - clipKuan / 2).toFixed(2)}px, ${(last.y - clipGao / 2).toFixed(2)}px)`
+      const noteKuan = note.offsetWidth || rongQiKuan
+      note.style.transform = `translate(${(last.x - noteKuan / 2).toFixed(2)}px, ${last.y.toFixed(2)}px) rotate(${rotation}deg)`
+    }
+
+    if (reducedMotion) {
+      yingYongJingZhi()
+      return
     }
 
     let xunHuanId: number | null = null
     let shangCiZhen = performance.now()
 
-    const HUI_FU_XI_SHU = 0.00006
-    const ZU_NI_XI_SHU = 0.0022
-    const JIAO_DU_YU_ZHI = 0.0003
-    const JIAO_SU_YU_ZHI = 0.00002
-    const SHU_BIAO_YING_XIANG = 0.00045
-    const FENG_CHANG_PIN_LV = 0.0011
-    const FENG_CHANG_QIANG_DU = 0.000008
-    const ZUI_DA_PIAN_YI = (18 * Math.PI) / 180
-
     const yingYongZiTai = () => {
-      wrapper.style.transform = `rotate(${(zhuangTai.jiaoDu * 180) / Math.PI}deg)`
+      huiZhiShengZi()
+      const last = jieDians[jieDians.length - 1]
+      const clipKuan = clip.offsetWidth || 20
+      const clipGao = clip.offsetHeight || 12
+      clip.style.transform = `translate(${(last.x - clipKuan / 2).toFixed(2)}px, ${(last.y - clipGao / 2).toFixed(2)}px)`
+      const noteKuan = note.offsetWidth || rongQiKuan
+      const jiaoDuDeg = (zhuangTai.jiaoDu * 180) / Math.PI
+      note.style.transform = `translate(${(last.x - noteKuan / 2).toFixed(2)}px, ${last.y.toFixed(2)}px) rotate(${jiaoDuDeg.toFixed(3)}deg)`
+    }
+
+    const gengXinShengZi = (dt: number) => {
+      const dtScale = Math.min(dt * 0.06, 1)
+
+      for (let i = 1; i < jieDians.length; i++) {
+        const node = jieDians[i]
+        const vx = (node.x - node.prevX) * SHENG_ZI_ZU_NI
+        const vy = (node.y - node.prevY) * SHENG_ZI_ZU_NI
+        node.prevX = node.x
+        node.prevY = node.y
+        node.x += vx
+        node.y += vy + SHENG_ZI_ZHONG_LI * dtScale
+      }
+
+      const last = jieDians[jieDians.length - 1]
+      const pianYiLi = Math.sin(zhuangTai.jiaoDu - jingZhiJiaoDuRad) * BIAN_QIAN_LA_LI * dtScale
+      last.x += pianYiLi
+
+      for (let iter = 0; iter < 2; iter++) {
+        jieDians[0].x = maoDianX
+        jieDians[0].y = maoDianY
+        for (let i = 0; i < jieDians.length - 1; i++) {
+          const a = jieDians[i]
+          const b = jieDians[i + 1]
+          const dx = b.x - a.x
+          const dy = b.y - a.y
+          const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001
+          const diff = (dist - jieDuanChang) / dist
+          if (i === 0) {
+            b.x -= dx * diff
+            b.y -= dy * diff
+          } else {
+            a.x += dx * diff * 0.5
+            a.y += dy * diff * 0.5
+            b.x -= dx * diff * 0.5
+            b.y -= dy * diff * 0.5
+          }
+        }
+      }
     }
 
     const xunHuan = (shiJian: number) => {
@@ -64,33 +161,23 @@ function StickyNote({ project, index, reducedMotion }: StickyNoteProps) {
       shangCiZhen = shiJian
 
       if (dt > 0) {
-        const pianYi = zhuangTai.jiaoDu - (jingZhiJiaoDu * Math.PI) / 180
+        const pianYi = zhuangTai.jiaoDu - jingZhiJiaoDuRad
         const huiFuLi = -HUI_FU_XI_SHU * pianYi
         const zuNiLi = -ZU_NI_XI_SHU * zhuangTai.jiaoSuDu
         const fengLi = Math.sin(shiJian * FENG_CHANG_PIN_LV + index) * FENG_CHANG_QIANG_DU
         zhuangTai.jiaoSuDu += (huiFuLi + zuNiLi + fengLi) * dt
         zhuangTai.jiaoDu += zhuangTai.jiaoSuDu * dt
-        const jingZhiJiaoDuRad = (jingZhiJiaoDu * Math.PI) / 180
         zhuangTai.jiaoDu = Math.max(
           jingZhiJiaoDuRad - ZUI_DA_PIAN_YI,
           Math.min(jingZhiJiaoDuRad + ZUI_DA_PIAN_YI, zhuangTai.jiaoDu)
         )
+
+        gengXinShengZi(dt)
       }
 
-      const yunDongZhong =
-        zhuangTai.huoDong ||
-        Math.abs(zhuangTai.jiaoDu - (jingZhiJiaoDu * Math.PI) / 180) > JIAO_DU_YU_ZHI ||
-        Math.abs(zhuangTai.jiaoSuDu) > JIAO_SU_YU_ZHI
+      yingYongZiTai()
 
-      if (yunDongZhong) {
-        yingYongZiTai()
-        xunHuanId = requestAnimationFrame(xunHuan)
-      } else {
-        zhuangTai.jiaoSuDu = 0
-        zhuangTai.jiaoDu = (jingZhiJiaoDu * Math.PI) / 180
-        yingYongZiTai()
-        xunHuanId = null
-      }
+      xunHuanId = requestAnimationFrame(xunHuan)
     }
 
     const chuLiYiDong = (e: MouseEvent) => {
@@ -103,7 +190,7 @@ function StickyNote({ project, index, reducedMotion }: StickyNoteProps) {
         const fengSu = Math.sqrt(vx * vx + vy * vy)
 
         if (fengSu > 0.03) {
-          const qieXiangSuDu = vx * Math.cos(zhuangTai.jiaoDu) + vy * Math.sin(zhuangTai.jiaoDu)
+          const qieXiangSuDu = -(vx * Math.cos(zhuangTai.jiaoDu) + vy * Math.sin(zhuangTai.jiaoDu))
           zhuangTai.jiaoSuDu += qieXiangSuDu * SHU_BIAO_YING_XIANG
         }
       }
@@ -119,7 +206,6 @@ function StickyNote({ project, index, reducedMotion }: StickyNoteProps) {
     }
 
     const chuLiJinRu = () => {
-      zhuangTai.huoDong = true
       zhuangTai.shangCiShiJian = 0
       if (xunHuanId === null) {
         shangCiZhen = performance.now()
@@ -128,45 +214,44 @@ function StickyNote({ project, index, reducedMotion }: StickyNoteProps) {
     }
 
     const chuLiLiKai = () => {
-      zhuangTai.huoDong = false
+      zhuangTai.shangCiShiJian = 0
     }
 
-    wrapper.addEventListener('mouseenter', chuLiJinRu)
-    wrapper.addEventListener('mouseleave', chuLiLiKai)
-    wrapper.addEventListener('mousemove', chuLiYiDong)
+    note.addEventListener('mouseenter', chuLiJinRu)
+    note.addEventListener('mouseleave', chuLiLiKai)
+    note.addEventListener('mousemove', chuLiYiDong)
 
+    yingYongZiTai()
     shangCiZhen = performance.now()
     xunHuanId = requestAnimationFrame(xunHuan)
 
     return () => {
       if (xunHuanId !== null) {
         cancelAnimationFrame(xunHuanId)
+        xunHuanId = null
       }
-      wrapper.removeEventListener('mouseenter', chuLiJinRu)
-      wrapper.removeEventListener('mouseleave', chuLiLiKai)
-      wrapper.removeEventListener('mousemove', chuLiYiDong)
-      wrapper.style.removeProperty('transform')
+      note.removeEventListener('mouseenter', chuLiJinRu)
+      note.removeEventListener('mouseleave', chuLiLiKai)
+      note.removeEventListener('mousemove', chuLiYiDong)
+      note.style.removeProperty('transform')
+      clip.style.removeProperty('transform')
+      path.removeAttribute('d')
     }
   }, [reducedMotion, rotation, index])
 
   const paper = (
-    <div className="note-paper note-parchment relative w-44 will-change-transform md:w-52">
+    <div ref={noteRef} className="note-paper note-parchment">
       <img
         src="/images/parchment-note.png"
         alt=""
         className={cn('note-parchment-img', `note-color-${colorIndex}`)}
         aria-hidden="true"
       />
-      <div
-        className={cn(
-          'note-parchment-content relative flex flex-col gap-2 transition-all duration-300 will-change-transform',
-          'group-hover:scale-105 group-hover:-translate-y-2 group-focus-visible:scale-105 group-focus-visible:-translate-y-2'
-        )}
-      >
-        <h3 className="font-display text-base font-semibold leading-tight note-text line-clamp-2 md:text-lg">
+      <div className="note-parchment-content">
+        <h3 className="font-display text-sm font-semibold leading-tight note-text line-clamp-2 md:text-base">
           {t(project.nameKey)}
         </h3>
-        <p className="line-clamp-4 text-xs leading-relaxed note-text-soft md:text-sm">{t(project.descKey)}</p>
+        <p className="line-clamp-3 text-xs leading-relaxed note-text-soft md:text-sm">{t(project.descKey)}</p>
         {link && (
           <div className="mt-1 inline-flex items-center gap-1 self-start text-xs font-medium note-text-soft transition-opacity group-hover:opacity-100">
             <span className="line-clamp-1 max-w-[8rem]">{t(link.labelKey)}</span>
@@ -179,23 +264,21 @@ function StickyNote({ project, index, reducedMotion }: StickyNoteProps) {
 
   const content = (
     <div
-      ref={bianQianWaiKeRef}
-      className={cn('note-wrapper group flex flex-col items-center outline-none', !reducedMotion && 'note-physics')}
+      ref={rongQiRef}
+      className={cn('note-anchor-container group outline-none', !reducedMotion && 'note-physics')}
       data-feng={reducedMotion ? undefined : ''}
-      style={{
-        marginTop: `${stringLength}px`,
-      }}
     >
-      <div
-        className="note-string w-px bg-gradient-to-b from-text-secondary/50 to-text-secondary/20"
-        style={{ height: `${stringLength}px` }}
-        aria-hidden="true"
-      />
-      <div
-        className="note-clip my-1 h-3 w-5 rounded-sm shadow-sm"
-        style={{ background: 'oklch(from #a16207 l c h / 0.85)' }}
-        aria-hidden="true"
-      />
+      <svg className="rope-svg" aria-hidden="true">
+        <path
+          ref={pathRef}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          className="text-text-secondary/60"
+        />
+      </svg>
+      <div ref={clipRef} className="note-clip" aria-hidden="true" />
       {paper}
     </div>
   )
@@ -223,23 +306,7 @@ export function ProjectsSection() {
   return (
     <Section id="projects" title={t('projects.title')} subtitle={t('projects.subtitle')}>
       <div className="relative min-h-[28rem] px-2 py-4 md:min-h-[32rem]">
-        <svg
-          className="rope-svg pointer-events-none absolute left-0 right-0 top-0 h-20 w-full"
-          viewBox="0 0 1000 80"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M0,40 C200,58 400,22 600,40 C800,58 900,30 1000,40"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="text-text-secondary/60"
-          />
-        </svg>
-
-        <div className="relative z-10 flex flex-wrap items-start justify-center gap-3 pt-10 md:gap-6 md:pt-14">
+        <div className="relative z-10 flex flex-wrap items-start justify-center gap-3 md:gap-6">
           {projects.map((project, index) => (
             <StickyNote key={project.id} project={project} index={index} reducedMotion={reducedMotion} />
           ))}

@@ -867,15 +867,57 @@ html.circular-reveal-active::view-transition-old(root) {
 }
 
 /* Projects Rope + Sticky Notes */
-.rope-svg {
-  filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--color-bg) 60%, transparent));
+.note-anchor-container {
+  position: relative;
+  width: 11rem;
+  height: calc(64px + 11rem * 841 / 800);
 }
 
-.note-wrapper {
-  transform-origin: top center;
+@media (min-width: 768px) {
+  .note-anchor-container {
+    width: 13rem;
+    height: calc(64px + 13rem * 841 / 800);
+  }
 }
 
 .note-physics {
+  will-change: transform;
+}
+
+.rope-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 64px;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-bg) 60%, transparent));
+}
+
+.note-clip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 12px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #9a6432 0%, #6b4423 60%, #4a2f1a 100%);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 3;
+  will-change: transform;
+}
+
+.note-paper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  transform-origin: top center;
   will-change: transform;
 }
 
@@ -903,12 +945,16 @@ html.circular-reveal-active::view-transition-old(root) {
 .note-parchment-content {
   position: relative;
   z-index: 1;
-  padding: 34% 10% 8% 14%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 28px 18px 18px 22px;
 }
 
 @media (min-width: 768px) {
   .note-parchment-content {
-    padding: 38% 12% 10% 16%;
+    gap: 0.5rem;
+    padding: 32px 20px 20px 24px;
   }
 }
 

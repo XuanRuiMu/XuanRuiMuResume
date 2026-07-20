@@ -61,19 +61,21 @@ export function NebulaBackground({
   const meteorCount = postProcessing && !reducedMotion ? params.meteorCount : 0
 
   return (
-    <group ref={groupRef}>
+    <>
       <color attach="background" args={[bgColor]} />
-      <NebulaCloud params={params} reducedMotion={reducedMotion} />
-      <StarField params={params} pixelRatio={pixelRatio} reducedMotion={reducedMotion} seed={seed} />
-      {meteorCount > 0 && (
-        <MeteorLayer
-          count={meteorCount}
-          spawnRate={params.meteorSpawnRate}
-          color={params.palette.meteor}
-          bounds={params.meteorBounds}
-          speed={params.meteorSpeed}
-        />
-      )}
-    </group>
+      <group ref={groupRef}>
+        <NebulaCloud params={params} reducedMotion={reducedMotion} />
+        <StarField params={params} pixelRatio={pixelRatio} reducedMotion={reducedMotion} seed={seed} />
+        {meteorCount > 0 && (
+          <MeteorLayer
+            count={meteorCount}
+            spawnRate={params.meteorSpawnRate}
+            color={params.palette.meteor}
+            bounds={params.meteorBounds}
+            speed={params.meteorSpeed}
+          />
+        )}
+      </group>
+    </>
   )
 }

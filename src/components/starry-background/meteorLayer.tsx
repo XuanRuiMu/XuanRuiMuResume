@@ -15,6 +15,7 @@ interface MeteorLayerProps {
 
 export function MeteorLayer({ count, spawnRate, color, bounds, speed }: MeteorLayerProps) {
   const meteorsRef = useRef<Meteor[]>([])
+  const lineSegmentsRef = useRef<LineSegments>(null)
   const { geometry, material } = useMemo(() => {
     const geo = new BufferGeometry()
     geo.setAttribute('position', new BufferAttribute(new Float32Array(count * 6), 3))
@@ -119,5 +120,5 @@ export function MeteorLayer({ count, spawnRate, color, bounds, speed }: MeteorLa
     geometry.setDrawRange(0, activeCount * 2)
   })
 
-  return <lineSegments ref={useRef<LineSegments>(null)} geometry={geometry} material={material} />
+  return <lineSegments ref={lineSegmentsRef} geometry={geometry} material={material} />
 }

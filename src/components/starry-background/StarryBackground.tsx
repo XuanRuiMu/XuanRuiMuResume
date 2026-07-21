@@ -104,6 +104,7 @@ export function StarryBackground({ className }: StarryBackgroundProps) {
           isLight={isLight}
           reducedMotion={reducedMotion}
           postProcessing={settings.postProcessing}
+          volumetric={settings.volumetric}
           pixelRatio={dprValue}
           mouseRef={mouseRef}
           scrollProgress={scrollProgress}

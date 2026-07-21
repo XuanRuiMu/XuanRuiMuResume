@@ -925,8 +925,6 @@ html.circular-reveal-active::view-transition-old(root) {
   --note-text: #3d3024;
   --note-text-soft: #5c4d3c;
   --note-border: rgba(61, 48, 36, 0.15);
-  display: flex;
-  align-items: stretch;
   aspect-ratio: 800 / 841;
 }
 
@@ -943,19 +941,43 @@ html.circular-reveal-active::view-transition-old(root) {
 }
 
 .note-parchment-content {
-  position: relative;
+  position: absolute;
+  inset: 10.82% 17.625% 14.03% 14.375%;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 28px 18px 18px 22px;
+  gap: clamp(0.2rem, 0.35vw + 0.1rem, 0.5rem);
+  overflow: hidden;
+  pointer-events: none;
 }
 
-@media (min-width: 768px) {
-  .note-parchment-content {
-    gap: 0.5rem;
-    padding: 32px 20px 20px 24px;
-  }
+.note-paper > .note-parchment-content > * {
+  pointer-events: auto;
+}
+
+.note-title {
+  font-size: clamp(0.72rem, 0.55rem + 0.55vw, 0.95rem);
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.note-desc {
+  font-size: clamp(0.62rem, 0.52rem + 0.38vw, 0.82rem);
+  line-height: 1.45;
+  letter-spacing: 0.005em;
+}
+
+.note-link-text {
+  font-size: clamp(0.6rem, 0.55rem + 0.22vw, 0.75rem);
+  line-height: 1.2;
+  margin-top: 0.15rem;
+}
+
+.note-link-label {
+  max-width: 7rem;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .note-text {

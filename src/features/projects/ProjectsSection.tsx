@@ -76,62 +76,49 @@ function StickyNote({ project, index, reducedMotion, 注册Ref, 注销Ref }: Sti
     return () => 注销Ref(project.id)
   }, [project.id, 注册Ref, 注销Ref, reducedMotion, rotation])
 
-  const paper = (
-    <div ref={noteRef} className="note-paper note-parchment">
-      <img
-        src="/images/parchment-note.png"
-        alt=""
-        className={cn('note-parchment-img', `note-color-${colorIndex}`)}
-        aria-hidden="true"
-      />
-      <div className="note-parchment-content">
-        <h3 className="font-display note-title note-text line-clamp-2">{t(project.nameKey)}</h3>
-        <p className="line-clamp-3 note-desc note-text-soft">{t(project.descKey)}</p>
-        {link && (
-          <div className="note-link-text inline-flex items-center gap-1 self-start note-text-soft transition-opacity group-hover:opacity-100">
-            <span className="line-clamp-1 note-link-label">{t(link.labelKey)}</span>
-            <ExternalLink size={12} aria-hidden="true" />
-          </div>
-        )}
-      </div>
-    </div>
-  )
-
-  const content = (
+  return (
     <div
       ref={rongQiRef}
       className={cn('note-anchor-container group outline-none', !reducedMotion && 'note-physics')}
       data-feng={reducedMotion ? undefined : ''}
     >
       <svg className="rope-svg" aria-hidden="true">
-        <path
-          ref={pathRef}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          className="text-text-secondary/60"
-        />
+        <defs>
+          <linearGradient id="silver-rope-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#e8eaed" />
+            <stop offset="45%" stopColor="#9aa0a6" />
+            <stop offset="100%" stopColor="#5f6368" />
+          </linearGradient>
+        </defs>
+        <path ref={pathRef} fill="none" stroke="url(#silver-rope-gradient)" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
       <div ref={clipRef} className="note-clip" aria-hidden="true" />
-      {paper}
+      <div ref={noteRef} className="note-paper note-parchment">
+        <img
+          src="/images/标准.png"
+          alt=""
+          className={cn('note-parchment-img', `note-color-${colorIndex}`)}
+          aria-hidden="true"
+        />
+        <div className="note-color-overlay" data-color={colorIndex} aria-hidden="true" />
+        <div className="note-parchment-content">
+          <h3 className="font-display note-title note-text">{t(project.nameKey)}</h3>
+          <p className="note-desc note-text-soft">{t(project.descKey)}</p>
+          {link && (
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="note-link-text inline-flex items-center gap-1 self-start note-text-soft transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              aria-label={`${t(project.nameKey)}：${t(link.labelKey)}`}
+            >
+              <span className="note-link-label">{t(link.labelKey)}</span>
+              <ExternalLink size={12} aria-hidden="true" />
+            </a>
+          )}
+        </div>
+      </div>
     </div>
-  )
-
-  if (!link) {
-    return content
-  }
-
-  return (
-    <a
-      href={link.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="note-link block"
-      aria-label={`${t(project.nameKey)}：${t(link.labelKey)}`}
-    >
-      {content}
-    </a>
   )
 }
 

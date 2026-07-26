@@ -5,7 +5,7 @@ describe('useAppStore', () => {
   beforeEach(() => {
     useAppStore.setState({
       activeSection: null,
-      theme: 'system',
+      theme: 'dark',
       commandOpen: false,
       chatOpen: false,
       aiMessages: [],
@@ -18,7 +18,7 @@ describe('useAppStore', () => {
   it('should have correct initial state', () => {
     const state = useAppStore.getState()
     expect(state.activeSection).toBeNull()
-    expect(state.theme).toBe('system')
+    expect(state.theme).toBe('dark')
     expect(state.commandOpen).toBe(false)
     expect(state.chatOpen).toBe(false)
     expect(state.aiMessages).toHaveLength(0)

@@ -11,7 +11,7 @@ describe('UiComponentRenderer', () => {
   it('renders ProjectCard component', () => {
     render(<UiComponentRenderer component={{ type: 'ProjectCard', projectId: 'xrm' }} />)
     expect(screen.getByTestId('ui-component-ProjectCard')).toBeInTheDocument()
-    expect(screen.getByText('暮澜纪元 MMORPG 服务端')).toBeInTheDocument()
+    expect(screen.getByText('暮澜纪元')).toBeInTheDocument()
   })
 
   it('renders SkillRadar component', () => {

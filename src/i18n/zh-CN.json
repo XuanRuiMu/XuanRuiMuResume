@@ -55,6 +55,21 @@
     "description": "页面渲染出错了，刷新一下试试。",
     "reload": "刷新页面"
   },
+  "controls": {
+    "toggle": "控制面板",
+    "tabs": {
+      "starry": "星空",
+      "notes": "便签"
+    },
+    "starry": {
+      "speed": "旋转速度",
+      "breath": "中心呼吸",
+      "hint": "深色模式下，移动鼠标可像水墨画笔一样拨开遮挡层，露出星空背景。"
+    },
+    "notes": {
+      "placeholder": "便签控制面板预留位，后续将集成物理开关、颜色主题等选项。"
+    }
+  },
   "footer": {
     "copyright": "© 2026 玄锐暮. 保留所有权利。",
     "status": "玄锐暮 · 在线简历 · 离线可用"
@@ -259,8 +274,8 @@
     },
     "projects": {
       "xrm": {
-        "name": "暮澜纪元 MMORPG 服务端",
-        "desc": "自己一个人写的 Minecraft MMORPG 服务端插件，120 多个 Java 类，职业、天赋、任务、事件和社交系统都自己搭。",
+        "name": "暮澜纪元",
+        "desc": "Minecraft 1.21.4 整合包，融合魔法、科技与冒险，深度自定义世界生成与剧情线。",
         "metrics": {
           "classes": "120+ Java 类",
           "systems": "8 世界 / 32 职业"

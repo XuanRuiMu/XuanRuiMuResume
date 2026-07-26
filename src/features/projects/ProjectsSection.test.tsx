@@ -111,7 +111,7 @@ describe('ProjectsSection', () => {
     const images = container.querySelectorAll('.note-parchment-img')
     expect(images.length).toBe(projects.length)
     for (const img of images) {
-      expect(img).toHaveAttribute('src', '/images/parchment-note.png')
+      expect(img).toHaveAttribute('src', '/images/标准.png')
       expect(img).toHaveAttribute('aria-hidden', 'true')
     }
   })

@@ -28,19 +28,32 @@ export interface 便签姿态 {
 export type 姿态回调 = (姿态列表: 便签姿态[]) => void
 
 const 重力Y = 1
-const 节点半径 = 1
-const 节点密度 = 0.001
-const 节点阻尼 = 0.35
+const 节点半径 = 2
+// 绳节点质量必须与便签质量在同一量级，否则重便签会把轻绳节点整条拉伸下坠。
+// 便签质量 ≈ 便签密度 × 面积(≈4.5万) ≈ 40；绳节点质量 = 节点密度 × πr²。
+// 取 节点密度 0.9 使单个节点质量 ≈ 11，与便签同量级，约束不再被拉爆。
+const 节点密度 = 0.9
+const 节点阻尼 = 0.28
 const 便签密度 = 0.0009
 const 便签阻尼 = 0.08
-const 绳约束刚度 = 0.96
-const 绳便签约束刚度 = 0.65
-const 绳便签约束阻尼 = 0.15
+// 刚性约束：绳段与"绳-便签"连接均取满刚度，配合高迭代求解器保证悬挂位置精确。
+const 绳约束刚度 = 1
+const 绳便签约束刚度 = 1
+const 绳便签约束阻尼 = 0.1
+// 求解器迭代次数——刚性长链 + 重物需要更高迭代才能收敛到正确悬挂位置。
+const 约束迭代次数 = 12
+const 位置迭代次数 = 12
+const 速度迭代次数 = 8
 const 环境风强度 = 0.0000045
 const 环境风频率 = 0.0009
 const 鼠标力系数 = 0.00012
 const 鼠标最小速度 = 0.03
 const 默认最大帧间隔 = 16.666
+// 所有便签共享同一物理世界，但它们生成于各自容器坐标系中的相同相对位置
+// （锚点X=容器宽/2）。若允许碰撞，多个刚体会在世界中互相弹开、四散下坠。
+// 本模拟为纯悬挂效果，不需要刚体间碰撞，故用同一负碰撞组令所有刚体永不相撞。
+const 非碰撞组 = -1
+const 非碰撞过滤 = { group: 非碰撞组 } as const
 
 interface 便签内部数据 {
   配置: 便签配置
@@ -72,6 +85,9 @@ export class 便签物理引擎 {
   constructor() {
     this.engine = Engine.create()
     this.engine.gravity.y = 重力Y
+    this.engine.constraintIterations = 约束迭代次数
+    this.engine.positionIterations = 位置迭代次数
+    this.engine.velocityIterations = 速度迭代次数
   }
 
   添加便签(配置: 便签配置): void {
@@ -84,6 +100,7 @@ export class 便签物理引擎 {
     const 锚点 = Bodies.circle(锚点X, 锚点Y, 节点半径, {
       isStatic: true,
       frictionAir: 0,
+      collisionFilter: 非碰撞过滤,
     })
 
     const 绳节点: Matter.Body[] = []
@@ -92,6 +109,7 @@ export class 便签物理引擎 {
       const node = Bodies.circle(锚点X, 节点Y, 节点半径, {
         density: 节点密度,
         frictionAir: 节点阻尼,
+        collisionFilter: 非碰撞过滤,
       })
       绳节点.push(node)
     }
@@ -102,6 +120,7 @@ export class 便签物理引擎 {
       density: 便签密度,
       frictionAir: 便签阻尼,
       angle: 静止角Rad,
+      collisionFilter: 非碰撞过滤,
     })
 
     const 约束列表: Matter.Constraint[] = []

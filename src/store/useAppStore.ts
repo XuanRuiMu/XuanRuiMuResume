@@ -74,7 +74,7 @@ export const SECTIONS: Record<string, AppSection> = {
 
 export const useAppStore = create<AppState>((set, get) => ({
   activeSection: null,
-  theme: 'system',
+  theme: 'dark',
   commandOpen: false,
   chatOpen: false,
   aiMessages: [],

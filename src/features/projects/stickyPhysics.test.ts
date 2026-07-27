@@ -201,7 +201,7 @@ describe('便签物理引擎', () => {
       索引: 0,
     })
     expect(配置.便签宽).toBe(208)
-    expect(配置.便签高).toBeCloseTo(208 * (841 / 800), 1)
+    expect(配置.便签高).toBeCloseTo(208 * (638 / 547), 1)
     expect(配置.绳节点数).toBe(6)
     expect(配置.最大偏移Deg).toBe(8)
   })

@@ -14,30 +14,31 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   return (
     <div className="relative flex min-h-screen flex-col bg-bg text-text-primary">
-      <A25StarryBackground className="z-0" />
-      <InkRevealOverlay />
-      <PWAStatusIndicator />
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-border">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <NavDock />
-          <div className="flex items-center gap-2">
-            <StarryBackgroundControls />
-            <ThemeToggle />
+      <A25StarryBackground className="z-0">
+        <InkRevealOverlay />
+        <PWAStatusIndicator />
+        <header className="fixed inset-x-0 top-0 z-50 border-b border-border">
+          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+            <NavDock />
+            <div className="flex items-center gap-2">
+              <StarryBackgroundControls />
+              <ThemeToggle />
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="relative z-10 flex-1 pt-14">{children}</main>
+        <main className="relative z-10 flex-1 pt-14">{children}</main>
 
-      <footer className="border-t border-border px-4 py-6">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 text-xs text-muted text-shadow-readable sm:flex-row">
-          <span>{t('footer.copyright')}</span>
-          <span>{t('footer.status')}</span>
-        </div>
-      </footer>
+        <footer className="border-t border-border px-4 py-6">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 text-xs text-muted text-shadow-readable sm:flex-row">
+            <span>{t('footer.copyright')}</span>
+            <span>{t('footer.status')}</span>
+          </div>
+        </footer>
 
-      <CommandPalette />
-      <AIChat />
+        <CommandPalette />
+        <AIChat />
+      </A25StarryBackground>
     </div>
   )
 }

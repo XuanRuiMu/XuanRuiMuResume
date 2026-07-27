@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { Layout } from './layout'
 
 vi.mock('../components/nav-dock/NavDock', () => ({
@@ -23,8 +24,10 @@ vi.mock('../components/PWAStatusIndicator', () => ({
 }))
 
 vi.mock('../components/starry-background', () => ({
-  A25StarryBackground: ({ className }: { className?: string }) => (
-    <div data-testid="starry-background" className={className} />
+  A25StarryBackground: ({ className, children }: { className?: string; children?: ReactNode }) => (
+    <div data-testid="starry-background" className={className}>
+      {children}
+    </div>
   ),
   InkRevealOverlay: () => <div data-testid="ink-reveal-overlay" />,
   StarryBackgroundControls: () => <button type="button" data-testid="starry-controls" />,

@@ -57,10 +57,13 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
   let breathEnabled = options.breathEnabled ?? true
 
   const scene = new THREE.Scene()
-  scene.fog = new THREE.FogExp2(0x05060f, 0.025)
+  // 极低雾密度：只给远景一点纵深 cues，绝不让背景星被雾衰减到看不见。
+  scene.fog = new THREE.FogExp2(0x05060f, 0.0035)
 
-  const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 200)
-  camera.position.set(6, 4, 9)
+  // 相机对准星系中心并显式 lookAt——否则相机默认朝 -Z 看，会把星系甩到画面左下。
+  const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 300)
+  camera.position.set(0, 5.5, 13.5)
+  camera.lookAt(0, 0, 0)
 
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -77,7 +80,7 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
 
   const galaxyParams: GalaxyParams = {
     count: particleCount,
-    size: 0.06,
+    size: 0.085,
     radius: 10,
     branches: 5,
     spin: 1,
@@ -132,22 +135,32 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
     const n = count
     const geo = new THREE.BufferGeometry()
     const pos = new Float32Array(n * 3)
+    const col = new Float32Array(n * 3)
     for (let i = 0; i < n; i++) {
       const i3 = i * 3
-      const r = 40 + Math.random() * 60
+      // 全球面均匀分布，半径拉大到包住相机，让星点铺满整个视野。
+      const r = 45 + Math.random() * 80
       const theta = Math.random() * Math.PI * 2
       const phi = Math.acos(2 * Math.random() - 1)
       pos[i3] = r * Math.sin(phi) * Math.cos(theta)
       pos[i3 + 1] = r * Math.sin(phi) * Math.sin(theta)
       pos[i3 + 2] = r * Math.cos(phi)
+      // 星点颜色：白 / 暖白 / 淡蓝 随机，营造真实星空色差。
+      const t = Math.random()
+      const c = t < 0.6 ? [1, 1, 1] : t < 0.85 ? [1, 0.9, 0.78] : [0.72, 0.82, 1]
+      const bright = 0.6 + Math.random() * 0.4
+      col[i3] = c[0] * bright
+      col[i3 + 1] = c[1] * bright
+      col[i3 + 2] = c[2] * bright
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
     const mat = new THREE.PointsMaterial({
-      size: 0.15,
+      size: 0.55,
       sizeAttenuation: true,
-      color: 0xffffff,
+      vertexColors: true,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.95,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       map: starTex,
@@ -159,14 +172,14 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
   scene.add(breatheGroup)
 
   let galaxy = buildGalaxy(particleCount)
-  let bgStars = buildBackgroundStars(Math.round(1500 * (particleCount / DEFAULT_PARTICLE_COUNT)))
+  let bgStars = buildBackgroundStars(Math.round(4500 * (particleCount / DEFAULT_PARTICLE_COUNT)))
   breatheGroup.add(galaxy)
   breatheGroup.add(bgStars)
 
   const uTime = { value: 0 }
   const breatheGLSL = `float breathe(float t) { return 0.5 + 0.5 * sin(t * 6.28318530718 * 0.15); }`
 
-  const sphereGeo = new THREE.SphereGeometry(0.25, 32, 32)
+  const sphereGeo = new THREE.SphereGeometry(0.85, 48, 48)
   const sphereMat = new THREE.ShaderMaterial({
     uniforms: { uTime },
     vertexShader: `
@@ -183,22 +196,22 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
       uniform float uTime;
       varying vec3 vNormal;
       varying vec3 vViewDir;
-      const vec3 colorPeak   = vec3(0.165, 0.039, 0.290);
-      const vec3 colorValley = vec3(0.020, 0.0, 0.031);
+      const vec3 colorPeak   = vec3(0.42, 0.13, 0.74);
+      const vec3 colorValley = vec3(0.03, 0.0, 0.05);
       ${breatheGLSL}
       void main() {
         float intensity = breathe(uTime);
         vec3 color = mix(colorValley, colorPeak, intensity);
         float fresnel = 1.0 - max(dot(vNormal, vViewDir), 0.0);
         fresnel = pow(fresnel, 1.5);
-        color += colorPeak * fresnel * (0.2 + intensity * 0.5);
+        color += colorPeak * fresnel * (0.5 + intensity * 0.9);
         gl_FragColor = vec4(color, 1.0);
       }
     `,
   })
   breatheGroup.add(new THREE.Mesh(sphereGeo, sphereMat))
 
-  const haloGeo = new THREE.SphereGeometry(0.35, 32, 32)
+  const haloGeo = new THREE.SphereGeometry(1.3, 48, 48)
   const haloMat = new THREE.ShaderMaterial({
     uniforms: { uTime },
     transparent: true,
@@ -219,13 +232,13 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
       uniform float uTime;
       varying vec3 vNormal;
       varying vec3 vViewDir;
-      const vec3 colorPeak = vec3(0.165, 0.039, 0.290);
+      const vec3 colorPeak = vec3(0.42, 0.13, 0.74);
       ${breatheGLSL}
       void main() {
         float intensity = breathe(uTime);
         float fresnel = 1.0 - max(dot(vNormal, vViewDir), 0.0);
         fresnel = pow(fresnel, 2.0);
-        gl_FragColor = vec4(colorPeak, fresnel * intensity * 0.25);
+        gl_FragColor = vec4(colorPeak, fresnel * intensity * 0.5);
       }
     `,
   })
@@ -279,7 +292,7 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
       galaxy.geometry.dispose()
       bgStars.geometry.dispose()
       galaxy = buildGalaxy(safeCount)
-      bgStars = buildBackgroundStars(Math.round(1500 * (safeCount / DEFAULT_PARTICLE_COUNT)))
+      bgStars = buildBackgroundStars(Math.round(4500 * (safeCount / DEFAULT_PARTICLE_COUNT)))
       breatheGroup.add(galaxy)
       breatheGroup.add(bgStars)
     },

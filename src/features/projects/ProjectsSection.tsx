@@ -198,6 +198,8 @@ export function ProjectsSection() {
       const refs = refsSnapshot.get(project.id)
       if (!refs) continue
       const move = (e: MouseEvent) => {
+        // 按住鼠标拖动(如选中文字)时不施加摆动力，避免便签随鼠标跑动干扰选中；仅悬停时才摆动。
+        if (e.buttons !== 0) return
         引擎.施加鼠标力(project.id, e.clientX, e.clientY)
       }
       const enter = () => 引擎.重置鼠标状态(project.id)

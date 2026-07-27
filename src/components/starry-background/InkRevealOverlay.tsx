@@ -8,7 +8,7 @@ interface InkRevealOverlayProps {
   brushSize?: number
 }
 
-export function InkRevealOverlay({ enabled = true, healSeconds = 2.5, brushSize = 180 }: InkRevealOverlayProps) {
+export function InkRevealOverlay({ enabled = true, healSeconds = 2.8, brushSize = 160 }: InkRevealOverlayProps) {
   const rendererRef = useRef<InkRevealRenderer | null>(null)
   const isDark = useIsDarkMode()
 
@@ -22,10 +22,17 @@ export function InkRevealOverlay({ enabled = true, healSeconds = 2.5, brushSize 
     const onMove = (e: PointerEvent) => {
       renderer.onPointerMove(e.clientX, e.clientY)
     }
+    const onLeave = () => {
+      renderer.onPointerLeave()
+    }
     window.addEventListener('pointermove', onMove, { passive: true })
+    document.documentElement.addEventListener('pointerleave', onLeave)
+    window.addEventListener('blur', onLeave)
 
     return () => {
       window.removeEventListener('pointermove', onMove)
+      document.documentElement.removeEventListener('pointerleave', onLeave)
+      window.removeEventListener('blur', onLeave)
       renderer.unmount()
       rendererRef.current = null
     }

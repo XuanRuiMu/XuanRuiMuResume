@@ -2,8 +2,19 @@ export interface InkRevealOptions {
   healSeconds?: number
   brushSize?: number
   enabled?: boolean
+  /** 遮挡层颜色（默认深色模式用的近黑） */
+  coverColor?: string
 }
 
+/**
+ * 水墨揭示渲染器（极致还原 mimo.xiaomi.com 的水墨画笔效果）。
+ *
+ * 核心设计：
+ * - 遮挡层是一张全屏 canvas，默认涂满 coverColor（z-index:1，盖住星空 z-0、被内容 z-10 压住）。
+ * - 鼠标划过时，沿指针轨迹**插值**连续盖章（destination-out 擦除），快速移动也不断线。
+ * - 笔刷是多层不规则径向渐变 blob + 内部"飞白"空隙 + 每章随机旋转/缩放/浓淡，模拟真实水墨晕染。
+ * - 复原按需触发：只有发生过擦除才启动 rAF，渐隐回遮挡色，复原完成后停止循环（空闲零开销）。
+ */
 export class InkRevealRenderer {
   private readonly canvas: HTMLCanvasElement
   private readonly ctx: CanvasRenderingContext2D
@@ -12,20 +23,30 @@ export class InkRevealRenderer {
   private rafId: number | null = null
   private pointer = { x: -1000, y: -1000, active: false }
   private healAlpha: number
+  private healSeconds: number
   private enabled: boolean
   private brushSize: number
+  private readonly coverColor: string
+  private readonly coverRgb: string
+  private dpr = 1
+  private lastStampTime = 0
 
   constructor(options: InkRevealOptions = {}) {
+    this.brushSize = options.brushSize ?? 160
+    this.healSeconds = options.healSeconds ?? 2.8
+    // 复原 alpha 调到复原窗口结束时约覆盖 95%，最后再一次填满，避免跳变。
+    this.healAlpha = 3 / Math.max(20, this.healSeconds * 60)
+    this.enabled = options.enabled ?? true
+    this.coverColor = options.coverColor ?? '#05060f'
+    this.coverRgb = this.hexToRgb(this.coverColor)
+
     this.canvas = document.createElement('canvas')
     this.canvas.className = 'ink-reveal-overlay'
-    this.canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:-1;'
+    // z-index:1 —— 高于星空画布(z-0)、低于主内容(z-10)。
+    this.canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;'
     const ctx = this.canvas.getContext('2d', { alpha: true })
     if (!ctx) throw new Error('无法创建 2D context')
     this.ctx = ctx
-
-    this.brushSize = options.brushSize ?? 180
-    this.healAlpha = 1 / Math.max(30, (options.healSeconds ?? 2.5) * 60)
-    this.enabled = options.enabled ?? true
 
     this.brush = document.createElement('canvas')
     this.brush.width = this.brushSize * 2
@@ -42,12 +63,11 @@ export class InkRevealRenderer {
   mount(container: HTMLElement) {
     container.appendChild(this.canvas)
     window.addEventListener('resize', this.resize)
-    this.start()
   }
 
   unmount() {
     window.removeEventListener('resize', this.resize)
-    this.stop()
+    this.stopHeal()
     if (this.canvas.parentNode) {
       this.canvas.parentNode.removeChild(this.canvas)
     }
@@ -55,6 +75,7 @@ export class InkRevealRenderer {
 
   setEnabled(enabled: boolean) {
     this.enabled = enabled
+    this.stopHeal()
     if (!enabled) {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     } else {
@@ -63,7 +84,8 @@ export class InkRevealRenderer {
   }
 
   setHealSeconds(seconds: number) {
-    this.healAlpha = 1 / Math.max(30, seconds * 60)
+    this.healSeconds = seconds
+    this.healAlpha = 3 / Math.max(20, seconds * 60)
   }
 
   setBrushSize(size: number) {
@@ -74,73 +96,154 @@ export class InkRevealRenderer {
   }
 
   onPointerMove(x: number, y: number) {
-    this.pointer.x = x * window.devicePixelRatio
-    this.pointer.y = y * window.devicePixelRatio
+    if (!this.enabled) return
+    const px = x * this.dpr
+    const py = y * this.dpr
+    if (this.pointer.active) {
+      const dx = px - this.pointer.x
+      const dy = py - this.pointer.y
+      const dist = Math.hypot(dx, dy)
+      const step = this.brushSize * this.dpr * 0.3
+      if (dist > step) {
+        // 轨迹插值：快速移动时补足中间笔触，保证连续不断线。
+        const steps = Math.min(Math.floor(dist / step), 24)
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps
+          this.stamp(this.pointer.x + dx * t, this.pointer.y + dy * t)
+        }
+      } else {
+        this.stamp(px, py)
+      }
+    } else {
+      this.stamp(px, py)
+    }
+    this.pointer.x = px
+    this.pointer.y = py
     this.pointer.active = true
-    this.stamp()
+    this.kickHeal()
   }
 
+  onPointerLeave() {
+    this.pointer.active = false
+  }
+
+  /** 构建一枚不规则水墨笔刷：多层 blob + 飞白。 */
   private buildBrush() {
     const ctx = this.brushCtx
-    const w = this.brush.width
-    const h = this.brush.height
-    ctx.clearRect(0, 0, w, h)
-    const centerX = w / 2
-    const centerY = h / 2
-    const blobs = 28
-    for (let i = 0; i < blobs; i++) {
+    const size = this.brush.width
+    const c = size / 2
+    ctx.clearRect(0, 0, size, size)
+    ctx.globalCompositeOperation = 'source-over'
+
+    // 多层不规则径向渐变 blob，越靠中心越浓密，边缘参差。
+    const layers = 42
+    for (let i = 0; i < layers; i++) {
       const angle = Math.random() * Math.PI * 2
-      const dist = Math.pow(Math.random(), 0.7) * this.brushSize * 0.7
-      const bx = centerX + Math.cos(angle) * dist
-      const by = centerY + Math.sin(angle) * dist
-      const r = this.brushSize * (0.12 + Math.random() * 0.18)
-      const alpha = 0.25 + Math.random() * 0.45
+      const dist = Math.pow(Math.random(), 1.6) * this.brushSize * 0.55
+      const bx = c + Math.cos(angle) * dist
+      const by = c + Math.sin(angle) * dist
+      const r = this.brushSize * (0.1 + Math.random() * 0.28)
+      const alpha = 0.14 + Math.random() * 0.4
       const g = ctx.createRadialGradient(bx, by, 0, bx, by, r)
       g.addColorStop(0, `rgba(255,255,255,${alpha})`)
-      g.addColorStop(0.5, `rgba(255,255,255,${alpha * 0.4})`)
+      g.addColorStop(0.55, `rgba(255,255,255,${alpha * 0.5})`)
       g.addColorStop(1, 'rgba(255,255,255,0)')
       ctx.fillStyle = g
-      ctx.fillRect(0, 0, w, h)
+      ctx.fillRect(0, 0, size, size)
     }
+
+    // 飞白：在笔刷内部随机擦除一些小空隙，形成干笔纹理。
+    ctx.globalCompositeOperation = 'destination-out'
+    const gaps = 14
+    for (let i = 0; i < gaps; i++) {
+      const angle = Math.random() * Math.PI * 2
+      const dist = Math.random() * this.brushSize * 0.42
+      const bx = c + Math.cos(angle) * dist
+      const by = c + Math.sin(angle) * dist
+      const r = this.brushSize * (0.03 + Math.random() * 0.09)
+      const g = ctx.createRadialGradient(bx, by, 0, bx, by, r)
+      g.addColorStop(0, `rgba(255,255,255,${0.35 + Math.random() * 0.45})`)
+      g.addColorStop(1, 'rgba(255,255,255,0)')
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, size, size)
+    }
+    ctx.globalCompositeOperation = 'source-over'
   }
 
   private resize = () => {
-    const dpr = Math.min(window.devicePixelRatio, 1.5)
-    this.canvas.width = Math.floor(window.innerWidth * dpr)
-    this.canvas.height = Math.floor(window.innerHeight * dpr)
+    this.dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+    this.canvas.width = Math.floor(window.innerWidth * this.dpr)
+    this.canvas.height = Math.floor(window.innerHeight * this.dpr)
     this.fillBlack()
   }
 
   private fillBlack() {
     if (!this.enabled) return
     this.ctx.globalCompositeOperation = 'source-over'
-    this.ctx.fillStyle = '#05060f'
+    this.ctx.globalAlpha = 1
+    this.ctx.fillStyle = this.coverColor
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
   }
 
-  private stamp() {
-    if (!this.enabled || !this.pointer.active) return
-    this.ctx.globalCompositeOperation = 'destination-out'
-    this.ctx.drawImage(this.brush, this.pointer.x - this.brushSize, this.pointer.y - this.brushSize)
+  private stamp(x: number, y: number) {
+    if (!this.enabled) return
+    const ctx = this.ctx
+    const half = this.brushSize * this.dpr
+    ctx.save()
+    ctx.globalCompositeOperation = 'destination-out'
+    // 每章随机旋转/缩放/浓淡，避免机械感，模拟真实落笔。
+    const scale = 0.7 + Math.random() * 0.65
+    const rot = Math.random() * Math.PI * 2
+    ctx.globalAlpha = 0.55 + Math.random() * 0.45
+    ctx.translate(x, y)
+    ctx.rotate(rot)
+    ctx.scale(scale, scale)
+    ctx.drawImage(this.brush, -half, -half)
+    ctx.restore()
+    this.lastStampTime = performance.now()
   }
 
-  private start() {
-    if (this.rafId !== null) return
-    const loop = () => {
-      if (this.enabled) {
-        this.ctx.globalCompositeOperation = 'source-over'
-        this.ctx.fillStyle = `rgba(5, 6, 15, ${this.healAlpha})`
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
-      }
-      this.rafId = requestAnimationFrame(loop)
+  private kickHeal() {
+    this.lastStampTime = performance.now()
+    if (this.rafId === null) {
+      this.rafId = requestAnimationFrame(this.healLoop)
     }
-    this.rafId = requestAnimationFrame(loop)
   }
 
-  private stop() {
+  private healLoop = () => {
+    const elapsed = performance.now() - this.lastStampTime
+    const healWindow = this.healSeconds * 1000
+    if (elapsed < healWindow) {
+      // 渐隐复原：低 alpha 遮挡色逐步盖回。
+      this.ctx.globalCompositeOperation = 'source-over'
+      this.ctx.globalAlpha = 1
+      this.ctx.fillStyle = `rgba(${this.coverRgb},${this.healAlpha})`
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+      this.rafId = requestAnimationFrame(this.healLoop)
+    } else {
+      // 复原完成：一次填满并停止循环（空闲零开销）。
+      this.fillBlack()
+      this.rafId = null
+    }
+  }
+
+  private stopHeal() {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId)
       this.rafId = null
     }
+  }
+
+  private hexToRgb(hex: string): string {
+    const m = hex.replace('#', '')
+    const full =
+      m.length === 3
+        ? m
+            .split('')
+            .map((c) => c + c)
+            .join('')
+        : m
+    const num = parseInt(full, 16)
+    return `${(num >> 16) & 255},${(num >> 8) & 255},${num & 255}`
   }
 }

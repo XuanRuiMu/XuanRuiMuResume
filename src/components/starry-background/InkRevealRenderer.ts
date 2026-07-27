@@ -6,14 +6,24 @@ export interface InkRevealOptions {
   coverColor?: string
 }
 
+interface Ripple {
+  x: number
+  y: number
+  born: number
+  life: number
+  maxR: number
+}
+
 /**
- * 水墨揭示渲染器（极致还原 mimo.xiaomi.com 的水墨画笔效果）。
+ * 水墨揭示渲染器（还原 mimo.xiaomi.com 的水墨画笔效果）。
  *
  * 核心设计：
  * - 遮挡层是一张全屏 canvas，默认涂满 coverColor（z-index:1，盖住星空 z-0、被内容 z-10 压住）。
- * - 鼠标划过时，沿指针轨迹**插值**连续盖章（destination-out 擦除），快速移动也不断线。
- * - 笔刷是多层不规则径向渐变 blob + 内部"飞白"空隙 + 每章随机旋转/缩放/浓淡，模拟真实水墨晕染。
- * - 复原按需触发：只有发生过擦除才启动 rAF，渐隐回遮挡色，复原完成后停止循环（空闲零开销）。
+ * - 鼠标划过：沿指针轨迹**插值**连续盖圆点（destination-out 擦除），保证不断线。
+ * - 慢速（< FAST_THRESHOLD）：纯圆点晕染，仿水墨落笔点墨。
+ * - 快速（>= FAST_THRESHOLD）：在圆点轨迹之外，于指针处生成**向外扩散的同心水波环**，
+ *   模拟"快速划过水面"的物理涟漪，而不是夸张的彗星拖尾。
+ * - 复原按需触发：只有发生过擦除/涟漪才启动 rAF，渐隐回遮挡色，复原完成后停止循环（空闲零开销）。
  */
 export class InkRevealRenderer {
   private readonly canvas: HTMLCanvasElement
@@ -29,8 +39,16 @@ export class InkRevealRenderer {
   private readonly coverColor: string
   private readonly coverRgb: string
   private dpr = 1
-  private lastStampTime = 0
   private lastMoveTime = 0
+  /** 距上次生成水波环已累积的快速移动距离 */
+  private fastAcc = 0
+
+  /** 速度阈值(px/ms)：超过即视为"快速划水"，触发生成水波环。 */
+  private static readonly FAST_THRESHOLD = 1.3
+  /** 快速移动多少像素生成一个水波环 */
+  private static readonly RIPPLE_SPACING = 90
+
+  private ripples: Ripple[] = []
 
   constructor(options: InkRevealOptions = {}) {
     this.brushSize = options.brushSize ?? 160
@@ -68,7 +86,7 @@ export class InkRevealRenderer {
 
   unmount() {
     window.removeEventListener('resize', this.resize)
-    this.stopHeal()
+    this.stopLoop()
     if (this.canvas.parentNode) {
       this.canvas.parentNode.removeChild(this.canvas)
     }
@@ -76,7 +94,9 @@ export class InkRevealRenderer {
 
   setEnabled(enabled: boolean) {
     this.enabled = enabled
-    this.stopHeal()
+    this.stopLoop()
+    this.ripples = []
+    this.fastAcc = 0
     if (!enabled) {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     } else {
@@ -105,45 +125,46 @@ export class InkRevealRenderer {
       const dx = px - this.pointer.x
       const dy = py - this.pointer.y
       const dist = Math.hypot(dx, dy)
-      // 速度与运动方向：决定笔刷是否拉伸成"快速划水"的箭头/彗星形。
       const dt = Math.max(now - this.lastMoveTime, 1)
       const speed = dist / dt // px / ms
       const angle = Math.atan2(dy, dx)
-      const stretch = this.speedToStretch(speed)
+
+      // 沿轨迹插值连续盖圆点，保证慢速/快速都不断线。
       const step = this.brushSize * this.dpr * 0.3
-      // 快速划水时少插值——让彗星的尾迹自己覆盖路径，呈现"头一点、身后拖尾"的箭头；
-      // 慢速则密插值保证圆点连续不断线。
-      const maxSteps = stretch > 1.3 ? 3 : 24
       if (dist > step) {
-        const steps = Math.min(Math.floor(dist / step), maxSteps)
+        const steps = Math.min(Math.floor(dist / step), 24)
         for (let i = 1; i <= steps; i++) {
           const t = i / steps
-          this.stamp(this.pointer.x + dx * t, this.pointer.y + dy * t, angle, stretch)
+          this.stampDot(this.pointer.x + dx * t, this.pointer.y + dy * t, angle)
         }
       } else {
-        this.stamp(px, py, angle, stretch)
+        this.stampDot(px, py, angle)
+      }
+
+      // 快速划水：沿路径按间距生成水波环（不再拉伸成箭头）。
+      if (speed >= InkRevealRenderer.FAST_THRESHOLD) {
+        this.fastAcc += dist
+        const spacing = InkRevealRenderer.RIPPLE_SPACING * this.dpr
+        while (this.fastAcc >= spacing) {
+          this.fastAcc -= spacing
+          this.spawnRipple(px, py, speed)
+        }
+      } else {
+        this.fastAcc = 0
       }
     } else {
-      this.stamp(px, py, 0, 1)
+      this.stampDot(px, py, 0)
     }
     this.pointer.x = px
     this.pointer.y = py
     this.pointer.active = true
     this.lastMoveTime = now
-    this.kickHeal()
-  }
-
-  /** 速度→拉伸系数：慢速≈1（圆 blob），快速→最多 ~2.8（箭头形）。 */
-  private speedToStretch(speed: number): number {
-    // speed 单位 px/ms。经验阈值：>0.9 px/ms 视作"快速划水"。
-    const t = Math.max(0, Math.min((speed - 0.35) / 1.6, 1))
-    // 平滑缓动，避免突变
-    const eased = t * t * (3 - 2 * t)
-    return 1 + eased * 1.8
+    this.kickLoop()
   }
 
   onPointerLeave() {
     this.pointer.active = false
+    this.fastAcc = 0
   }
 
   /** 构建一枚不规则水墨笔刷：多层 blob + 飞白。 */
@@ -204,69 +225,93 @@ export class InkRevealRenderer {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
   }
 
-  /**
-   * 盖章一笔。
-   * @param angle 运动方向角（弧度）
-   * @param stretch 速度拉伸系数（1=圆 blob，>1=快速划水的箭头/彗星形）
-   */
-  private stamp(x: number, y: number, angle: number, stretch: number) {
+  /** 盖一枚圆点晕染（水墨落笔）。 */
+  private stampDot(x: number, y: number, angle: number) {
     if (!this.enabled) return
     const ctx = this.ctx
     const half = this.brushSize * this.dpr
-    if (stretch > 1.02) {
-      // 快速划水：头部(当前点)浓而宽、尾部(运动后方)细而淡的细长彗星/箭头尾迹。
-      const dirX = Math.cos(angle)
-      const dirY = Math.sin(angle)
-      const wakeLen = half * stretch * 1.25
-      const segments = 5
-      for (let i = 0; i < segments; i++) {
-        const t = i / (segments - 1) // 0=头，1=尾
-        const bx = x - dirX * wakeLen * t
-        const by = y - dirY * wakeLen * t
-        // 运动方向拉长、垂直方向大幅收窄，尾部收成尖点。
-        const scaleX = stretch * 1.15 * (1 - t * 0.7)
-        const scaleY = ((1 - t * 0.78) / (stretch * 1.25)) * (0.9 + Math.random() * 0.2)
-        ctx.save()
-        ctx.globalCompositeOperation = 'destination-out'
-        ctx.globalAlpha = (0.7 + Math.random() * 0.3) * (1 - t * 0.8)
-        ctx.translate(bx, by)
-        ctx.rotate(angle + (Math.random() - 0.5) * 0.12)
-        ctx.scale(scaleX, scaleY)
-        ctx.drawImage(this.brush, -half, -half)
-        ctx.restore()
+    ctx.save()
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.globalAlpha = 0.5 + Math.random() * 0.5
+    ctx.translate(x, y)
+    const scale = 0.7 + Math.random() * 0.6
+    ctx.rotate(angle + (Math.random() - 0.5) * 0.2)
+    ctx.scale(scale, scale)
+    ctx.drawImage(this.brush, -half, -half)
+    ctx.restore()
+  }
+
+  /** 在 (x,y) 生成一枚水波环，半径随速度增大。 */
+  private spawnRipple(x: number, y: number, speed: number) {
+    const maxR = Math.min(240, 70 + speed * 45) * this.dpr
+    this.ripples.push({
+      x,
+      y,
+      born: performance.now(),
+      life: 620,
+      maxR,
+    })
+    // 控制总量，避免极端情况堆积。
+    if (this.ripples.length > 40) this.ripples.shift()
+  }
+
+  /** 每帧绘制并更新水波环（擦除），返回是否仍有存活涟漪。 */
+  private drawRipples(now: number): boolean {
+    if (this.ripples.length === 0) return false
+    const ctx = this.ctx
+    let alive = false
+    ctx.save()
+    ctx.globalCompositeOperation = 'destination-out'
+    for (let i = this.ripples.length - 1; i >= 0; i--) {
+      const rp = this.ripples[i]
+      const t = (now - rp.born) / rp.life
+      if (t >= 1) {
+        this.ripples.splice(i, 1)
+        continue
       }
-    } else {
-      // 慢速：常规圆 blob，随机旋转/缩放/浓淡。
-      ctx.save()
-      ctx.globalCompositeOperation = 'destination-out'
-      ctx.globalAlpha = 0.55 + Math.random() * 0.45
-      ctx.translate(x, y)
-      const scale = 0.7 + Math.random() * 0.65
-      ctx.rotate(Math.random() * Math.PI * 2)
-      ctx.scale(scale, scale)
-      ctx.drawImage(this.brush, -half, -half)
-      ctx.restore()
+      alive = true
+      // easeOut：先快后慢地扩散，像真实水波。
+      const eased = 1 - (1 - t) * (1 - t)
+      const r = eased * rp.maxR
+      const a = (1 - t) * 0.85 // 随时间淡出
+      // 同心多环，营造水面涟漪层次。
+      for (let k = 0; k < 3; k++) {
+        const rr = r * (1 - k * 0.28)
+        if (rr <= 0) continue
+        const th = 9 * this.dpr
+        const g = ctx.createRadialGradient(rp.x, rp.y, Math.max(0, rr - th), rp.x, rp.y, rr + th)
+        g.addColorStop(0, 'rgba(255,255,255,0)')
+        g.addColorStop(0.5, `rgba(255,255,255,${a * (1 - k * 0.32)})`)
+        g.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.fillStyle = g
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+      }
     }
-    this.lastStampTime = performance.now()
+    ctx.restore()
+    return alive
   }
 
-  private kickHeal() {
-    this.lastStampTime = performance.now()
+  private kickLoop() {
+    this.lastActivity = performance.now()
     if (this.rafId === null) {
-      this.rafId = requestAnimationFrame(this.healLoop)
+      this.rafId = requestAnimationFrame(this.tick)
     }
   }
 
-  private healLoop = () => {
-    const elapsed = performance.now() - this.lastStampTime
+  private lastActivity = 0
+
+  private tick = () => {
+    const now = performance.now()
+    const ripplesAlive = this.drawRipples(now)
+    const elapsed = now - this.lastActivity
     const healWindow = this.healSeconds * 1000
-    if (elapsed < healWindow) {
-      // 渐隐复原：低 alpha 遮挡色逐步盖回。
+    if (elapsed < healWindow || ripplesAlive) {
+      // 渐隐复原：低 alpha 遮挡色逐步盖回（覆盖圆点与水波）。
       this.ctx.globalCompositeOperation = 'source-over'
       this.ctx.globalAlpha = 1
       this.ctx.fillStyle = `rgba(${this.coverRgb},${this.healAlpha})`
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
-      this.rafId = requestAnimationFrame(this.healLoop)
+      this.rafId = requestAnimationFrame(this.tick)
     } else {
       // 复原完成：一次填满并停止循环（空闲零开销）。
       this.fillBlack()
@@ -274,7 +319,7 @@ export class InkRevealRenderer {
     }
   }
 
-  private stopHeal() {
+  private stopLoop() {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId)
       this.rafId = null

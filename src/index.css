@@ -983,7 +983,7 @@ html.circular-reveal-active::view-transition-old(root) {
 
 .note-title {
   flex-shrink: 0;
-  margin: 0 10% 0 15%;
+  margin: 0 13% 0 14%;
   font-size: clamp(0.95rem, 0.8rem + 0.55vw, 1.18rem);
   line-height: 1.22;
   font-weight: 700;
@@ -997,7 +997,8 @@ html.circular-reveal-active::view-transition-old(root) {
   align-items: center;
   min-height: 0;
   overflow: hidden;
-  margin: 0 8% 0 19%;
+  /* 左右都留空隙（对齐目标图：左19%、右16%），右边距避免文字贴到羊皮卷右边框 */
+  margin: 0 16% 0 19%;
   font-size: clamp(0.72rem, 0.62rem + 0.38vw, 0.84rem);
   line-height: 1.42;
   letter-spacing: 0.004em;
@@ -1007,7 +1008,7 @@ html.circular-reveal-active::view-transition-old(root) {
 .note-link-text {
   flex-shrink: 0;
   align-self: flex-start;
-  margin: 0.3rem 8% 0 17%;
+  margin: 0.3rem 13% 0 16%;
   font-size: clamp(0.8rem, 0.68rem + 0.4vw, 0.92rem);
   font-weight: 600;
   line-height: 1.3;

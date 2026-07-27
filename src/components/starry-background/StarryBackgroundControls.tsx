@@ -10,6 +10,7 @@ export function StarryBackgroundControls() {
   const api = useStarryBackground()
   const [speed, setSpeed] = useState(0.1)
   const [breath, setBreath] = useState(true)
+  const [zoom, setZoom] = useState(1)
 
   const handleSpeedChange = (value: number) => {
     setSpeed(value)
@@ -19,6 +20,11 @@ export function StarryBackgroundControls() {
   const handleBreathChange = (value: boolean) => {
     setBreath(value)
     api?.setBreathEnabled(value)
+  }
+
+  const handleZoomChange = (value: number) => {
+    setZoom(value)
+    api?.setZoom(value)
   }
 
   return (
@@ -75,6 +81,22 @@ export function StarryBackgroundControls() {
                   step={0.01}
                   value={speed}
                   onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
+                  className="w-full accent-primary"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{t('controls.starry.zoom')}</span>
+                  <span className="font-mono text-primary">{zoom.toFixed(2)}×</span>
+                </label>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={2.5}
+                  step={0.01}
+                  value={zoom}
+                  onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
                   className="w-full accent-primary"
                 />
               </div>

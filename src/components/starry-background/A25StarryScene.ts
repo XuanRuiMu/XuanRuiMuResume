@@ -11,6 +11,7 @@ export interface A25StarrySceneApi {
   setRotationSpeed: (speed: number) => void
   setBreathEnabled: (enabled: boolean) => void
   setParticleCount: (count: number) => void
+  setZoom: (zoom: number) => void
   getFps: () => number
   destroy: () => void
 }
@@ -295,6 +296,11 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
       bgStars = buildBackgroundStars(Math.round(4500 * (safeCount / DEFAULT_PARTICLE_COUNT)))
       breatheGroup.add(galaxy)
       breatheGroup.add(bgStars)
+    },
+    setZoom(zoom: number) {
+      // 用相机焦距实现缩放（滚轮已用于页面滚动，故缩放走控制台）。限定范围防止拉飞。
+      camera.zoom = Math.max(0.4, Math.min(zoom, 3))
+      camera.updateProjectionMatrix()
     },
     getFps() {
       return currentFps

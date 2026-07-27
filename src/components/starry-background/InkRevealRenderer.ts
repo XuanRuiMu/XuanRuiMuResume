@@ -30,6 +30,7 @@ export class InkRevealRenderer {
   private readonly coverRgb: string
   private dpr = 1
   private lastStampTime = 0
+  private lastMoveTime = 0
 
   constructor(options: InkRevealOptions = {}) {
     this.brushSize = options.brushSize ?? 160
@@ -99,28 +100,46 @@ export class InkRevealRenderer {
     if (!this.enabled) return
     const px = x * this.dpr
     const py = y * this.dpr
+    const now = performance.now()
     if (this.pointer.active) {
       const dx = px - this.pointer.x
       const dy = py - this.pointer.y
       const dist = Math.hypot(dx, dy)
+      // 速度与运动方向：决定笔刷是否拉伸成"快速划水"的箭头/彗星形。
+      const dt = Math.max(now - this.lastMoveTime, 1)
+      const speed = dist / dt // px / ms
+      const angle = Math.atan2(dy, dx)
+      const stretch = this.speedToStretch(speed)
       const step = this.brushSize * this.dpr * 0.3
+      // 快速划水时少插值——让彗星的尾迹自己覆盖路径，呈现"头一点、身后拖尾"的箭头；
+      // 慢速则密插值保证圆点连续不断线。
+      const maxSteps = stretch > 1.3 ? 3 : 24
       if (dist > step) {
-        // 轨迹插值：快速移动时补足中间笔触，保证连续不断线。
-        const steps = Math.min(Math.floor(dist / step), 24)
+        const steps = Math.min(Math.floor(dist / step), maxSteps)
         for (let i = 1; i <= steps; i++) {
           const t = i / steps
-          this.stamp(this.pointer.x + dx * t, this.pointer.y + dy * t)
+          this.stamp(this.pointer.x + dx * t, this.pointer.y + dy * t, angle, stretch)
         }
       } else {
-        this.stamp(px, py)
+        this.stamp(px, py, angle, stretch)
       }
     } else {
-      this.stamp(px, py)
+      this.stamp(px, py, 0, 1)
     }
     this.pointer.x = px
     this.pointer.y = py
     this.pointer.active = true
+    this.lastMoveTime = now
     this.kickHeal()
+  }
+
+  /** 速度→拉伸系数：慢速≈1（圆 blob），快速→最多 ~2.8（箭头形）。 */
+  private speedToStretch(speed: number): number {
+    // speed 单位 px/ms。经验阈值：>0.9 px/ms 视作"快速划水"。
+    const t = Math.max(0, Math.min((speed - 0.35) / 1.6, 1))
+    // 平滑缓动，避免突变
+    const eased = t * t * (3 - 2 * t)
+    return 1 + eased * 1.8
   }
 
   onPointerLeave() {
@@ -185,21 +204,49 @@ export class InkRevealRenderer {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
   }
 
-  private stamp(x: number, y: number) {
+  /**
+   * 盖章一笔。
+   * @param angle 运动方向角（弧度）
+   * @param stretch 速度拉伸系数（1=圆 blob，>1=快速划水的箭头/彗星形）
+   */
+  private stamp(x: number, y: number, angle: number, stretch: number) {
     if (!this.enabled) return
     const ctx = this.ctx
     const half = this.brushSize * this.dpr
-    ctx.save()
-    ctx.globalCompositeOperation = 'destination-out'
-    // 每章随机旋转/缩放/浓淡，避免机械感，模拟真实落笔。
-    const scale = 0.7 + Math.random() * 0.65
-    const rot = Math.random() * Math.PI * 2
-    ctx.globalAlpha = 0.55 + Math.random() * 0.45
-    ctx.translate(x, y)
-    ctx.rotate(rot)
-    ctx.scale(scale, scale)
-    ctx.drawImage(this.brush, -half, -half)
-    ctx.restore()
+    if (stretch > 1.02) {
+      // 快速划水：头部(当前点)浓而宽、尾部(运动后方)细而淡的细长彗星/箭头尾迹。
+      const dirX = Math.cos(angle)
+      const dirY = Math.sin(angle)
+      const wakeLen = half * stretch * 1.25
+      const segments = 5
+      for (let i = 0; i < segments; i++) {
+        const t = i / (segments - 1) // 0=头，1=尾
+        const bx = x - dirX * wakeLen * t
+        const by = y - dirY * wakeLen * t
+        // 运动方向拉长、垂直方向大幅收窄，尾部收成尖点。
+        const scaleX = stretch * 1.15 * (1 - t * 0.7)
+        const scaleY = ((1 - t * 0.78) / (stretch * 1.25)) * (0.9 + Math.random() * 0.2)
+        ctx.save()
+        ctx.globalCompositeOperation = 'destination-out'
+        ctx.globalAlpha = (0.7 + Math.random() * 0.3) * (1 - t * 0.8)
+        ctx.translate(bx, by)
+        ctx.rotate(angle + (Math.random() - 0.5) * 0.12)
+        ctx.scale(scaleX, scaleY)
+        ctx.drawImage(this.brush, -half, -half)
+        ctx.restore()
+      }
+    } else {
+      // 慢速：常规圆 blob，随机旋转/缩放/浓淡。
+      ctx.save()
+      ctx.globalCompositeOperation = 'destination-out'
+      ctx.globalAlpha = 0.55 + Math.random() * 0.45
+      ctx.translate(x, y)
+      const scale = 0.7 + Math.random() * 0.65
+      ctx.rotate(Math.random() * Math.PI * 2)
+      ctx.scale(scale, scale)
+      ctx.drawImage(this.brush, -half, -half)
+      ctx.restore()
+    }
     this.lastStampTime = performance.now()
   }
 

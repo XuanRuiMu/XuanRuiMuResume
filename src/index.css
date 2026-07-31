@@ -1075,3 +1075,13 @@ html.circular-reveal-active::view-transition-old(root) {
     animation: none;
   }
 }
+
+/* Ink Reveal Overlay — 100% mimo.xiaomi.com algorithm */
+.ink-reveal-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}

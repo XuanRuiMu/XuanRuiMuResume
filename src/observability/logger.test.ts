@@ -1,15 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { logger } from './logger'
+import { ringBuffer } from './globals'
 
 describe('logger', () => {
-  let consoleSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(() => {
-    consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    consoleSpy.mockRestore()
+    ringBuffer.clear()
   })
 
   it('should generate a session id', () => {
@@ -18,18 +13,22 @@ describe('logger', () => {
     expect(typeof sessionId).toBe('string')
   })
 
-  it('should emit info logs with context', () => {
+  it('should write info logs to ringBuffer', () => {
     logger.info('test message', { key: 'value' })
-    expect(consoleSpy).toHaveBeenCalled()
-    const call = consoleSpy.mock.calls[0] as unknown[]
-    expect(call[0]).toContain('INFO')
-    expect(call[1]).toBe('test message')
+    const entries = ringBuffer.read()
+    expect(entries).toHaveLength(1)
+    expect(entries[0].message).toBe('test message')
+    expect(entries[0].level).toBe('info')
+    expect(entries[0].context?.key).toBe('value')
   })
 
-  it('should support debug/warn/error/fatal levels without throwing', () => {
+  it('should support all levels without throwing', () => {
     expect(() => logger.debug('d')).not.toThrow()
+    expect(() => logger.info('i')).not.toThrow()
     expect(() => logger.warn('w')).not.toThrow()
     expect(() => logger.error('e')).not.toThrow()
     expect(() => logger.fatal('f')).not.toThrow()
+    const entries = ringBuffer.read()
+    expect(entries).toHaveLength(5)
   })
 })

@@ -22,6 +22,7 @@ interface A25StarryBackgroundProps {
 export function A25StarryBackground({ className, children }: A25StarryBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [api, setApi] = useState<A25StarrySceneApi | null>(null)
+  const [inkRevealEnabled, setInkRevealEnabled] = useState(true)
   const { settings, loading } = usePerformanceProfile()
   const reducedMotion = useReducedMotion()
   const isDark = useIsDarkMode()
@@ -36,7 +37,6 @@ export function A25StarryBackground({ className, children }: A25StarryBackground
       particleCount: settings.particleCount,
       dpr,
       rotationSpeed: 0.1,
-      breathEnabled: true,
     })
     setApi(scene)
 
@@ -47,9 +47,12 @@ export function A25StarryBackground({ className, children }: A25StarryBackground
   }, [settings, reducedMotion, isDark])
 
   const showCanvas = isDark && !loading && !reducedMotion
+  const contextValue = api
+    ? { ...api, inkRevealEnabled, setInkRevealEnabled }
+    : { inkRevealEnabled, setInkRevealEnabled }
 
   return (
-    <StarryBackgroundContext.Provider value={api}>
+    <StarryBackgroundContext.Provider value={contextValue}>
       <div
         ref={containerRef}
         className={cn('fixed inset-0 z-0', showCanvas ? '' : isDark ? 'bg-[#05060f]' : 'bg-transparent', className)}

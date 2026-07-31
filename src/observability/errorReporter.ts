@@ -1,5 +1,18 @@
-import { logger } from './logger'
+import { ringBuffer } from './globals'
+import { LogCategory } from './ringBuffer'
 import type { ErrorCategory, ErrorReport, LogContext } from './types'
+
+const CATEGORY_MAP: Record<ErrorCategory, LogCategory> = {
+  render: LogCategory.Render,
+  runtime: LogCategory.Runtime,
+  network: LogCategory.Network,
+  webgl: LogCategory.WebGL,
+  webgpu: LogCategory.WebGL,
+  audio: LogCategory.Audio,
+  unknown: LogCategory.Unknown,
+  logic: LogCategory.Unknown,
+  dependency: LogCategory.Unknown,
+}
 
 function classifyError(error: Error): ErrorCategory {
   const message = error.message?.toLowerCase() ?? ''
@@ -38,7 +51,7 @@ function buildReport(
     context,
     url: typeof window !== 'undefined' ? window.location.href : '',
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-    sessionId: logger.getSessionId(),
+    sessionId: 'ringbuf-01',
   }
 }
 
@@ -59,12 +72,13 @@ class ErrorReporter {
 
     if (this.reported.has(report.id)) return report
     if (this.reported.size >= this.maxReports) {
-      logger.warn('Error report quota exceeded', { category })
+      ringBuffer.write('warn', LogCategory.Runtime, 'Error report quota exceeded', { category })
       return report
     }
     this.reported.add(report.id)
 
-    logger.error(`[${category}] ${report.message}`, {
+    const catNum = CATEGORY_MAP[category] ?? LogCategory.Unknown
+    ringBuffer.write('error', catNum, `[${category}] ${report.message}`, {
       errorId: report.id,
       category: report.category,
       url: report.url,
@@ -72,8 +86,8 @@ class ErrorReporter {
     })
 
     if (import.meta.env.PROD) {
-      this.send(report).catch((err) => {
-        logger.warn('Failed to send error report', { errorId: report.id, sendError: String(err) })
+      this.send(report).catch(() => {
+        ringBuffer.write('warn', LogCategory.Runtime, 'Failed to send error report', { errorId: report.id })
       })
     }
 

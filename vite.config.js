@@ -6,6 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'node:path'
 import fs from 'node:fs'
+import { observabilityPlugin } from './src/observability/vite-plugin-observability'
 
 const isAnalyze = process.env.ANALYZE === 'true'
 
@@ -47,6 +48,24 @@ function preloadCSSPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    observabilityPlugin(),
+    // Serve /test-starry/ 目录索引
+    {
+      name: 'test-starry-index',
+      configureServer(server) {
+        server.middlewares.use('/test-starry', (req, res, next) => {
+          if (req.url === '/' || req.url === '') {
+            const indexPath = path.resolve(__dirname, 'public/test-starry/index.html')
+            if (fs.existsSync(indexPath)) {
+              res.setHeader('Content-Type', 'text/html; charset=utf-8')
+              res.end(fs.readFileSync(indexPath, 'utf-8'))
+              return
+            }
+          }
+          next()
+        })
+      },
+    },
     inlineCriticalCSS(),
     preloadCSSPlugin(),
     react(),
@@ -68,6 +87,7 @@ export default defineConfig({
         enabled: true,
         type: 'module',
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/test-starry\//],
       },
     }),
     isAnalyze &&

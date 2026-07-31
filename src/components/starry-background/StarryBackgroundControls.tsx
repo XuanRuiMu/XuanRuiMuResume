@@ -9,22 +9,22 @@ export function StarryBackgroundControls() {
   const [activeTab, setActiveTab] = useState<'starry' | 'notes'>('starry')
   const api = useStarryBackground()
   const [speed, setSpeed] = useState(0.1)
-  const [breath, setBreath] = useState(true)
   const [zoom, setZoom] = useState(1)
+  const [inkReveal, setInkReveal] = useState(true)
 
   const handleSpeedChange = (value: number) => {
     setSpeed(value)
-    api?.setRotationSpeed(value)
-  }
-
-  const handleBreathChange = (value: boolean) => {
-    setBreath(value)
-    api?.setBreathEnabled(value)
+    api?.setRotationSpeed?.(value)
   }
 
   const handleZoomChange = (value: number) => {
     setZoom(value)
-    api?.setZoom(value)
+    api?.setZoom?.(value)
+  }
+
+  const handleInkRevealChange = (value: boolean) => {
+    setInkReveal(value)
+    api?.setInkRevealEnabled?.(value)
   }
 
   return (
@@ -72,7 +72,7 @@ export function StarryBackgroundControls() {
               <div>
                 <label className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                   <span>{t('controls.starry.speed')}</span>
-                  <span className="font-mono text-primary">{speed.toFixed(2)}×</span>
+                  <span className="font-mono text-primary">{speed.toFixed(2)}x</span>
                 </label>
                 <input
                   type="range"
@@ -88,7 +88,7 @@ export function StarryBackgroundControls() {
               <div>
                 <label className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                   <span>{t('controls.starry.zoom')}</span>
-                  <span className="font-mono text-primary">{zoom.toFixed(2)}×</span>
+                  <span className="font-mono text-primary">{zoom.toFixed(2)}x</span>
                 </label>
                 <input
                   type="range"
@@ -100,13 +100,12 @@ export function StarryBackgroundControls() {
                   className="w-full accent-primary"
                 />
               </div>
-
               <label className="flex cursor-pointer items-center justify-between text-xs text-muted-foreground">
-                <span>{t('controls.starry.breath')}</span>
+                <span>{t('controls.starry.inkReveal')}</span>
                 <input
                   type="checkbox"
-                  checked={breath}
-                  onChange={(e) => handleBreathChange(e.target.checked)}
+                  checked={inkReveal}
+                  onChange={(e) => handleInkRevealChange(e.target.checked)}
                   className="accent-primary"
                 />
               </label>

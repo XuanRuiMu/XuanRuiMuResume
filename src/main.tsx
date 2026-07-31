@@ -6,6 +6,11 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { PerformanceMonitor } from './components/PerformanceMonitor'
 import { Providers } from './app/providers'
 import { registerServiceWorker } from './utils/swRegister'
+import { DevOverlay, initObservability, ringBuffer } from './observability'
+
+initObservability().catch((err) => {
+  ringBuffer.write('error', 1, 'Observability init failed', { error: String(err) })
+})
 
 registerServiceWorker()
 
@@ -16,6 +21,7 @@ createRoot(document.getElementById('root')!).render(
         <App />
       </Providers>
       <PerformanceMonitor />
+      <DevOverlay />
     </ErrorBoundary>
   </StrictMode>
 )

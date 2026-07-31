@@ -1,15 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { errorReporter, classifyError } from './errorReporter'
+import { ringBuffer } from './globals'
 
 describe('errorReporter', () => {
-  let consoleSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(() => {
-    consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    consoleSpy.mockRestore()
+    ringBuffer.clear()
   })
 
   it('should classify webgl errors', () => {
@@ -34,5 +29,12 @@ describe('errorReporter', () => {
     const report = errorReporter.report('string error')
     expect(report).not.toBeNull()
     expect(report?.message).toBe('string error')
+  })
+
+  it('should write error entries to ringBuffer', () => {
+    errorReporter.report(new Error('test error'))
+    const entries = ringBuffer.read()
+    expect(entries.length).toBeGreaterThan(0)
+    expect(entries.some((e) => e.message.includes('test error'))).toBe(true)
   })
 })

@@ -4,24 +4,21 @@ export interface A25StarrySceneOptions {
   particleCount?: number
   dpr?: number
   rotationSpeed?: number
-  breathEnabled?: boolean
 }
 
 export interface A25StarrySceneApi {
   setRotationSpeed: (speed: number) => void
-  setBreathEnabled: (enabled: boolean) => void
   setParticleCount: (count: number) => void
   setZoom: (zoom: number) => void
   getFps: () => number
   destroy: () => void
 }
 
-const DEFAULT_PARTICLE_COUNT = 20000
 const DEFAULT_DPR = 1.5
 const DEFAULT_ROTATION_SPEED = 0.1
 
-function makeStarTexture(): THREE.CanvasTexture {
-  const size = 128
+function makeStarTexture(glowFraction = 0.08): THREE.CanvasTexture {
+  const size = 64
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
@@ -29,8 +26,8 @@ function makeStarTexture(): THREE.CanvasTexture {
   if (!ctx) throw new Error('无法创建 2D context')
   const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
   gradient.addColorStop(0, 'rgba(255,255,255,1)')
-  gradient.addColorStop(0.25, 'rgba(255,255,255,0.85)')
-  gradient.addColorStop(0.55, 'rgba(180,200,255,0.35)')
+  gradient.addColorStop(glowFraction, 'rgba(255,255,255,0.9)')
+  gradient.addColorStop(0.4, 'rgba(180,200,255,0.2)')
   gradient.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = gradient
   ctx.fillRect(0, 0, size, size)
@@ -39,32 +36,15 @@ function makeStarTexture(): THREE.CanvasTexture {
   return tex
 }
 
-interface GalaxyParams {
-  count: number
-  size: number
-  radius: number
-  branches: number
-  spin: number
-  randomness: number
-  randomnessPower: number
-  insideColor: THREE.Color
-  outsideColor: THREE.Color
-}
-
 export function createA25StarryScene(container: HTMLElement, options: A25StarrySceneOptions = {}): A25StarrySceneApi {
-  const particleCount = options.particleCount ?? DEFAULT_PARTICLE_COUNT
   const dpr = Math.min(options.dpr ?? DEFAULT_DPR, 2)
   let rotationSpeed = options.rotationSpeed ?? DEFAULT_ROTATION_SPEED
-  let breathEnabled = options.breathEnabled ?? true
 
   const scene = new THREE.Scene()
-  // 极低雾密度：只给远景一点纵深 cues，绝不让背景星被雾衰减到看不见。
-  scene.fog = new THREE.FogExp2(0x05060f, 0.0035)
+  scene.background = new THREE.Color(0x05060f)
 
-  // 相机对准星系中心并显式 lookAt——否则相机默认朝 -Z 看，会把星系甩到画面左下。
-  const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 300)
-  camera.position.set(0, 5.5, 13.5)
-  camera.lookAt(0, 0, 0)
+  const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 600)
+  camera.position.set(0, 0, 8)
 
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
@@ -77,175 +57,169 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
   renderer.setAnimationLoop(tick)
   container.appendChild(renderer.domElement)
 
-  const starTex = makeStarTexture()
+  const starTex = makeStarTexture(0.08)
+  const starTexSoft = makeStarTexture(0.3)
 
-  const galaxyParams: GalaxyParams = {
-    count: particleCount,
-    size: 0.085,
-    radius: 10,
-    branches: 5,
-    spin: 1,
-    randomness: 0.5,
-    randomnessPower: 3,
-    insideColor: new THREE.Color('#ff9a52'),
-    outsideColor: new THREE.Color('#4a7bff'),
-  }
+  const rootGroup = new THREE.Group()
+  scene.add(rootGroup)
 
-  function buildGalaxy(count: number): THREE.Points {
-    const geometry = new THREE.BufferGeometry()
-    const positions = new Float32Array(count * 3)
-    const colors = new Float32Array(count * 3)
+  function buildBackgroundLayer(
+    count: number,
+    minR: number,
+    maxR: number,
+    size: number,
+    opacity: number,
+    colorHex = 0x8899cc
+  ): THREE.Points {
+    const geo = new THREE.BufferGeometry()
+    const pos = new Float32Array(count * 3)
     for (let i = 0; i < count; i++) {
       const i3 = i * 3
-      const radius = Math.random() * galaxyParams.radius
-      const spinAngle = radius * galaxyParams.spin
-      const branchAngle = ((i % galaxyParams.branches) / galaxyParams.branches) * Math.PI * 2
-      const signX = Math.random() < 0.5 ? 1 : -1
-      const signY = Math.random() < 0.5 ? 1 : -1
-      const signZ = Math.random() < 0.5 ? 1 : -1
-      const rndX = Math.pow(Math.random(), galaxyParams.randomnessPower) * signX * galaxyParams.randomness * radius
-      const rndY =
-        Math.pow(Math.random(), galaxyParams.randomnessPower) * signY * galaxyParams.randomness * radius * 0.45
-      const rndZ = Math.pow(Math.random(), galaxyParams.randomnessPower) * signZ * galaxyParams.randomness * radius
-      positions[i3] = Math.cos(branchAngle + spinAngle) * radius + rndX
-      positions[i3 + 1] = rndY
-      positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + rndZ
-      const mixed = galaxyParams.insideColor
-        .clone()
-        .lerp(galaxyParams.outsideColor, Math.min(radius / galaxyParams.radius, 1))
-      colors[i3] = mixed.r
-      colors[i3 + 1] = mixed.g
-      colors[i3 + 2] = mixed.b
-    }
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-    const material = new THREE.PointsMaterial({
-      size: galaxyParams.size,
-      sizeAttenuation: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      vertexColors: true,
-      transparent: true,
-      map: starTex,
-      alphaTest: 0.001,
-    })
-    return new THREE.Points(geometry, material)
-  }
-
-  function buildBackgroundStars(count: number): THREE.Points {
-    const n = count
-    const geo = new THREE.BufferGeometry()
-    const pos = new Float32Array(n * 3)
-    const col = new Float32Array(n * 3)
-    for (let i = 0; i < n; i++) {
-      const i3 = i * 3
-      // 全球面均匀分布，半径拉大到包住相机，让星点铺满整个视野。
-      const r = 45 + Math.random() * 80
+      const r = minR + Math.random() * (maxR - minR)
       const theta = Math.random() * Math.PI * 2
       const phi = Math.acos(2 * Math.random() - 1)
       pos[i3] = r * Math.sin(phi) * Math.cos(theta)
       pos[i3 + 1] = r * Math.sin(phi) * Math.sin(theta)
       pos[i3 + 2] = r * Math.cos(phi)
-      // 星点颜色：白 / 暖白 / 淡蓝 随机，营造真实星空色差。
-      const t = Math.random()
-      const c = t < 0.6 ? [1, 1, 1] : t < 0.85 ? [1, 0.9, 0.78] : [0.72, 0.82, 1]
-      const bright = 0.6 + Math.random() * 0.4
-      col[i3] = c[0] * bright
-      col[i3 + 1] = c[1] * bright
-      col[i3 + 2] = c[2] * bright
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    const mat = new THREE.PointsMaterial({
+      size,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      map: starTex,
+      alphaTest: 0.001,
+    })
+    mat.color.setHex(colorHex)
+    return new THREE.Points(geo, mat)
+  }
+
+  const bgLayer1 = buildBackgroundLayer(8000, 45, 180, 0.35, 0.6, 0x8899cc)
+  rootGroup.add(bgLayer1)
+  const bgLayer2 = buildBackgroundLayer(4000, 20, 50, 0.2, 0.3, 0x667799)
+  rootGroup.add(bgLayer2)
+
+  function buildNebula(count: number, minR: number, maxR: number, hue: number, size: number): THREE.Points {
+    const geo = new THREE.BufferGeometry()
+    const pos = new Float32Array(count * 3)
+    const col = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3
+      const r = minR + Math.random() * (maxR - minR)
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+      pos[i3] = r * Math.sin(phi) * Math.cos(theta)
+      pos[i3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.4
+      pos[i3 + 2] = r * Math.cos(phi)
+      const c = new THREE.Color().setHSL(hue + (Math.random() - 0.5) * 0.06, 0.6, 0.15 + Math.random() * 0.12)
+      col[i3] = c.r
+      col[i3 + 1] = c.g
+      col[i3 + 2] = c.b
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
     const mat = new THREE.PointsMaterial({
-      size: 0.55,
+      size,
       sizeAttenuation: true,
       vertexColors: true,
       transparent: true,
-      opacity: 0.95,
+      opacity: 0.5,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
-      map: starTex,
+      map: starTexSoft,
+      alphaTest: 0.001,
     })
     return new THREE.Points(geo, mat)
   }
 
-  const breatheGroup = new THREE.Group()
-  scene.add(breatheGroup)
+  rootGroup.add(buildNebula(3000, 4, 8, 0.78, 0.5))
+  rootGroup.add(buildNebula(2500, 5, 10, 0.82, 0.45))
+  rootGroup.add(buildNebula(2000, -6, -3, 0.73, 0.4))
+  rootGroup.add(buildNebula(1800, 3, 6, 0.85, 0.35))
 
-  let galaxy = buildGalaxy(particleCount)
-  let bgStars = buildBackgroundStars(Math.round(4500 * (particleCount / DEFAULT_PARTICLE_COUNT)))
-  breatheGroup.add(galaxy)
-  breatheGroup.add(bgStars)
-
-  const uTime = { value: 0 }
-  const breatheGLSL = `float breathe(float t) { return 0.5 + 0.5 * sin(t * 6.28318530718 * 0.15); }`
-
-  const sphereGeo = new THREE.SphereGeometry(0.85, 48, 48)
-  const sphereMat = new THREE.ShaderMaterial({
-    uniforms: { uTime },
-    vertexShader: `
-      varying vec3 vNormal;
-      varying vec3 vViewDir;
-      void main() {
-        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        vNormal = normalize(normalMatrix * normal);
-        vViewDir = normalize(-mvPos.xyz);
-        gl_Position = projectionMatrix * mvPos;
-      }
-    `,
-    fragmentShader: `
-      uniform float uTime;
-      varying vec3 vNormal;
-      varying vec3 vViewDir;
-      const vec3 colorPeak   = vec3(0.42, 0.13, 0.74);
-      const vec3 colorValley = vec3(0.03, 0.0, 0.05);
-      ${breatheGLSL}
-      void main() {
-        float intensity = breathe(uTime);
-        vec3 color = mix(colorValley, colorPeak, intensity);
-        float fresnel = 1.0 - max(dot(vNormal, vViewDir), 0.0);
-        fresnel = pow(fresnel, 1.5);
-        color += colorPeak * fresnel * (0.5 + intensity * 0.9);
-        gl_FragColor = vec4(color, 1.0);
-      }
-    `,
-  })
-  breatheGroup.add(new THREE.Mesh(sphereGeo, sphereMat))
-
-  const haloGeo = new THREE.SphereGeometry(1.3, 48, 48)
-  const haloMat = new THREE.ShaderMaterial({
-    uniforms: { uTime },
+  const milkyCount = 5000
+  const milkyGeo = new THREE.BufferGeometry()
+  const milkyPos = new Float32Array(milkyCount * 3)
+  const milkyCol = new Float32Array(milkyCount * 3)
+  for (let i = 0; i < milkyCount; i++) {
+    const i3 = i * 3
+    const r = 4 + Math.random() * 12
+    const angle = Math.random() * Math.PI * 2
+    const spread = (1 - Math.pow(Math.random(), 3)) * 1.2
+    milkyPos[i3] = r * Math.cos(angle)
+    milkyPos[i3 + 1] = (Math.random() - 0.5) * spread + r * 0.08 * Math.sin(angle * 3)
+    milkyPos[i3 + 2] = r * Math.sin(angle) * 0.6 + (Math.random() - 0.5) * spread * 0.5
+    const bright = 0.5 + Math.random() * 0.5
+    const warmth = 0.8 + Math.random() * 0.2
+    milkyCol[i3] = warmth * bright
+    milkyCol[i3 + 1] = (0.7 + Math.random() * 0.3) * bright
+    milkyCol[i3 + 2] = (0.5 + Math.random() * 0.5) * bright
+  }
+  milkyGeo.setAttribute('position', new THREE.BufferAttribute(milkyPos, 3))
+  milkyGeo.setAttribute('color', new THREE.BufferAttribute(milkyCol, 3))
+  const milkyMat = new THREE.PointsMaterial({
+    size: 0.12,
+    sizeAttenuation: true,
+    vertexColors: true,
     transparent: true,
-    blending: THREE.AdditiveBlending,
+    opacity: 0.7,
     depthWrite: false,
-    side: THREE.BackSide,
-    vertexShader: `
-      varying vec3 vNormal;
-      varying vec3 vViewDir;
-      void main() {
-        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        vNormal = normalize(normalMatrix * normal);
-        vViewDir = normalize(-mvPos.xyz);
-        gl_Position = projectionMatrix * mvPos;
-      }
-    `,
-    fragmentShader: `
-      uniform float uTime;
-      varying vec3 vNormal;
-      varying vec3 vViewDir;
-      const vec3 colorPeak = vec3(0.42, 0.13, 0.74);
-      ${breatheGLSL}
-      void main() {
-        float intensity = breathe(uTime);
-        float fresnel = 1.0 - max(dot(vNormal, vViewDir), 0.0);
-        fresnel = pow(fresnel, 2.0);
-        gl_FragColor = vec4(colorPeak, fresnel * intensity * 0.5);
-      }
-    `,
+    blending: THREE.AdditiveBlending,
+    map: starTex,
+    alphaTest: 0.001,
   })
-  breatheGroup.add(new THREE.Mesh(haloGeo, haloMat))
+  rootGroup.add(new THREE.Points(milkyGeo, milkyMat))
 
-  const clock = new THREE.Clock()
+  const fgCount = 3000
+  const fgGeo = new THREE.BufferGeometry()
+  const fgPos = new Float32Array(fgCount * 3)
+  const fgSizes = new Float32Array(fgCount)
+  const fgCol = new Float32Array(fgCount * 3)
+  for (let i = 0; i < fgCount; i++) {
+    const i3 = i * 3
+    const r = 2 + Math.random() * 10
+    const theta = Math.random() * Math.PI * 2
+    const phi = Math.acos(2 * Math.random() - 1)
+    fgPos[i3] = r * Math.sin(phi) * Math.cos(theta)
+    fgPos[i3 + 1] = r * Math.sin(phi) * Math.sin(theta)
+    fgPos[i3 + 2] = r * Math.cos(phi)
+    fgSizes[i] = 0.08 + Math.random() * 0.25
+    const t = Math.random()
+    let c
+    if (t < 0.5) c = [1, 1, 1]
+    else if (t < 0.7) c = [1, 0.92, 0.78]
+    else if (t < 0.85) c = [0.78, 0.85, 1]
+    else c = [1, 0.75, 0.65]
+    const bright = 0.7 + Math.random() * 0.3
+    fgCol[i3] = c[0] * bright
+    fgCol[i3 + 1] = c[1] * bright
+    fgCol[i3 + 2] = c[2] * bright
+  }
+  fgGeo.setAttribute('position', new THREE.BufferAttribute(fgPos, 3))
+  fgGeo.setAttribute('size', new THREE.BufferAttribute(fgSizes, 1))
+  fgGeo.setAttribute('color', new THREE.BufferAttribute(fgCol, 3))
+  const fgMat = new THREE.PointsMaterial({
+    size: 0.15,
+    sizeAttenuation: true,
+    vertexColors: true,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    map: starTex,
+    alphaTest: 0.001,
+  })
+  const fgStars = new THREE.Points(fgGeo, fgMat)
+  fgStars.material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader.replace(
+      'gl_PointSize = size *',
+      'gl_PointSize = size * (0.5 + 1.5 * (1.0 + sin(position.x * 100.0 + position.y * 73.0 + position.z * 41.0)) * 0.3) *'
+    )
+  }
+  rootGroup.add(fgStars)
+
   let rotationY = 0
   let lastFrameT = performance.now()
   let frames = 0
@@ -266,10 +240,7 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
     const dt = (now - lastFrameT) / 1000
     lastFrameT = now
     rotationY += dt * 0.3 * rotationSpeed
-    breatheGroup.rotation.y = rotationY
-    if (breathEnabled) {
-      uTime.value = clock.getElapsedTime()
-    }
+    rootGroup.rotation.y = rotationY
     renderer.render(scene, camera)
     frames++
     if (now - fpsLastT >= 500) {
@@ -283,22 +254,8 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
     setRotationSpeed(speed: number) {
       rotationSpeed = speed
     },
-    setBreathEnabled(enabled: boolean) {
-      breathEnabled = enabled
-    },
-    setParticleCount(count: number) {
-      const safeCount = Math.max(1000, Math.min(count, 50000))
-      breatheGroup.remove(galaxy)
-      breatheGroup.remove(bgStars)
-      galaxy.geometry.dispose()
-      bgStars.geometry.dispose()
-      galaxy = buildGalaxy(safeCount)
-      bgStars = buildBackgroundStars(Math.round(4500 * (safeCount / DEFAULT_PARTICLE_COUNT)))
-      breatheGroup.add(galaxy)
-      breatheGroup.add(bgStars)
-    },
+    setParticleCount(_count: number) {},
     setZoom(zoom: number) {
-      // 用相机焦距实现缩放（滚轮已用于页面滚动，故缩放走控制台）。限定范围防止拉飞。
       camera.zoom = Math.max(0.4, Math.min(zoom, 3))
       camera.updateProjectionMatrix()
     },
@@ -323,6 +280,7 @@ export function createA25StarryScene(container: HTMLElement, options: A25StarryS
         }
       })
       starTex.dispose()
+      starTexSoft.dispose()
     },
   }
 }

@@ -1,42 +1,37 @@
 import { useEffect, useRef } from 'react'
 import { InkRevealRenderer } from './InkRevealRenderer'
 import { useIsDarkMode } from './useIsDarkMode'
+import { useStarryBackground } from './StarryBackgroundContext'
 
 interface InkRevealOverlayProps {
   enabled?: boolean
-  healSeconds?: number
-  brushSize?: number
 }
 
-export function InkRevealOverlay({ enabled = true, healSeconds = 2.8, brushSize = 160 }: InkRevealOverlayProps) {
+export function InkRevealOverlay({ enabled: enabledProp }: InkRevealOverlayProps) {
   const rendererRef = useRef<InkRevealRenderer | null>(null)
   const isDark = useIsDarkMode()
+  const ctx = useStarryBackground()
+  const enabled = enabledProp ?? ctx?.inkRevealEnabled ?? true
 
   useEffect(() => {
     if (typeof window === 'undefined' || !isDark) return
+    if (!window.matchMedia('(hover: hover)').matches) return
 
-    const renderer = new InkRevealRenderer({ enabled, healSeconds, brushSize })
+    const renderer = new InkRevealRenderer({ enabled })
     rendererRef.current = renderer
     renderer.mount(document.body)
 
     const onMove = (e: PointerEvent) => {
       renderer.onPointerMove(e.clientX, e.clientY)
     }
-    const onLeave = () => {
-      renderer.onPointerLeave()
-    }
     window.addEventListener('pointermove', onMove, { passive: true })
-    document.documentElement.addEventListener('pointerleave', onLeave)
-    window.addEventListener('blur', onLeave)
 
     return () => {
       window.removeEventListener('pointermove', onMove)
-      document.documentElement.removeEventListener('pointerleave', onLeave)
-      window.removeEventListener('blur', onLeave)
       renderer.unmount()
       rendererRef.current = null
     }
-  }, [isDark, enabled, healSeconds, brushSize])
+  }, [isDark, enabled])
 
   return null
 }

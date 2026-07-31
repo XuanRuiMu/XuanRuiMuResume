@@ -24,13 +24,12 @@ vi.mock('../components/PWAStatusIndicator', () => ({
 }))
 
 vi.mock('../components/starry-background', () => ({
-  A25StarryBackground: ({ className, children }: { className?: string; children?: ReactNode }) => (
+  StarryGalaxyBackground: ({ className, children }: { className?: string; children?: ReactNode }) => (
     <div data-testid="starry-background" className={className}>
       {children}
     </div>
   ),
   InkRevealOverlay: () => <div data-testid="ink-reveal-overlay" />,
-  StarryBackgroundControls: () => <button type="button" data-testid="starry-controls" />,
 }))
 
 describe('Layout', () => {
@@ -46,7 +45,7 @@ describe('Layout', () => {
     expect(screen.getByTestId('ink-reveal-overlay')).toBeInTheDocument()
   })
 
-  it('renders navigation, theme toggle, controls and overlays', () => {
+  it('renders navigation, theme toggle and overlays', () => {
     render(
       <Layout>
         <div>page</div>
@@ -55,7 +54,6 @@ describe('Layout', () => {
 
     expect(screen.getByTestId('nav-dock')).toBeInTheDocument()
     expect(screen.getByTestId('theme-toggle')).toBeInTheDocument()
-    expect(screen.getByTestId('starry-controls')).toBeInTheDocument()
     expect(screen.getByTestId('command-palette')).toBeInTheDocument()
     expect(screen.getByTestId('ai-chat')).toBeInTheDocument()
     expect(screen.getByTestId('pwa-status')).toBeInTheDocument()

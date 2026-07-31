@@ -1,4 +1,2 @@
-export { A25StarryBackground } from './A25StarryBackground'
+export { StarryGalaxyBackground } from './StarryGalaxyBackground'
 export { InkRevealOverlay } from './InkRevealOverlay'
-export { StarryBackgroundControls } from './StarryBackgroundControls'
-export { useStarryBackground } from './StarryBackgroundContext'

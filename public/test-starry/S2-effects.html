@@ -20,7 +20,7 @@
   </script>
   <script type="module">
     // ========== 1. IMPORTS ==========
-    import { AdditiveBlending, AmbientLight, BufferAttribute, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, IcosahedronGeometry, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Points, RawShaderMaterial, Scene, Sprite, SpriteMaterial, Vector3, WebGLRenderer, RingGeometry, SphereGeometry } from "three";
+    import { AdditiveBlending, AmbientLight, BufferAttribute, BufferGeometry, CanvasTexture, Color, DirectionalLight, PerspectiveCamera, Points, RawShaderMaterial, Scene, Sprite, SpriteMaterial, WebGLRenderer } from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
     import GUI from "three/addons/libs/lil-gui.module.min.js";
     import { TWEEN } from "three/addons/libs/tween.module.min.js";
@@ -241,186 +241,13 @@
     // ========== 5. EFFECTS STATE OBJECT ==========
     const effState = {
       colorBreath: { enabled: true },
-      meteors: { enabled: true, interval: 6, speed: 1 },
-      comets: { enabled: true, interval: 10, speed: 1 },
-      supernova: { enabled: true, frequency: 1 },
-      asteroids: { enabled: true, count: 6, orbitRadius: 8 },
-      nebula: { enabled: true, count: 3, opacity: 0.4 },
-      twinkle: { enabled: true, intensity: 0.5, speed: 1 },
-      stardust: { enabled: true, opacity: 0.3 },
-      orbiters: { enabled: true, count: 8, speed: 1 },
-      aurora: { enabled: true, intensity: 0.5 },
-      shockwave: { enabled: true, interval: 8 }
+      supernova: { enabled: true, frequency: 0.5 },
+      nebula: { enabled: true, count: 6, opacity: 0.5 },
+      twinkle: { enabled: true, intensity: 0.6, speed: 1.85 },
+      stardust: { enabled: true, opacity: 1 }
     };
 
     // ========== 6. EFFECTS IMPLEMENTATION ==========
-
-    // --- E02: 流星 (Meteors) ---
-    function meteorTexture() {
-      var W2 = 256, H2 = 64, c = document.createElement('canvas')
-      c.width = W2; c.height = H2
-      var x = c.getContext('2d'), img = x.createImageData(W2, H2), d = img.data
-      for (var py = 0; py < H2; py++) {
-        for (var px = 0; px < W2; px++) {
-          var u = px / (W2 - 1)
-          var v = (py - (H2 - 1) / 2) / ((H2 - 1) / 2)
-          var wHalf = 0.12 + 0.5 * Math.pow(u, 1.6)
-          var a = Math.pow(u, 2) * Math.exp(-(v * v) / (wHalf * wHalf * 0.5))
-          var duh = (u - 0.93) / 0.05, hv = v / 0.55
-          a += Math.exp(-(duh * duh + hv * hv))
-          if (a > 1) a = 1
-          var i = (py * W2 + px) * 4
-          if (a > 0.004) {
-            var t3 = Math.min(1, Math.pow(u, 2) * 1.6)
-            d[i] = 255
-            d[i + 1] = Math.round(120 + 130 * t3)
-            d[i + 2] = Math.round(40 + 190 * t3)
-            d[i + 3] = Math.round(a * 255)
-          }
-        }
-      }
-      x.putImageData(img, 0, 0)
-      return new CanvasTexture(c)
-    }
-    var METEOR_TEX = meteorTexture(), METEOR_GEO = new PlaneGeometry(1, 1)
-    var meteorList = [], meteorNext = performance.now() + 5000 + Math.random() * 8000
-
-    function skyPointInView(nx, ny, r) {
-      var v = new Vector3(nx, ny, 0.5).unproject(camera).sub(camera.position).normalize()
-      return camera.position.clone().addScaledVector(v, r)
-    }
-
-    function spawnMeteor() {
-      var nx = Math.random() * 1.5 - 0.75, ny = Math.random() * 1.1 - 0.25
-      var dx = (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.5)
-      var dy = -(0.3 + Math.random() * 0.5)
-      var r = 20 + Math.random() * 10
-      var from = skyPointInView(nx, ny, r), to = skyPointInView(nx + dx, ny + dy, r)
-      var dir = to.sub(from), dist = dir.length()
-      dir.divideScalar(dist)
-      var W3 = 0.5 + Math.random() * 0.3
-      var viewDir = from.clone().sub(camera.position).normalize()
-      var side = new Vector3().crossVectors(dir, viewDir)
-      if (side.lengthSq() < 1e-4) side.set(0, 1, 0); else side.normalize()
-      var normal = new Vector3().crossVectors(dir, side)
-      var m = new MeshBasicMaterial({ map: METEOR_TEX, transparent: true, opacity: 0, depthWrite: false, blending: AdditiveBlending, side: DoubleSide })
-      var mesh = new Mesh(METEOR_GEO, m)
-      mesh.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(dir, side, normal))
-      mesh.scale.set(0.001, W3, 1)
-      mesh.frustumCulled = false
-      scene.add(mesh)
-      meteorList.push({ obj: mesh, mat: m, from: from, dir: dir, dist: dist, t0: performance.now(), dur: 800 + Math.random() * 400 })
-    }
-
-    function updateMeteors(now) {
-      if (!effState.meteors.enabled) return
-      var interval = effState.meteors.interval * 1000
-      if (now >= meteorNext) {
-        spawnMeteor()
-        meteorNext = now + interval * 0.5 + Math.random() * interval
-      }
-      for (var i = meteorList.length - 1; i >= 0; i--) {
-        var mt = meteorList[i], age = now - mt.t0, progress = Math.min(age / mt.dur, 1)
-        var pos = mt.from.clone().addScaledVector(mt.dir, progress * mt.dist)
-        mt.obj.position.copy(pos)
-        mt.mat.opacity = progress < 0.1 ? progress * 10 : (1 - progress) * 1.2
-        if (progress >= 1) {
-          scene.remove(mt.obj)
-          mt.mat.dispose()
-          meteorList.splice(i, 1)
-        }
-      }
-    }
-
-    function clearMeteors() {
-      for (var i = meteorList.length - 1; i >= 0; i--) {
-        scene.remove(meteorList[i].obj)
-        meteorList[i].mat.dispose()
-      }
-      meteorList = []
-      meteorNext = performance.now() + 5000
-    }
-
-    // --- E03: 彗星 (Comets) ---
-    function cometTexture() {
-      var W2 = 256, H2 = 64, c = document.createElement('canvas')
-      c.width = W2; c.height = H2
-      var x = c.getContext('2d'), img = x.createImageData(W2, H2), d = img.data
-      for (var py = 0; py < H2; py++) {
-        for (var px = 0; px < W2; px++) {
-          var u = px / (W2 - 1)
-          var v = (py - (H2 - 1) / 2) / ((H2 - 1) / 2)
-          var wHalf = 0.12 + 0.5 * Math.pow(u, 1.6)
-          var a = Math.pow(u, 2) * Math.exp(-(v * v) / (wHalf * wHalf * 0.5))
-          var duh = (u - 0.93) / 0.05, hv = v / 0.55
-          a += Math.exp(-(duh * duh + hv * hv))
-          if (a > 1) a = 1
-          var i = (py * W2 + px) * 4
-          if (a > 0.004) {
-            var t3 = Math.min(1, Math.pow(u, 2) * 1.6)
-            d[0] = Math.round(50 + 205 * t3)
-            d[1] = Math.round(180 + 75 * t3)
-            d[2] = Math.round(220 + 35 * t3)
-            d[3] = Math.round(a * 255)
-          }
-        }
-      }
-      x.putImageData(img, 0, 0)
-      return new CanvasTexture(c)
-    }
-    var COMET_TEX = cometTexture(), COMET_GEO = new PlaneGeometry(1.2, 1)
-    var cometList = [], cometNext = performance.now() + 8000 + Math.random() * 10000
-
-    function spawnComet() {
-      var nx = Math.random() * 2 - 1, ny = Math.random() * 1.5 - 0.5
-      var dx = (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.8)
-      var dy = -(0.2 + Math.random() * 0.4)
-      var r = 25 + Math.random() * 15
-      var from = skyPointInView(nx, ny, r), to = skyPointInView(nx + dx, ny + dy, r)
-      var dir = to.sub(from), dist = dir.length()
-      dir.divideScalar(dist)
-      var W3 = 0.4 + Math.random() * 0.3
-      var viewDir = from.clone().sub(camera.position).normalize()
-      var side = new Vector3().crossVectors(dir, viewDir)
-      if (side.lengthSq() < 1e-4) side.set(0, 1, 0); else side.normalize()
-      var normal = new Vector3().crossVectors(dir, side)
-      var m = new MeshBasicMaterial({ map: COMET_TEX, transparent: true, opacity: 0, depthWrite: false, blending: AdditiveBlending, side: DoubleSide })
-      var mesh = new Mesh(COMET_GEO, m)
-      mesh.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(dir, side, normal))
-      mesh.scale.set(0.001, W3, 1)
-      mesh.frustumCulled = false
-      scene.add(mesh)
-      cometList.push({ obj: mesh, mat: m, from: from, dir: dir, dist: dist, t0: performance.now(), dur: 1800 + Math.random() * 800 })
-    }
-
-    function updateComets(now) {
-      if (!effState.comets.enabled) return
-      var interval = effState.comets.interval * 1000
-      if (now >= cometNext) {
-        spawnComet()
-        cometNext = now + interval * 0.5 + Math.random() * interval
-      }
-      for (var i = cometList.length - 1; i >= 0; i--) {
-        var ct = cometList[i], age = now - ct.t0, progress = Math.min(age / ct.dur, 1)
-        var pos = ct.from.clone().addScaledVector(ct.dir, progress * ct.dist)
-        ct.obj.position.copy(pos)
-        ct.mat.opacity = progress < 0.1 ? progress * 10 : (1 - progress) * 1.2
-        if (progress >= 1) {
-          scene.remove(ct.obj)
-          ct.mat.dispose()
-          cometList.splice(i, 1)
-        }
-      }
-    }
-
-    function clearComets() {
-      for (var i = cometList.length - 1; i >= 0; i--) {
-        scene.remove(cometList[i].obj)
-        cometList[i].mat.dispose()
-      }
-      cometList = []
-      cometNext = performance.now() + 8000
-    }
 
     // --- E04: 超新星 (Supernova) ---
     function supernovaTexture() {
@@ -479,69 +306,6 @@
       }
       supernovaList = []
       supernovaNext = performance.now() + 2000
-    }
-
-    // --- E05: 漂浮陨石 (Asteroids) ---
-    function rockTexture() {
-      var S = 64, c = document.createElement('canvas')
-      c.width = c.height = S
-      var x = c.getContext('2d')
-      for (var i = 0; i < 300; i++) {
-        var px = Math.random() * S, py = Math.random() * S
-        var size = 2 + Math.random() * 6
-        var bright = 60 + Math.random() * 120
-        x.fillStyle = 'rgb(' + bright + ',' + Math.round(bright * 0.85) + ',' + Math.round(bright * 0.7) + ')'
-        x.fillRect(px, py, size, size)
-      }
-      return new CanvasTexture(c)
-    }
-    var ROCK_TEX = rockTexture()
-    var asteroids = []
-
-    function createAsteroids(count) {
-      removeAsteroids()
-      for (var ai = 0; ai < count; ai++) {
-        var geo = new IcosahedronGeometry(0.3 + Math.random() * 0.3, 1)
-        var pos = geo.attributes.position.array
-        for (var pi = 0; pi < pos.length; pi += 3) {
-          var displace = 0.6 + Math.random() * 0.4
-          pos[pi] *= displace
-          pos[pi + 1] *= displace * (0.7 + Math.random() * 0.6)
-          pos[pi + 2] *= displace * (0.7 + Math.random() * 0.6)
-        }
-        geo.computeVertexNormals()
-        var mat = new MeshStandardMaterial({ map: ROCK_TEX, roughness: 0.9, metalness: 0.1, color: 0x888899 })
-        var mesh = new Mesh(geo, mat)
-        var angle = Math.random() * Math.PI * 2
-        var radius = effState.asteroids.orbitRadius * (0.7 + Math.random() * 0.6)
-        mesh.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * 2, Math.sin(angle) * radius)
-        mesh.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6)
-        mesh.userData = { rotSpeed: { x: (Math.random() - 0.5) * 0.02, y: (Math.random() - 0.5) * 0.02, z: (Math.random() - 0.5) * 0.02 }, orbitSpeed: 0.002 + Math.random() * 0.003, orbitAngle: angle, orbitRadius: radius }
-        scene.add(mesh)
-        asteroids.push(mesh)
-      }
-    }
-
-    function removeAsteroids() {
-      for (var i = 0; i < asteroids.length; i++) {
-        scene.remove(asteroids[i])
-        asteroids[i].geometry.dispose()
-        asteroids[i].material.dispose()
-      }
-      asteroids = []
-    }
-
-    function updateAsteroids() {
-      if (!effState.asteroids.enabled) return
-      for (var ai = 0; ai < asteroids.length; ai++) {
-        var ast = asteroids[ai], ud = ast.userData
-        ast.rotation.x += ud.rotSpeed.x
-        ast.rotation.y += ud.rotSpeed.y
-        ast.rotation.z += ud.rotSpeed.z
-        ud.orbitAngle += ud.orbitSpeed
-        ast.position.x = Math.cos(ud.orbitAngle) * ud.orbitRadius
-        ast.position.z = Math.sin(ud.orbitAngle) * ud.orbitRadius
-      }
     }
 
     // --- E06: 星云 (Nebula) ---
@@ -699,164 +463,6 @@
       stardustPoints.material.uniforms.uOpacity.value = effState.stardust.opacity
     }
 
-    // --- E09: 轨道卫星 (Orbiters) ---
-    var orbiters = []
-
-    function createOrbiters(count) {
-      removeOrbiters()
-      var rainbow = [0xff0000, 0xff8800, 0xffff00, 0x00ff00, 0x0088ff, 0x4400ff, 0x8800ff, 0xff00ff, 0xff4488, 0x00ff88, 0x88ff00, 0x0044ff, 0xff0044, 0x44ff00, 0x00ffcc, 0xcc00ff, 0xffcc00, 0x00ccff, 0xccff00, 0xff00cc]
-      for (var i = 0; i < count; i++) {
-        var geo = new SphereGeometry(0.05, 8, 8)
-        var col = rainbow[i % rainbow.length]
-        var mat = new MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1 })
-        var mesh = new Mesh(geo, mat)
-        var angle = (i / count) * Math.PI * 2
-        var radius = 2.5 + (i / count) * 3.5
-        var height = (i / count - 0.5) * 3
-        mesh.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius)
-        mesh.userData = { angle: angle, radius: radius, height: height, speed: 0.3 + (i / count) * 0.5 }
-        scene.add(mesh)
-        orbiters.push(mesh)
-      }
-    }
-
-    function removeOrbiters() {
-      for (var i = 0; i < orbiters.length; i++) {
-        scene.remove(orbiters[i])
-        orbiters[i].geometry.dispose()
-        orbiters[i].material.dispose()
-      }
-      orbiters = []
-    }
-
-    function updateOrbiters(time) {
-      if (!effState.orbiters.enabled) return
-      var speedMul = effState.orbiters.speed
-      for (var i = 0; i < orbiters.length; i++) {
-        var ob = orbiters[i], ud = ob.userData
-        ud.angle += 0.01 * ud.speed * speedMul
-        ob.position.x = Math.cos(ud.angle) * ud.radius
-        ob.position.z = Math.sin(ud.angle) * ud.radius
-        ob.position.y = ud.height + Math.sin(time * ud.speed * 0.5) * 0.5
-      }
-    }
-
-    // --- E10: 极光 (Aurora) ---
-    var auroraMesh = null
-
-    function createAurora() {
-      removeAurora()
-      var geo = new PlaneGeometry(8, 4)
-      var mat = new RawShaderMaterial({
-        uniforms: {
-          uTime: { value: 0 },
-          uIntensity: { value: effState.aurora.intensity }
-        },
-        vertexShader: `
-          precision highp float;
-          attribute vec3 position;
-          attribute vec2 uv;
-          uniform mat4 projectionMatrix;
-          uniform mat4 modelViewMatrix;
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          precision highp float;
-          uniform float uTime;
-          uniform float uIntensity;
-          varying vec2 vUv;
-          void main() {
-            float x = vUv.x * 4.0;
-            float y = vUv.y;
-            float t = uTime * 0.5;
-            float wave1 = sin(x * 2.0 + t * 3.0) * 0.5 + 0.5;
-            float wave2 = sin(x * 3.0 - t * 2.0 + y * 5.0) * 0.5 + 0.5;
-            float wave3 = sin((x + y) * 4.0 + t * 4.0) * 0.5 + 0.5;
-            float mask = sin(y * 3.14159) * 0.8 + 0.2;
-            vec3 purple = vec3(0.6, 0.1, 1.0);
-            vec3 blue = vec3(0.2, 0.4, 1.0);
-            vec3 green = vec3(0.1, 0.8, 0.5);
-            vec3 color = mix(purple, blue, wave1);
-            color = mix(color, green, wave2 * 0.4);
-            float alpha = (wave1 * 0.4 + wave2 * 0.3 + wave3 * 0.3) * mask * uIntensity * 0.6;
-            gl_FragColor = vec4(color, alpha);
-          }
-        `,
-        transparent: true, side: DoubleSide, depthWrite: false, blending: AdditiveBlending
-      })
-      auroraMesh = new Mesh(geo, mat)
-      auroraMesh.position.set(0, 3, -5)
-      auroraMesh.lookAt(0, 0, 0)
-      scene.add(auroraMesh)
-    }
-
-    function removeAurora() {
-      if (auroraMesh) {
-        scene.remove(auroraMesh)
-        auroraMesh.geometry.dispose()
-        auroraMesh.material.dispose()
-        auroraMesh = null
-      }
-    }
-
-    function updateAurora(time) {
-      if (!effState.aurora.enabled || !auroraMesh) return
-      auroraMesh.material.uniforms.uTime.value = time
-      auroraMesh.material.uniforms.uIntensity.value = effState.aurora.intensity
-    }
-
-    // --- E11: 冲击波 (Shockwave) ---
-    var shockwaves = [], shockwaveNext = performance.now() + 3000
-
-    function spawnShockwave() {
-      var geo = new RingGeometry(0.1, 0.3, 32)
-      var mat = new MeshBasicMaterial({
-        color: 0x4488ff, transparent: true, opacity: 1, side: DoubleSide,
-        blending: AdditiveBlending, depthWrite: false
-      })
-      var mesh = new Mesh(geo, mat)
-      mesh.position.set(0, 0, 0)
-      mesh.rotation.x = -Math.PI / 2
-      scene.add(mesh)
-      shockwaves.push({ obj: mesh, mat: mat, geo: geo, t0: performance.now(), dur: 2000 })
-    }
-
-    function updateShockwave(now) {
-      if (!effState.shockwave.enabled) return
-      var interval = effState.shockwave.interval * 1000
-      if (now >= shockwaveNext) {
-        spawnShockwave()
-        shockwaveNext = now + interval * 0.5 + Math.random() * interval * 0.5
-      }
-      for (var i = shockwaves.length - 1; i >= 0; i--) {
-        var sw = shockwaves[i], age = now - sw.t0, progress = age / sw.dur
-        if (progress >= 1) {
-          scene.remove(sw.obj)
-          sw.geo.dispose()
-          sw.mat.dispose()
-          shockwaves.splice(i, 1)
-          continue
-        }
-        var scale = 0.5 + progress * 6
-        sw.obj.scale.set(scale, scale, scale)
-        sw.mat.opacity = 1 - progress
-      }
-    }
-
-    function clearShockwave() {
-      for (var i = shockwaves.length - 1; i >= 0; i--) {
-        scene.remove(shockwaves[i].obj)
-        shockwaves[i].geo.dispose()
-        shockwaves[i].mat.dispose()
-      }
-      shockwaves = []
-      shockwaveNext = performance.now() + 3000
-    }
-
     // ========== 7. GUI SETUP ==========
     var cRadius, cSpin, cRandomness
 
@@ -875,37 +481,11 @@
     fBreath.add(effState.colorBreath, 'enabled').name('启用')
     fBreath.add(u.uCycleSpeed, "value", 0.1, 5, 0.01).name("周期速度")
 
-    var fMeteors = gui.addFolder('流星')
-    fMeteors.add(effState.meteors, 'enabled').name('启用').onChange(function(v) {
-      if (!v) clearMeteors()
-    })
-    fMeteors.add(effState.meteors, 'interval', 1, 15, 0.5).name("间隔")
-    fMeteors.add(effState.meteors, 'speed', 0.5, 3, 0.1).name("速度")
-
-    var fComets = gui.addFolder('彗星')
-    fComets.add(effState.comets, 'enabled').name('启用').onChange(function(v) {
-      if (!v) clearComets()
-    })
-    fComets.add(effState.comets, 'interval', 2, 20, 0.5).name("间隔")
-    fComets.add(effState.comets, 'speed', 0.5, 3, 0.1).name("速度")
-
     var fSupernova = gui.addFolder('超新星')
     fSupernova.add(effState.supernova, 'enabled').name('启用').onChange(function(v) {
       if (!v) clearSupernova()
     })
     fSupernova.add(effState.supernova, 'frequency', 0.1, 3, 0.1).name("频率")
-
-    var fAsteroids = gui.addFolder('漂浮陨石')
-    fAsteroids.add(effState.asteroids, 'enabled').name('启用').onChange(function(v) {
-      if (v) createAsteroids(effState.asteroids.count)
-      else removeAsteroids()
-    })
-    fAsteroids.add(effState.asteroids, 'count', 3, 15, 1).name("数量").onChange(function(v) {
-      if (effState.asteroids.enabled) createAsteroids(v)
-    })
-    fAsteroids.add(effState.asteroids, 'orbitRadius', 3, 12, 0.5).name("轨道半径").onChange(function(v) {
-      if (effState.asteroids.enabled) createAsteroids(effState.asteroids.count)
-    })
 
     var fNebula = gui.addFolder('星云')
     fNebula.add(effState.nebula, 'enabled').name('启用').onChange(function(v) {
@@ -929,37 +509,11 @@
     })
     fStardust.add(effState.stardust, 'opacity', 0, 1, 0.01).name("透明度")
 
-    var fOrbiters = gui.addFolder('轨道卫星')
-    fOrbiters.add(effState.orbiters, 'enabled').name('启用').onChange(function(v) {
-      if (v) createOrbiters(effState.orbiters.count)
-      else removeOrbiters()
-    })
-    fOrbiters.add(effState.orbiters, 'count', 2, 20, 1).name("数量").onChange(function(v) {
-      if (effState.orbiters.enabled) createOrbiters(v)
-    })
-    fOrbiters.add(effState.orbiters, 'speed', 0.1, 3, 0.1).name("速度")
-
-    var fAurora = gui.addFolder('极光')
-    fAurora.add(effState.aurora, 'enabled').name('启用').onChange(function(v) {
-      if (v) createAurora()
-      else removeAurora()
-    })
-    fAurora.add(effState.aurora, 'intensity', 0, 1, 0.01).name("强度")
-
-    var fShockwave = gui.addFolder('冲击波')
-    fShockwave.add(effState.shockwave, 'enabled').name('启用').onChange(function(v) {
-      if (!v) clearShockwave()
-    })
-    fShockwave.add(effState.shockwave, 'interval', 2, 20, 0.5).name("间隔")
-
     gui.close()
 
     // Initialize on-start effects
-    createAsteroids(effState.asteroids.count)
     createNebula(effState.nebula.count)
     createStardust()
-    createOrbiters(effState.orbiters.count)
-    createAurora()
     updateTwinkle()
 
     // ========== 8. BIG BANG ANIMATION ==========
@@ -994,17 +548,8 @@
       galaxyMaterial.uniforms.uColorInn.value = [currentInn.r, currentInn.g, currentInn.b]
       galaxyMaterial.uniforms.uColorOut.value = [currentOut.r, currentOut.g, currentOut.b]
 
-      // E02: 流星
-      updateMeteors(now)
-
-      // E03: 彗星
-      updateComets(now)
-
       // E04: 超新星
       updateSupernova(now)
-
-      // E05: 漂浮陨石
-      updateAsteroids()
 
       // E06: 星云
       updateNebula(cycleTime)
@@ -1014,15 +559,6 @@
 
       // E08: 尘埃粒子
       updateStardust(cycleTime)
-
-      // E09: 轨道卫星
-      updateOrbiters(cycleTime)
-
-      // E10: 极光
-      updateAurora(cycleTime)
-
-      // E11: 冲击波
-      updateShockwave(now)
 
       TWEEN.update()
       orbit.update()

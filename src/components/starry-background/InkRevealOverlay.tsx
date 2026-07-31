@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { InkRevealRenderer } from './InkRevealRenderer'
 import { useIsDarkMode } from './useIsDarkMode'
-import { useStarryBackground } from './StarryBackgroundContext'
 
 interface InkRevealOverlayProps {
   enabled?: boolean
@@ -10,8 +9,7 @@ interface InkRevealOverlayProps {
 export function InkRevealOverlay({ enabled: enabledProp }: InkRevealOverlayProps) {
   const rendererRef = useRef<InkRevealRenderer | null>(null)
   const isDark = useIsDarkMode()
-  const ctx = useStarryBackground()
-  const enabled = enabledProp ?? ctx?.inkRevealEnabled ?? true
+  const enabled = enabledProp ?? true
 
   useEffect(() => {
     if (typeof window === 'undefined' || !isDark) return

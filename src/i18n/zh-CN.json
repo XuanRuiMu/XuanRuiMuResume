@@ -1,4 +1,25 @@
 {
+  "starryBg": {
+    "title": "特效控制面板",
+    "galaxy": "星系参数",
+    "particleSize": "粒子大小",
+    "branches": "旋臂数",
+    "radius": "缩放",
+    "spin": "旋转",
+    "randomness": "扩散",
+    "colorBreath": "颜色呼吸",
+    "cycleSpeed": "周期速度",
+    "supernova": "超新星",
+    "frequency": "频率",
+    "nebula": "星云",
+    "count": "数量",
+    "opacity": "透明度",
+    "twinkle": "星星闪烁",
+    "intensity": "强度",
+    "speed": "速度",
+    "stardust": "尘埃粒子",
+    "enabled": "启用"
+  },
   "pwa": {
     "offlineTitle": "离线模式",
     "offlineDescription": "当前处于离线模式，已启用简化渲染",
@@ -54,22 +75,6 @@
     "title": "页面暂时无法显示",
     "description": "页面渲染出错了，刷新一下试试。",
     "reload": "刷新页面"
-  },
-  "controls": {
-    "toggle": "控制面板",
-    "tabs": {
-      "starry": "星空",
-      "notes": "便签"
-    },
-    "starry": {
-      "speed": "旋转速度",
-      "zoom": "背景缩放",
-      "hint": "深色模式下，移动鼠标可像水墨画笔一样拨开遮挡层，露出星空背景。",
-      "inkReveal": "墨迹揭示"
-    },
-    "notes": {
-      "placeholder": "便签控制面板预留位，后续将集成物理开关、颜色主题等选项。"
-    }
   },
   "footer": {
     "copyright": "© 2026 玄锐暮. 保留所有权利。",

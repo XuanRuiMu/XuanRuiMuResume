@@ -150,5 +150,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['zustand'],
+    // 仅扫描真实入口，避免预打包扫描器误解析 public/ 下走 CDN importmap 的测试页（如 S2-effects.html）
+    entries: ['index.html'],
   },
 })

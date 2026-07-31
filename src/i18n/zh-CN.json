@@ -18,7 +18,9 @@
     "intensity": "强度",
     "speed": "速度",
     "stardust": "尘埃粒子",
-    "enabled": "启用"
+    "enabled": "启用",
+    "display": "显示",
+    "inkScreen": "水墨遮罩"
   },
   "pwa": {
     "offlineTitle": "离线模式",

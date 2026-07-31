@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import GUI from 'three/addons/libs/lil-gui.module.min.js'
 import { t as translate } from '../../i18n/translations'
 import type { TranslationKey } from '../../i18n/translations'
+import { useStarryUiStore } from '../../store/useStarryUiStore'
 
 export interface StarryGalaxySceneOptions {
   dpr?: number
@@ -267,9 +268,10 @@ export function createStarryGalaxyScene(
   scene.background = new THREE.Color(BACKGROUND_COLOR)
 
   const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100)
-  camera.position.set(0, 2, 3)
+  camera.position.set(0, 2.2, 5.5)
+  camera.lookAt(0, 0, 0)
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true })
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
   renderer.setSize(container.clientWidth, container.clientHeight)
   renderer.setPixelRatio(dpr)
   renderer.setClearColor(BACKGROUND_COLOR, 1)
@@ -589,14 +591,21 @@ export function createStarryGalaxyScene(
     ;(stardustPoints.material as THREE.RawShaderMaterial).uniforms.uOpacity.value = effState.stardust.opacity
   }
 
-  const gui = new GUI({ title: tf('starryBg.title'), width: 280 })
+  const guiContainer = typeof document !== 'undefined' ? document.getElementById('starry-gui-slot') : null
+  const gui = new GUI({
+    title: tf('starryBg.title'),
+    width: 300,
+    container: guiContainer ?? undefined,
+  })
   const guiStyle = gui.domElement.style
   guiStyle.position = 'fixed'
-  guiStyle.right = '16px'
-  guiStyle.bottom = '16px'
-  guiStyle.top = 'auto'
+  guiStyle.top = '64px'
+  guiStyle.right = '12px'
+  guiStyle.bottom = 'auto'
   guiStyle.left = 'auto'
   guiStyle.zIndex = '1000'
+  guiStyle.maxHeight = 'calc(100vh - 80px)'
+  guiStyle.overflowY = 'auto'
 
   const fGalaxy = gui.addFolder(tf('starryBg.galaxy'))
   fGalaxy.add(galaxyUniforms.uSize, 'value', 0, 4, 0.01).name(tf('starryBg.particleSize'))
@@ -649,6 +658,15 @@ export function createStarryGalaxyScene(
       else removeStardust()
     })
   fStardust.add(effState.stardust, 'opacity', 0, 1, 0.01).name(tf('starryBg.opacity'))
+
+  const fDisplay = gui.addFolder(tf('starryBg.display'))
+  const inkProxy = { on: useStarryUiStore.getState().inkEnabled }
+  fDisplay
+    .add(inkProxy, 'on')
+    .name(tf('starryBg.inkScreen'))
+    .onChange((v) => {
+      useStarryUiStore.getState().setInkEnabled(Boolean(v))
+    })
 
   gui.close()
 

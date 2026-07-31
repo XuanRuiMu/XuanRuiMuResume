@@ -23,6 +23,7 @@ export function Layout({ children }: LayoutProps) {
             <NavDock />
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              <div id="starry-gui-slot" aria-hidden="true" />
             </div>
           </div>
         </header>

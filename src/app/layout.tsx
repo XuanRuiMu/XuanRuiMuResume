@@ -14,8 +14,9 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   return (
     <div className="relative flex min-h-screen flex-col bg-bg text-text-primary">
-      <StarryGalaxyBackground className="z-0">
-        <InkRevealOverlay />
+      <StarryGalaxyBackground className="z-0" />
+      <InkRevealOverlay />
+      <div className="relative z-10 flex min-h-screen flex-col">
         <PWAStatusIndicator />
         <header className="fixed inset-x-0 top-0 z-50 border-b border-border">
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
@@ -37,7 +38,7 @@ export function Layout({ children }: LayoutProps) {
 
         <CommandPalette />
         <AIChat />
-      </StarryGalaxyBackground>
+      </div>
     </div>
   )
 }

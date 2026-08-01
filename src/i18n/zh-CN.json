@@ -20,7 +20,8 @@
     "stardust": "尘埃粒子",
     "enabled": "启用",
     "display": "显示",
-    "inkScreen": "水墨遮罩"
+    "inkScreen": "水墨遮罩",
+    "panelTrigger": "特效面板"
   },
   "pwa": {
     "offlineTitle": "离线模式",

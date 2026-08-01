@@ -61,7 +61,6 @@ interface SupernovaItem {
 const GALAXY_COUNT = 128 ** 2
 const UNIVERSE_COUNT = GALAXY_COUNT / 2
 const STARDUST_COUNT = 500
-const BIG_BANG_DURATION = 5000
 const BACKGROUND_COLOR = 0x05060f
 
 const NEBULA_COLORS = [
@@ -195,10 +194,6 @@ const stardustFragmentShader = `
   }
 `
 
-function cubicInOut(x: number): number {
-  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
-}
-
 function makeAlphaMap(): THREE.CanvasTexture {
   const ctx = document.createElement('canvas').getContext('2d')
   if (!ctx) throw new Error('无法创建 2D context')
@@ -305,9 +300,9 @@ export function createStarryGalaxyScene(
     uTime: { value: 0 },
     uSize: { value: 1.69 },
     uBranches: { value: 5 },
-    uRadius: { value: 0 },
-    uSpin: { value: 0 },
-    uRandomness: { value: 0 },
+    uRadius: { value: 2.79 },
+    uSpin: { value: 1.75 },
+    uRandomness: { value: 1 },
     uAlphaMap: { value: alphaMap },
     uColorInn: { value: breathPurpleInn },
     uColorOut: { value: breathPurpleOut },
@@ -592,27 +587,44 @@ export function createStarryGalaxyScene(
   }
 
   const guiContainer = typeof document !== 'undefined' ? document.getElementById('starry-gui-slot') : null
+  const starryGuiTrigger = typeof document !== 'undefined' ? document.getElementById('starry-gui-trigger') : null
   const gui = new GUI({
     title: tf('starryBg.title'),
     width: 300,
     container: guiContainer ?? undefined,
   })
   const guiStyle = gui.domElement.style
-  guiStyle.position = 'fixed'
-  guiStyle.top = '64px'
-  guiStyle.right = '12px'
-  guiStyle.bottom = 'auto'
-  guiStyle.left = 'auto'
-  guiStyle.zIndex = '1000'
+  guiStyle.position = 'relative'
+  guiStyle.width = '100%'
   guiStyle.maxHeight = 'calc(100vh - 80px)'
   guiStyle.overflowY = 'auto'
+
+  let starryPanelOpen = false
+  const setStarryPanel = (open: boolean) => {
+    starryPanelOpen = open
+    if (guiContainer) guiContainer.classList.toggle('hidden', !open)
+    starryGuiTrigger?.setAttribute('aria-expanded', String(open))
+  }
+  const onStarryDocClick = (e: MouseEvent) => {
+    const target = e.target as Node
+    if (starryGuiTrigger && starryGuiTrigger.contains(target)) {
+      e.stopPropagation()
+      setStarryPanel(!starryPanelOpen)
+      return
+    }
+    if (guiContainer && guiContainer.contains(target)) return
+    if (starryPanelOpen) setStarryPanel(false)
+  }
+  if (starryGuiTrigger && guiContainer) {
+    document.addEventListener('click', onStarryDocClick)
+  }
 
   const fGalaxy = gui.addFolder(tf('starryBg.galaxy'))
   fGalaxy.add(galaxyUniforms.uSize, 'value', 0, 4, 0.01).name(tf('starryBg.particleSize'))
   fGalaxy.add(galaxyUniforms.uBranches, 'value', 1, 5, 1).name(tf('starryBg.branches'))
-  const radiusSlider = fGalaxy.add(galaxyUniforms.uRadius, 'value', 0, 5, 0.01).name(tf('starryBg.radius'))
-  const spinSlider = fGalaxy.add(galaxyUniforms.uSpin, 'value', -12.57, 12.57, 0.01).name(tf('starryBg.spin'))
-  const randomnessSlider = fGalaxy.add(galaxyUniforms.uRandomness, 'value', 0, 1, 0.01).name(tf('starryBg.randomness'))
+  fGalaxy.add(galaxyUniforms.uRadius, 'value', 0, 5, 0.01).name(tf('starryBg.radius'))
+  fGalaxy.add(galaxyUniforms.uSpin, 'value', -12.57, 12.57, 0.01).name(tf('starryBg.spin'))
+  fGalaxy.add(galaxyUniforms.uRandomness, 'value', 0, 1, 0.01).name(tf('starryBg.randomness'))
   fGalaxy.open()
 
   const fBreath = gui.addFolder(tf('starryBg.colorBreath'))
@@ -668,14 +680,11 @@ export function createStarryGalaxyScene(
       useStarryUiStore.getState().setInkEnabled(Boolean(v))
     })
 
-  gui.close()
+  fDisplay.open()
 
   createNebula(effState.nebula.count)
   createStardust()
   updateTwinkle()
-
-  let bigBangStart: number | null = null
-  let bigBangDone = false
 
   let lastFrameT = performance.now()
   let frames = 0
@@ -714,31 +723,6 @@ export function createStarryGalaxyScene(
     updateTwinkle()
     updateStardust(cycleTime)
 
-    if (bigBangStart === null) bigBangStart = now
-    if (!bigBangDone) {
-      const progress = Math.min((now - bigBangStart) / BIG_BANG_DURATION, 1)
-      const eased = cubicInOut(progress)
-      const radius = eased * 2.79
-      const spin = eased * 1.75
-      const randomness = eased
-      const rotate = eased * Math.PI * 4
-      galaxyUniforms.uRadius.value = radius
-      galaxyUniforms.uSpin.value = spin
-      galaxyUniforms.uRandomness.value = randomness
-      galaxy.rotation.y = rotate
-      universe.rotation.y = rotate / 3
-      radiusSlider.setValue(radius)
-      radiusSlider.updateDisplay()
-      spinSlider.setValue(spin)
-      spinSlider.updateDisplay()
-      randomnessSlider.setValue(randomness)
-      randomnessSlider.updateDisplay()
-      if (progress >= 1) {
-        bigBangDone = true
-        gui.open()
-      }
-    }
-
     renderer.render(scene, camera)
 
     frames++
@@ -756,6 +740,7 @@ export function createStarryGalaxyScene(
     destroy() {
       renderer.setAnimationLoop(null)
       resizeObserver.disconnect()
+      document.removeEventListener('click', onStarryDocClick)
       gui.destroy()
       clearSupernova()
       removeNebula()

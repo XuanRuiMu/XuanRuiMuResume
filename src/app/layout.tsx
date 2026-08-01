@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import { SlidersHorizontal } from 'lucide-react'
 import { NavDock } from '../components/nav-dock/NavDock'
 import { ThemeToggle } from '../components/theme-toggle/ThemeToggle'
 import { CommandPalette } from '../components/command-palette/CommandPalette'
@@ -23,7 +24,23 @@ export function Layout({ children }: LayoutProps) {
             <NavDock />
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <div id="starry-gui-slot" aria-hidden="true" />
+              <div id="starry-gui-root" className="relative">
+                <button
+                  id="starry-gui-trigger"
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+                  aria-label={t('starryBg.panelTrigger')}
+                  title={t('starryBg.panelTrigger')}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-text-primary transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <SlidersHorizontal size={16} />
+                </button>
+                <div
+                  id="starry-gui-slot"
+                  className="absolute right-0 top-full z-[1000] mt-2 hidden w-[300px] overflow-hidden rounded-lg border border-border bg-surface shadow-xl"
+                />
+              </div>
             </div>
           </div>
         </header>

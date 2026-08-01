@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import GUI from 'three/addons/libs/lil-gui.module.min.js'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { t as translate } from '../../i18n/translations'
 import type { TranslationKey } from '../../i18n/translations'
 import { useStarryUiStore } from '../../store/useStarryUiStore'
@@ -277,6 +278,15 @@ export function createStarryGalaxyScene(
   renderer.setPixelRatio(dpr)
   renderer.setClearColor(BACKGROUND_COLOR, 1)
   container.appendChild(renderer.domElement)
+
+  const starryControls = new OrbitControls(camera, renderer.domElement)
+  starryControls.target.set(0, 0, 0)
+  starryControls.enableDamping = true
+  starryControls.dampingFactor = 0.08
+  starryControls.enablePan = false
+  starryControls.minDistance = 2
+  starryControls.maxDistance = 30
+  starryControls.update()
 
   const alphaMap = makeAlphaMap()
 

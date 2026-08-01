@@ -122,6 +122,13 @@ S2-effects.html 仅保留 5 个特效（颜色呼吸+超新星+星云+星星闪�
 - **修复 A（面板入顶栏）**：`layout.tsx` 顶栏右侧 `ThemeToggle` 旁新增 `#starry-gui-root`（relative）容器，内含触发按钮 `#starry-gui-trigger`（lucide `SlidersHorizontal`，尺寸/配色对齐顶栏其它按钮）与下拉槽 `#starry-gui-slot`（absolute right-0 top-full z-[1000] hidden w-[300px]）；`StarryGalaxyScene.ts` 的 lil-gui 挂载进该槽，去掉 `position:fixed/top/right` 强制改为 `position:relative; width:100%; maxHeight:calc(100vh-80px); overflowY:auto`；新增 document 级点击委托：点触发按钮切换槽 `hidden`、点面板外区域收起；`destroy` 中 `removeEventListener`。触发按钮文案/aria 走新翻译键 `starryBg.panelTrigger`（`zh-CN.json` 新增）。
 - **修复 B（删除开场动画）**：移除 `BIG_BANG_DURATION`、`cubicInOut`、`bigBangStart/bigBangDone` 及动画循环内逐帧增长逻辑；星系 uniforms 直接置终值 `uRadius=2.79 / uSpin=1.75 / uRandomness=1`，渲染即完整成形；移除 `gui.open()` 触发与未用 `radiusSlider/spinSlider/randomnessSlider` 变量。`fGalaxy` 与 `fDisplay` 默认展开，关面板后不残留浮层。
 - **验证**：Playwright 双环境——dev(5180) 关闭 DevOverlay(Ctrl+Shift+D) 后 9/9 通过；prod preview(4173) 7/7 通过。结论：触发按钮恒在顶栏、面板默认隐藏非悬浮、点击展开/收起、lil-gui 挂载于顶栏容器内、含"水墨遮罩"开关、星空 canvas 渲染、无 console 错误。tsc=0 / lint(src)=0（另有 8 条既存 warning，均与本次改动无关）/ vitest 376·376=0 / build=0。
-- **已知 caveat**：dev 模式存在项目自带 observability `DevOverlay`（top-right 420px、z-99999）会遮挡顶栏右侧触发按钮；其为 dev-only（`isDev()` 守卫，生产构建不渲染），生产 preview 无此遮挡。dev 点击触发按钮前先关闭 DevOverlay（✕ 或 Ctrl+Shift+D）。
+- **已知 caveat（已解决）**：dev 模式项目自带 observability `DevOverlay`（top-right 420px、z-99999）曾遮挡顶栏右侧触发按钮；后续修复四已将触发按钮移至顶栏左侧（NavDock 旁），dev/prod 均直接可点，无需关闭浮层。该浮层为 dev-only（`isDev()` 守卫，生产构建不渲染）。
 - **Docker**：项目不含 Dockerfile / docker-compose / .dockerignore，未使用 Docker，未启动。
 - **提交**：已本地提交，待用户确认是否推送 main（SSH）。
+
+## 后续修复四（用户选择，2026-08-01）
+
+- **问题**：dev 模式项目自带 observability `DevOverlay`（top-right、420px、`z-index:99999`）遮挡顶栏右侧触发按钮，dev 点击前需先关闭浮层。
+- **修复**：`layout.tsx` 将 `#starry-gui-root`（触发按钮+下拉槽）从顶栏右侧 `ThemeToggle` 旁移至左侧 `NavDock` 旁，与 `ThemeToggle` 分离；下拉槽锚点由 `right-0` 改为 `left-0`（左锚定避免溢出屏幕左缘）；`ThemeToggle` 仍居右。触发按钮仍"在顶栏上与其他元素并列"，且避开了 DevOverlay 覆盖区。
+- **验证**：Playwright(dev 5180) 直接点击触发按钮（不关闭 DevOverlay）6/6 通过：触发按钮 centerX=721 < DevOverlay 左缘 844（1280 视口）；直接点击即展开面板；lil-gui 挂载于顶栏容器内；含"水墨遮罩"开关；下拉面板在屏幕内；无 console 错误。tsc=0 / lint=0 错误 / vitest 376·376=0。
+- **提交**：已本地提交（含左移改动与 PROGRESS 更新），准备推送 main（SSH）。

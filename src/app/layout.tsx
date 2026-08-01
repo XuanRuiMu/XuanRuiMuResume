@@ -20,10 +20,9 @@ export function Layout({ children }: LayoutProps) {
       <div className="relative z-10 flex min-h-screen flex-col">
         <PWAStatusIndicator />
         <header className="fixed inset-x-0 top-0 z-50 border-b border-border">
-          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-            <NavDock />
+          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4">
             <div className="flex items-center gap-2">
-              <ThemeToggle />
+              <NavDock />
               <div id="starry-gui-root" className="relative">
                 <button
                   id="starry-gui-trigger"
@@ -38,9 +37,12 @@ export function Layout({ children }: LayoutProps) {
                 </button>
                 <div
                   id="starry-gui-slot"
-                  className="absolute right-0 top-full z-[1000] mt-2 hidden w-[300px] overflow-hidden rounded-lg border border-border bg-surface shadow-xl"
+                  className="absolute left-0 top-full z-[1000] mt-2 hidden w-[300px] overflow-hidden rounded-lg border border-border bg-surface shadow-xl"
                 />
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
             </div>
           </div>
         </header>

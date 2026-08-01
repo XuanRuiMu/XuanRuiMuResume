@@ -37,7 +37,7 @@ export function Layout({ children }: LayoutProps) {
                 </button>
                 <div
                   id="starry-gui-slot"
-                  className="absolute left-0 top-full z-[1000] mt-2 hidden w-[300px] overflow-hidden rounded-lg border border-border bg-surface shadow-xl"
+                  className="fixed top-14 left-3 z-[1000] hidden w-[300px] overflow-hidden rounded-lg border border-border bg-surface shadow-xl"
                 />
               </div>
             </div>

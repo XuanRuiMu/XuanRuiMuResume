@@ -263,7 +263,13 @@ export function createStarryGalaxyScene(
   scene.background = new THREE.Color(BACKGROUND_COLOR)
 
   const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100)
-  camera.position.set(0, 5.13, 2.96)
+  let starryElevation = 45
+  const applyElevation = () => {
+    const rad = (starryElevation * Math.PI) / 180
+    const d = 5.92
+    camera.position.set(0, d * Math.sin(rad), d * Math.cos(rad))
+  }
+  applyElevation()
   camera.lookAt(0, 0, 0)
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
@@ -619,12 +625,54 @@ export function createStarryGalaxyScene(
     document.addEventListener('click', onStarryDocClick)
   }
 
+  // 控制面板拖动手柄
+  if (guiContainer) {
+    let starryDragHandle: HTMLElement | null = guiContainer.querySelector('.starry-drag-handle')
+    if (!starryDragHandle) {
+      starryDragHandle = document.createElement('div')
+      starryDragHandle.className = 'starry-drag-handle'
+      starryDragHandle.style.cssText =
+        'position:sticky;top:0;height:30px;display:flex;align-items:center;justify-content:center;cursor:grab;user-select:none;border-bottom:1px solid rgba(255,255,255,.12);font-size:12px;letter-spacing:.04em;color:#e6e8ee;background:rgba(11,14,22,.96);z-index:1'
+      starryDragHandle.innerHTML = '<span>⠿ 拖动特效面板</span>'
+      guiContainer.insertBefore(starryDragHandle, guiContainer.firstChild)
+    }
+    let dragging = false
+    let dragStartX = 0
+    let dragStartY = 0
+    let panelLeft = 0
+    let panelTop = 0
+    const onDragMove = (e: MouseEvent) => {
+      if (!dragging) return
+      if (guiContainer) {
+        guiContainer.style.left = `${panelLeft + e.clientX - dragStartX}px`
+        guiContainer.style.top = `${panelTop + e.clientY - dragStartY}px`
+      }
+    }
+    const onDragEnd = () => {
+      dragging = false
+      window.removeEventListener('mousemove', onDragMove)
+      window.removeEventListener('mouseup', onDragEnd)
+    }
+    starryDragHandle.addEventListener('mousedown', (e: MouseEvent) => {
+      dragging = true
+      dragStartX = e.clientX
+      dragStartY = e.clientY
+      const rect = guiContainer!.getBoundingClientRect()
+      panelLeft = rect.left
+      panelTop = rect.top
+      window.addEventListener('mousemove', onDragMove)
+      window.addEventListener('mouseup', onDragEnd)
+    })
+  }
+
   const fGalaxy = gui.addFolder(tf('starryBg.galaxy'))
   fGalaxy.add(galaxyUniforms.uSize, 'value', 0, 4, 0.01).name(tf('starryBg.particleSize'))
   fGalaxy.add(galaxyUniforms.uBranches, 'value', 1, 5, 1).name(tf('starryBg.branches'))
   fGalaxy.add(galaxyUniforms.uRadius, 'value', 0, 5, 0.01).name(tf('starryBg.radius'))
   fGalaxy.add(galaxyUniforms.uSpin, 'value', -12.57, 12.57, 0.01).name(tf('starryBg.spin'))
   fGalaxy.add(galaxyUniforms.uRandomness, 'value', 0, 1, 0.01).name(tf('starryBg.randomness'))
+  const starryElevState = { elevation: 45 }
+  fGalaxy.add(starryElevState, 'elevation', 0, 90, 1).name(tf('starryBg.viewAngle')).onChange(applyElevation)
   fGalaxy.open()
 
   const fBreath = gui.addFolder(tf('starryBg.colorBreath'))

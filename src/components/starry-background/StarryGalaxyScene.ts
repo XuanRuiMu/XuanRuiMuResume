@@ -263,9 +263,9 @@ export function createStarryGalaxyScene(
   scene.background = new THREE.Color(BACKGROUND_COLOR)
 
   const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100)
-  let starryElevation = 45
+  const starryElevState = { elevation: 45 }
   const applyElevation = () => {
-    const rad = (starryElevation * Math.PI) / 180
+    const rad = (starryElevState.elevation * Math.PI) / 180
     const d = 5.92
     camera.position.set(0, d * Math.sin(rad), d * Math.cos(rad))
   }
@@ -671,7 +671,6 @@ export function createStarryGalaxyScene(
   fGalaxy.add(galaxyUniforms.uRadius, 'value', 0, 5, 0.01).name(tf('starryBg.radius'))
   fGalaxy.add(galaxyUniforms.uSpin, 'value', -12.57, 12.57, 0.01).name(tf('starryBg.spin'))
   fGalaxy.add(galaxyUniforms.uRandomness, 'value', 0, 1, 0.01).name(tf('starryBg.randomness'))
-  const starryElevState = { elevation: 45 }
   fGalaxy.add(starryElevState, 'elevation', 0, 90, 1).name(tf('starryBg.viewAngle')).onChange(applyElevation)
   fGalaxy.open()
 

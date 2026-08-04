@@ -20,7 +20,7 @@
   </script>
   <script type="module">
     // ========== 1. IMPORTS ==========
-    import { AdditiveBlending, AmbientLight, BufferAttribute, BufferGeometry, CanvasTexture, Color, DirectionalLight, PerspectiveCamera, Points, RawShaderMaterial, Scene, Sprite, SpriteMaterial, WebGLRenderer } from "three";
+    import { AdditiveBlending, AmbientLight, BufferAttribute, BufferGeometry, CanvasTexture, Color, DirectionalLight, DoubleSide, Mesh, MeshBasicMaterial, NormalBlending, PerspectiveCamera, Points, RawShaderMaterial, Scene, SphereGeometry, Sprite, SpriteMaterial, WebGLRenderer } from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
     import GUI from "three/addons/libs/lil-gui.module.min.js";
     import { TWEEN } from "three/addons/libs/tween.module.min.js";
@@ -241,7 +241,7 @@
     // ========== 5. EFFECTS STATE OBJECT ==========
     const effState = {
       colorBreath: { enabled: true },
-      supernova: { enabled: true, frequency: 0.5 },
+      supernova: { enabled: true, frequency: 0.5, opacity: 0.25 },
       nebula: { enabled: true, count: 6, opacity: 0.5 },
       twinkle: { enabled: true, intensity: 0.6, speed: 1.85 },
       stardust: { enabled: true, opacity: 1 }
@@ -249,28 +249,41 @@
 
     // ========== 6. EFFECTS IMPLEMENTATION ==========
 
-    // --- E04: 超新星 (Supernova) ---
-    function supernovaTexture() {
+    // --- E04: 超新星 (Supernova) — 七色彩虹渐变 ---
+    const SUPERNOVA_RAINBOW = [
+      { name: '红',   stops: [['rgba(255,230,230,1)'],['rgba(255,60,60,0.85)'],['rgba(180,0,0,0)']] },
+      { name: '橙',   stops: [['rgba(255,220,180,1)'],['rgba(255,130,0,0.85)'],['rgba(180,70,0,0)']] },
+      { name: '黄',   stops: [['rgba(255,255,180,1)'],['rgba(240,200,0,0.85)'],['rgba(160,120,0,0)']] },
+      { name: '绿',   stops: [['rgba(180,255,180,1)'],['rgba(40,200,40,0.85)'],['rgba(0,120,0,0)']] },
+      { name: '青',   stops: [['rgba(180,255,255,1)'],['rgba(0,200,200,0.85)'],['rgba(0,120,130,0)']] },
+      { name: '蓝',   stops: [['rgba(180,200,255,1)'],['rgba(50,100,220,0.85)'],['rgba(20,50,160,0)']] },
+      { name: '紫',   stops: [['rgba(230,180,255,1)'],['rgba(150,50,240,0.85)'],['rgba(90,0,170,0)']] },
+    ]
+    function supernovaTexture(colorIndex) {
       var S = 64, c = document.createElement('canvas')
       c.width = c.height = S
       var x = c.getContext('2d')
+      var pal = SUPERNOVA_RAINBOW[colorIndex % SUPERNOVA_RAINBOW.length].stops
       var grd = x.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2)
-      grd.addColorStop(0, 'rgba(255,255,255,1)')
-      grd.addColorStop(0.2, 'rgba(255,200,100,0.8)')
-      grd.addColorStop(0.5, 'rgba(255,100,50,0.4)')
-      grd.addColorStop(1, 'rgba(255,0,0,0)')
+      grd.addColorStop(0, pal[0][0])
+      grd.addColorStop(0.25, pal[0][0].replace(/[\d.]+\)$/, '0.9)'))
+      grd.addColorStop(0.5, pal[1][0])
+      grd.addColorStop(1, pal[2][0])
       x.fillStyle = grd
       x.fillRect(0, 0, S, S)
       return new CanvasTexture(c)
     }
-    var SUPERNOVA_TEX = supernovaTexture()
-    var supernovaList = [], supernovaNext = performance.now() + 3000
+    var SUPERNOVA_TEX_LIST = SUPERNOVA_RAINBOW.map(function(_, i) { return supernovaTexture(i) })
+    var supernovaList = [], supernovaNext = performance.now() + 3000, supernovaColorIdx = 0
 
     function spawnSupernova() {
-      var mat = new SpriteMaterial({ map: SUPERNOVA_TEX, transparent: true, blending: AdditiveBlending, depthWrite: false, depthTest: false })
+      var tex = SUPERNOVA_TEX_LIST[supernovaColorIdx % SUPERNOVA_TEX_LIST.length]
+      supernovaColorIdx++
+      var mat = new SpriteMaterial({ map: tex, transparent: true, blending: AdditiveBlending, depthWrite: false, depthTest: false })
       var sprite = new Sprite(mat)
       sprite.position.set(0, 0, 0)
       sprite.scale.set(0.1, 0.1, 1)
+      sprite.renderOrder = 10
       scene.add(sprite)
       supernovaList.push({ obj: sprite, mat: mat, t0: performance.now(), dur: 3000 })
     }
@@ -293,9 +306,7 @@
         }
         var scale = 0.1 + progress * 8
         sn.obj.scale.set(scale, scale, 1)
-        var color = new Color(1, 1 - progress * 0.6, 1 - progress * 0.8)
-        sn.mat.color.set(color)
-        sn.mat.opacity = 1 - progress
+        sn.mat.opacity = (1 - progress) * effState.supernova.opacity
       }
     }
 
@@ -348,6 +359,7 @@
         var s = 2 + Math.random() * 3
         sprite.scale.set(s, s, 1)
         sprite.userData = { angle: angle, radius: radius, height: height, speed: 0.05 + Math.random() * 0.05, phase: Math.random() * 6.28 }
+        sprite.renderOrder = 10
         scene.add(sprite)
         nebulaSprites.push(sprite)
       }
@@ -438,6 +450,7 @@
         transparent: true, depthWrite: false, blending: AdditiveBlending
       })
       stardustPoints = new Points(geo, mat)
+      stardustPoints.renderOrder = 10
       scene.add(stardustPoints)
     }
 
@@ -463,16 +476,158 @@
       stardustPoints.material.uniforms.uOpacity.value = effState.stardust.opacity
     }
 
+    // --- E09: 中心紫黑渐变球体 (Core Orb) ---
+    var coreOrbState = { enabled: true, speed: 1.0, opacity: 0.98, radius: 0.25 }
+    var coreOrb = null
+    var coreOrbGlow = null
+
+    function hslToRgb(h, s, l) {
+      h = ((h % 1) + 1) % 1
+      var r, g, b
+      if (s === 0) { r = g = b = l }
+      else {
+        var hue2 = function(p, q, t) {
+          if (t < 0) t += 1; if (t > 1) t -= 1
+          if (t < 1/6) return p + (q - p) * 6 * t
+          if (t < 1/2) return q
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6
+          return p
+        }
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s
+        var p = 2 * l - q
+        r = hue2(p, q, h + 1/3); g = hue2(p, q, h); b = hue2(p, q, h - 1/3)
+      }
+      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
+    }
+
+    // E09 中心球（方向 A：发光核心 + 立体光）
+    // 结构：居中炽热核（青白）→ 深蓝 → 近黑靛蓝缘；叠加上左受光高光 + 下右暗部（伪 3D 体积）
+    // 外缘另加 Additive 辉光环（coreOrbGlow）融入场景并消除贴纸感
+    // 约束：本体 NormalBlending、内圈 alpha=1，仍遮挡白色星核
+    function createCoreOrbTexture(phase) {
+      var S = 256, c = document.createElement('canvas')
+      c.width = c.height = S
+      var x = c.getContext('2d')
+      // 随「渐变速率」做 ±14° 轻微色相摆动
+      var hueShift = Math.sin(phase) * 14
+      // 基础：黑洞式渐变——近黑核心(事件视界) + 外圈明亮吸积盘光环 + 最外缘透明融背景
+      // 每项为 [位置, 色相, 饱和, 明度, 透明度]
+      var stops = [
+        [0.00, 230, 0.50, 0.02, 1.00],  // 近黑（事件视界核心，不透明遮白星）
+        [0.33, 232, 0.60, 0.06, 1.00],  // 仍近黑（核心）
+        [0.45, 212, 0.75, 0.22, 1.00],  // 深蓝，向内环过渡
+        [0.58, 200, 0.85, 0.62, 0.95],  // 亮青蓝（吸积盘内缘）
+        [0.70, 195, 0.82, 0.80, 0.88],  // 近白青（吸积盘最亮环）
+        [0.82, 200, 0.60, 0.52, 0.55],  // 环外缘转暗
+        [0.92, 205, 0.40, 0.38, 0.28],  // 淡出
+        [1.00, 210, 0.30, 0.30, 0.00]   // 融于背景
+      ]
+      var grd = x.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2)
+      for (var i = 0; i < stops.length; i++) {
+        var p = stops[i][0], h = stops[i][1] + hueShift, s = stops[i][2], l = stops[i][3], a = stops[i][4]
+        var rgb = hslToRgb(h / 360, s, l)
+        grd.addColorStop(p, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a + ')')
+      }
+      x.fillStyle = grd
+      x.fillRect(0, 0, S, S)
+
+      // 黑洞为旋转对称发光，不叠加方向性高光/暗部
+
+      // 径向遮罩：仅把最外缘收为干净圆形（内圈透明度保持上方渐变设定）
+      x.globalCompositeOperation = 'destination-in'
+      var fade = x.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2)
+      fade.addColorStop(0.00, 'rgba(0,0,0,1)')
+      fade.addColorStop(0.94, 'rgba(0,0,0,1)')
+      fade.addColorStop(1.00, 'rgba(0,0,0,0)')
+      x.fillStyle = fade; x.fillRect(0, 0, S, S)
+      x.globalCompositeOperation = 'source-over'
+      return new CanvasTexture(c)
+    }
+
+    // 外缘 Additive 辉光环纹理（透明心、亮缘、柔出），用于融入场景
+    function createCoreOrbGlowTexture() {
+      var S = 256, c = document.createElement('canvas')
+      c.width = c.height = S
+      var x = c.getContext('2d')
+      var g = x.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2)
+      g.addColorStop(0.00, 'rgba(120,170,255,0)')
+      g.addColorStop(0.55, 'rgba(120,170,255,0)')
+      g.addColorStop(0.80, 'rgba(130,180,255,0.55)')
+      g.addColorStop(0.92, 'rgba(150,200,255,0.28)')
+      g.addColorStop(1.00, 'rgba(150,200,255,0)')
+      x.fillStyle = g; x.fillRect(0, 0, S, S)
+      return new CanvasTexture(c)
+    }
+
+    function createCoreOrb() {
+      // 清理旧对象（本体 + 辉光）
+      if (coreOrb) {
+        scene.remove(coreOrb)
+        if (coreOrb.material.map) coreOrb.material.map.dispose()
+        coreOrb.material.dispose()
+        coreOrb = null
+      }
+      if (coreOrbGlow) {
+        scene.remove(coreOrbGlow)
+        if (coreOrbGlow.material.map) coreOrbGlow.material.map.dispose()
+        coreOrbGlow.material.dispose()
+        coreOrbGlow = null
+      }
+      if (!coreOrbState.enabled) return
+      // 本体（NormalBlending，遮挡白色星核）
+      var tex = createCoreOrbTexture(0)
+      var mat = new SpriteMaterial({
+        map: tex, transparent: true, opacity: coreOrbState.opacity,
+        depthWrite: false, depthTest: false, blending: NormalBlending
+      })
+      coreOrb = new Sprite(mat)
+      coreOrb.position.set(0, 0, 0)
+      coreOrb.scale.set(coreOrbState.radius, coreOrbState.radius, 1)
+      coreOrb.renderOrder = 1000
+      scene.add(coreOrb)
+      // 外缘辉光环（Additive，融入场景、消除贴纸感）
+      var gtex = createCoreOrbGlowTexture()
+      var gmat = new SpriteMaterial({
+        map: gtex, transparent: true, opacity: coreOrbState.opacity * 0.7,
+        depthWrite: false, depthTest: false, blending: AdditiveBlending
+      })
+      coreOrbGlow = new Sprite(gmat)
+      coreOrbGlow.position.set(0, 0, 0)
+      coreOrbGlow.scale.set(coreOrbState.radius * 1.4, coreOrbState.radius * 1.4, 1)
+      coreOrbGlow.renderOrder = 1001
+      scene.add(coreOrbGlow)
+    }
+
+    function updateCoreOrb(cycleTime) {
+      if (!coreOrbState.enabled || !coreOrb) return
+      var phase = cycleTime * coreOrbState.speed * 2
+      coreOrb.material.map.dispose()
+      coreOrb.material.map = createCoreOrbTexture(phase)
+      coreOrb.material.opacity = coreOrbState.opacity
+      if (coreOrbGlow) coreOrbGlow.material.opacity = coreOrbState.opacity * 0.7
+      coreOrb.material.needsUpdate = true
+    }
+
     // ========== 7. GUI SETUP ==========
     var cRadius, cSpin, cRandomness
 
     var gui = new GUI({ title: '特效控制面板' })
 
+    // 缩放（模拟鼠标滚轮：控制相机距离）
+    var camZoomState = { distance: 2 }
+    function applyCamZoom() {
+      var dir = camera.position.clone().normalize()
+      if (dir.lengthSq() < 0.0001) { dir.set(0, 0, 1) }
+      camera.position.copy(dir.multiplyScalar(camZoomState.distance))
+      orbit.update()
+    }
+
     var fGalaxy = gui.addFolder('星系参数')
     var u = galaxyMaterial.uniforms
     fGalaxy.add(u.uSize, "value", 0, 4, 0.01).name("粒子大小")
     fGalaxy.add(u.uBranches, "value", 1, 5, 1).name("旋臂数")
-    cRadius = fGalaxy.add(u.uRadius, "value", 0, 5, 0.01).name("缩放")
+    cRadius = fGalaxy.add(camZoomState, "distance", 1.5, 25, 0.01).name("缩放").onChange(applyCamZoom)
+    fGalaxy.add(u.uRadius, "value", 0, 8, 0.01).name("星系半径")
     cSpin = fGalaxy.add(u.uSpin, "value", -12.57, 12.57, 0.01).name("旋转")
     cRandomness = fGalaxy.add(u.uRandomness, "value", 0, 1, 0.01).name("扩散")
     fGalaxy.open()
@@ -486,6 +641,7 @@
       if (!v) clearSupernova()
     })
     fSupernova.add(effState.supernova, 'frequency', 0.1, 3, 0.1).name("频率")
+    fSupernova.add(effState.supernova, 'opacity', 0, 1, 0.01).name("透明度")
 
     var fNebula = gui.addFolder('星云')
     fNebula.add(effState.nebula, 'enabled').name('启用').onChange(function(v) {
@@ -509,19 +665,33 @@
     })
     fStardust.add(effState.stardust, 'opacity', 0, 1, 0.01).name("透明度")
 
+    var fCoreOrb = gui.addFolder('中心装饰球')
+    fCoreOrb.add(coreOrbState, 'enabled').name('启用').onChange(function(v) {
+      if (v) createCoreOrb()
+      else { if (coreOrb) { scene.remove(coreOrb); coreOrb = null } if (coreOrbGlow) { scene.remove(coreOrbGlow); coreOrbGlow = null } }
+    })
+    fCoreOrb.add(coreOrbState, 'opacity', 0, 1, 0.01).name("不透明度")
+    fCoreOrb.add(coreOrbState, 'radius', 0.05, 1.5, 0.01).name("半径").onChange(function(v) {
+      if (coreOrb) coreOrb.scale.set(v, v, 1)
+      if (coreOrbGlow) coreOrbGlow.scale.set(v * 1.4, v * 1.4, 1)
+    })
+    fCoreOrb.add(coreOrbState, 'speed', 0, 5, 0.01).name("渐变速率")
+
     gui.close()
 
     // Initialize on-start effects
     createNebula(effState.nebula.count)
     createStardust()
     updateTwinkle()
+    applyCamZoom()
+    createCoreOrb()
 
     // ========== 8. BIG BANG ANIMATION ==========
     new TWEEN.Tween({ radius: 0, spin: 0, randomness: 0, rotate: 0 })
       .to({ radius: 2.79, spin: 1.75, randomness: 1.0, rotate: Math.PI * 4 })
       .duration(5000).easing(TWEEN.Easing.Cubic.InOut)
       .onUpdate(({ radius, spin, randomness, rotate }) => {
-        cRadius.setValue(radius); cRadius.updateDisplay()
+        u.uRadius.value = radius
         cSpin.setValue(spin); cSpin.updateDisplay()
         cRandomness.setValue(randomness); cRandomness.updateDisplay()
         galaxy.rotation.y = rotate; universe.rotation.y = rotate / 3
@@ -559,6 +729,9 @@
 
       // E08: 尘埃粒子
       updateStardust(cycleTime)
+
+      // E09: 中心装饰球
+      updateCoreOrb(cycleTime)
 
       TWEEN.update()
       orbit.update()

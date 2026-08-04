@@ -16,7 +16,7 @@ export interface StarryGalaxySceneApi {
 }
 
 export const DEFAULT_EFFECT_PARAMS = {
-  supernova: { frequency: 0.5 },
+  supernova: { frequency: 0.5, opacity: 0.25 },
   nebula: { count: 6, opacity: 0.5 },
   twinkle: { intensity: 0.6, speed: 1.85 },
   stardust: { opacity: 1 },
@@ -46,7 +46,7 @@ interface UniverseUniforms extends Record<string, THREE.IUniform> {
 
 interface EffectState {
   colorBreath: { enabled: boolean }
-  supernova: { enabled: boolean; frequency: number }
+  supernova: { enabled: boolean; frequency: number; opacity: number }
   nebula: { enabled: boolean; count: number; opacity: number }
   twinkle: { enabled: boolean; intensity: number; speed: number }
   stardust: { enabled: boolean; opacity: number }
@@ -264,10 +264,10 @@ export function createStarryGalaxyScene(
   scene.background = new THREE.Color(BACKGROUND_COLOR)
 
   const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100)
-  const starryElevState = { elevation: 45 }
+  const starryElevState = { elevation: 28 }
   const applyElevation = () => {
     const rad = (starryElevState.elevation * Math.PI) / 180
-    const d = 5.92
+    const d = 3
     camera.position.set(0, d * Math.sin(rad), d * Math.cos(rad))
   }
   applyElevation()
@@ -402,7 +402,11 @@ export function createStarryGalaxyScene(
 
   const effState: EffectState = {
     colorBreath: { enabled: true },
-    supernova: { enabled: true, frequency: DEFAULT_EFFECT_PARAMS.supernova.frequency },
+    supernova: {
+      enabled: true,
+      frequency: DEFAULT_EFFECT_PARAMS.supernova.frequency,
+      opacity: DEFAULT_EFFECT_PARAMS.supernova.opacity,
+    },
     nebula: {
       enabled: true,
       count: DEFAULT_EFFECT_PARAMS.nebula.count,
@@ -454,7 +458,7 @@ export function createStarryGalaxyScene(
       const scale = 0.1 + progress * 8
       sn.obj.scale.set(scale, scale, 1)
       sn.mat.color.set(1, 1 - progress * 0.6, 1 - progress * 0.8)
-      sn.mat.opacity = 1 - progress
+      sn.mat.opacity = (1 - progress) * effState.supernova.opacity
     }
   }
 
@@ -602,6 +606,151 @@ export function createStarryGalaxyScene(
     ;(stardustPoints.material as THREE.RawShaderMaterial).uniforms.uOpacity.value = effState.stardust.opacity
   }
 
+  // --- E09: 中心黑洞式装饰球 (Core Orb) ---
+  const coreOrbState = { enabled: true, speed: 1.0, opacity: 0.98, radius: 0.25 }
+  let coreOrb: THREE.Sprite | null = null
+  let coreOrbGlow: THREE.Sprite | null = null
+
+  function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+    h = ((h % 1) + 1) % 1
+    let r: number, g: number, b: number
+    if (s === 0) {
+      r = g = b = l
+    } else {
+      const hue2 = (p: number, q: number, t: number) => {
+        if (t < 0) t += 1
+        if (t > 1) t -= 1
+        if (t < 1 / 6) return p + (q - p) * 6 * t
+        if (t < 1 / 2) return q
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
+        return p
+      }
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+      const p = 2 * l - q
+      r = hue2(p, q, h + 1 / 3)
+      g = hue2(p, q, h)
+      b = hue2(p, q, h - 1 / 3)
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
+  }
+
+  // 黑洞式渐变：近黑核心(事件视界) + 外圈明亮吸积盘光环 + 最外缘透明融背景
+  // 每项 [位置, 色相, 饱和, 明度, 透明度]
+  function createCoreOrbTexture(phase: number): THREE.CanvasTexture {
+    const S = 256
+    const c = document.createElement('canvas')
+    c.width = c.height = S
+    const x = c.getContext('2d')
+    if (!x) throw new Error('无法创建 2D context')
+    const hueShift = Math.sin(phase) * 14
+    const stops: Array<[number, number, number, number, number]> = [
+      [0.0, 230, 0.5, 0.02, 1.0],
+      [0.33, 232, 0.6, 0.06, 1.0],
+      [0.45, 212, 0.75, 0.22, 1.0],
+      [0.58, 200, 0.85, 0.62, 0.95],
+      [0.7, 195, 0.82, 0.8, 0.88],
+      [0.82, 200, 0.6, 0.52, 0.55],
+      [0.92, 205, 0.4, 0.38, 0.28],
+      [1.0, 210, 0.3, 0.3, 0.0],
+    ]
+    const grd = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2)
+    for (const st of stops) {
+      const p = st[0]
+      const h = st[1] + hueShift
+      const s = st[2]
+      const l = st[3]
+      const a = st[4]
+      const rgb = hslToRgb(h / 360, s, l)
+      grd.addColorStop(p, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a + ')')
+    }
+    x.fillStyle = grd
+    x.fillRect(0, 0, S, S)
+
+    // 径向遮罩：仅把最外缘收为干净圆形（内圈透明度保持上方渐变设定）
+    x.globalCompositeOperation = 'destination-in'
+    const fade = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2)
+    fade.addColorStop(0.0, 'rgba(0,0,0,1)')
+    fade.addColorStop(0.94, 'rgba(0,0,0,1)')
+    fade.addColorStop(1.0, 'rgba(0,0,0,0)')
+    x.fillStyle = fade
+    x.fillRect(0, 0, S, S)
+    x.globalCompositeOperation = 'source-over'
+    return new THREE.CanvasTexture(c)
+  }
+
+  function createCoreOrbGlowTexture(): THREE.CanvasTexture {
+    const S = 256
+    const c = document.createElement('canvas')
+    c.width = c.height = S
+    const x = c.getContext('2d')
+    if (!x) throw new Error('无法创建 2D context')
+    const g = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2)
+    g.addColorStop(0.0, 'rgba(120,170,255,0)')
+    g.addColorStop(0.55, 'rgba(120,170,255,0)')
+    g.addColorStop(0.8, 'rgba(130,180,255,0.55)')
+    g.addColorStop(0.92, 'rgba(150,200,255,0.28)')
+    g.addColorStop(1.0, 'rgba(150,200,255,0)')
+    x.fillStyle = g
+    x.fillRect(0, 0, S, S)
+    return new THREE.CanvasTexture(c)
+  }
+
+  function createCoreOrb() {
+    if (coreOrb) {
+      scene.remove(coreOrb)
+      coreOrb.material.map?.dispose()
+      coreOrb.material.dispose()
+      coreOrb = null
+    }
+    if (coreOrbGlow) {
+      scene.remove(coreOrbGlow)
+      coreOrbGlow.material.map?.dispose()
+      coreOrbGlow.material.dispose()
+      coreOrbGlow = null
+    }
+    if (!coreOrbState.enabled) return
+    // 本体（NormalBlending，遮挡白色星核）
+    const tex = createCoreOrbTexture(0)
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      opacity: coreOrbState.opacity,
+      depthWrite: false,
+      depthTest: false,
+      blending: THREE.NormalBlending,
+    })
+    coreOrb = new THREE.Sprite(mat)
+    coreOrb.position.set(0, 0, 0)
+    coreOrb.scale.set(coreOrbState.radius, coreOrbState.radius, 1)
+    coreOrb.renderOrder = 1000
+    scene.add(coreOrb)
+    // 外缘辉光环（Additive，融入场景、消除贴纸感）
+    const gtex = createCoreOrbGlowTexture()
+    const gmat = new THREE.SpriteMaterial({
+      map: gtex,
+      transparent: true,
+      opacity: coreOrbState.opacity * 0.7,
+      depthWrite: false,
+      depthTest: false,
+      blending: THREE.AdditiveBlending,
+    })
+    coreOrbGlow = new THREE.Sprite(gmat)
+    coreOrbGlow.position.set(0, 0, 0)
+    coreOrbGlow.scale.set(coreOrbState.radius * 1.4, coreOrbState.radius * 1.4, 1)
+    coreOrbGlow.renderOrder = 1001
+    scene.add(coreOrbGlow)
+  }
+
+  function updateCoreOrb(cycleTime: number) {
+    if (!coreOrbState.enabled || !coreOrb) return
+    const phase = cycleTime * coreOrbState.speed * 2
+    coreOrb.material.map?.dispose()
+    coreOrb.material.map = createCoreOrbTexture(phase)
+    coreOrb.material.opacity = coreOrbState.opacity
+    if (coreOrbGlow) coreOrbGlow.material.opacity = coreOrbState.opacity * 0.7
+    coreOrb.material.needsUpdate = true
+  }
+
   const guiContainer = typeof document !== 'undefined' ? document.getElementById('starry-gui-slot') : null
   const starryGuiTrigger = typeof document !== 'undefined' ? document.getElementById('starry-gui-trigger') : null
   const gui = new GUI({
@@ -678,10 +827,30 @@ export function createStarryGalaxyScene(
   const fGalaxy = gui.addFolder(tf('starryBg.galaxy'))
   fGalaxy.add(galaxyUniforms.uSize, 'value', 0, 4, 0.01).name(tf('starryBg.particleSize'))
   fGalaxy.add(galaxyUniforms.uBranches, 'value', 1, 5, 1).name(tf('starryBg.branches'))
-  fGalaxy.add(galaxyUniforms.uRadius, 'value', 0, 5, 0.01).name(tf('starryBg.radius'))
+
+  // 缩放（模拟鼠标滚轮：控制相机距离）
+  const camZoomState = { distance: 3 }
+  const applyCamZoom = () => {
+    const dir = new THREE.Vector3().copy(camera.position).normalize()
+    if (dir.lengthSq() < 0.0001) dir.set(0, 0, 1)
+    camera.position.copy(dir.multiplyScalar(camZoomState.distance))
+    starryControls.update()
+  }
+  fGalaxy
+    .add(camZoomState, 'distance', 1.5, 25, 0.01)
+    .name(tf('starryBg.zoom') ?? '缩放')
+    .onChange(applyCamZoom)
+
+  fGalaxy.add(galaxyUniforms.uRadius, 'value', 0, 8, 0.01).name(tf('starryBg.radius'))
   fGalaxy.add(galaxyUniforms.uSpin, 'value', -12.57, 12.57, 0.01).name(tf('starryBg.spin'))
   fGalaxy.add(galaxyUniforms.uRandomness, 'value', 0, 1, 0.01).name(tf('starryBg.randomness'))
-  fGalaxy.add(starryElevState, 'elevation', 0, 90, 1).name(tf('starryBg.viewAngle')).onChange(applyElevation)
+  fGalaxy
+    .add(starryElevState, 'elevation', 0, 90, 1)
+    .name(tf('starryBg.viewAngle'))
+    .onChange(() => {
+      applyElevation()
+      starryControls.update()
+    })
   fGalaxy.open()
 
   const fBreath = gui.addFolder(tf('starryBg.colorBreath'))
@@ -696,6 +865,7 @@ export function createStarryGalaxyScene(
       if (!v) clearSupernova()
     })
   fSupernova.add(effState.supernova, 'frequency', 0.1, 3, 0.1).name(tf('starryBg.frequency'))
+  fSupernova.add(effState.supernova, 'opacity', 0, 1, 0.01).name(tf('starryBg.opacity') ?? '透明度')
 
   const fNebula = gui.addFolder(tf('starryBg.nebula'))
   fNebula
@@ -728,6 +898,33 @@ export function createStarryGalaxyScene(
     })
   fStardust.add(effState.stardust, 'opacity', 0, 1, 0.01).name(tf('starryBg.opacity'))
 
+  const fCoreOrb = gui.addFolder(tf('starryBg.coreOrb'))
+  fCoreOrb
+    .add(coreOrbState, 'enabled')
+    .name(tf('starryBg.enabled'))
+    .onChange((v: boolean) => {
+      if (v) createCoreOrb()
+      else {
+        if (coreOrb) {
+          scene.remove(coreOrb)
+          coreOrb = null
+        }
+        if (coreOrbGlow) {
+          scene.remove(coreOrbGlow)
+          coreOrbGlow = null
+        }
+      }
+    })
+  fCoreOrb.add(coreOrbState, 'opacity', 0, 1, 0.01).name(tf('starryBg.opacity'))
+  fCoreOrb
+    .add(coreOrbState, 'radius', 0.05, 1.5, 0.01)
+    .name(tf('starryBg.radius'))
+    .onChange((v: number) => {
+      if (coreOrb) coreOrb.scale.set(v, v, 1)
+      if (coreOrbGlow) coreOrbGlow.scale.set(v * 1.4, v * 1.4, 1)
+    })
+  fCoreOrb.add(coreOrbState, 'speed', 0, 5, 0.01).name(tf('starryBg.gradientSpeed'))
+
   const fDisplay = gui.addFolder(tf('starryBg.display'))
   const inkProxy = { on: useStarryUiStore.getState().inkEnabled }
   fDisplay
@@ -742,6 +939,8 @@ export function createStarryGalaxyScene(
   createNebula(effState.nebula.count)
   createStardust()
   updateTwinkle()
+  applyCamZoom()
+  createCoreOrb()
 
   let lastFrameT = performance.now()
   let frames = 0
@@ -779,6 +978,7 @@ export function createStarryGalaxyScene(
     updateNebula(cycleTime)
     updateTwinkle()
     updateStardust(cycleTime)
+    updateCoreOrb(cycleTime)
 
     renderer.render(scene, camera)
 
@@ -802,6 +1002,18 @@ export function createStarryGalaxyScene(
       clearSupernova()
       removeNebula()
       removeStardust()
+      if (coreOrb) {
+        scene.remove(coreOrb)
+        coreOrb.material.map?.dispose()
+        coreOrb.material.dispose()
+        coreOrb = null
+      }
+      if (coreOrbGlow) {
+        scene.remove(coreOrbGlow)
+        coreOrbGlow.material.map?.dispose()
+        coreOrbGlow.material.dispose()
+        coreOrbGlow = null
+      }
       scene.traverse((obj) => {
         if (obj instanceof THREE.Points || obj instanceof THREE.Mesh) {
           obj.geometry.dispose()

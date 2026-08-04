@@ -608,28 +608,38 @@ export function createStarryGalaxyScene(
 
   // --- 中心暗化 (Center Dim): 在背景中心区域压暗所有元素，形成暗井 ---
   // 不使用可见装饰球；用「黑色径向透明」贴图以 NormalBlending 叠在最上层，
-  // 把该区域星点/星云/星尘的光线与颜色按比例压暗（intensity 越高越黑）。
-  const centerDimState = { enabled: true, intensity: 0.8, radius: 0.6 }
+  // 把该区域星点/星云/星尘的光线与颜色按比例压暗。整体压暗强度随时间做
+  // 「深→浅→深」的循环呼吸（透明度渐变），而非固定不变。
+  const centerDimState = { enabled: true, intensity: 0.8, radius: 0.6, period: 5.0 }
   let centerDim: THREE.Sprite | null = null
+  // 呼吸时最浅端占满强度的比例（1=不呼吸，0=完全消失）
+  const centerDimMinFactor = 0.25
 
-  // 黑色径向透明贴图：中心最暗，向外平滑过渡到完全透明，
-  // 使中心区域所有元素（星点/星云/星尘）按比例变暗而非出现实心球。
+  // 固定最大 alpha=1 的径向渐变，实际压暗强度由 material.opacity 控制，
+  // 以便逐帧做呼吸渐变而无需重建贴图。
   function createCenterDimTexture(): THREE.CanvasTexture {
     const S = 256
     const c = document.createElement('canvas')
     c.width = c.height = S
     const x = c.getContext('2d')
     if (!x) throw new Error('无法创建 2D context')
-    const a = centerDimState.intensity
     const grd = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2)
-    grd.addColorStop(0.0, 'rgba(0,0,0,' + a + ')')
-    grd.addColorStop(0.4, 'rgba(0,0,0,' + a * 0.96 + ')')
-    grd.addColorStop(0.62, 'rgba(0,0,0,' + a * 0.62 + ')')
-    grd.addColorStop(0.82, 'rgba(0,0,0,' + a * 0.24 + ')')
+    grd.addColorStop(0.0, 'rgba(0,0,0,1)')
+    grd.addColorStop(0.4, 'rgba(0,0,0,0.96)')
+    grd.addColorStop(0.62, 'rgba(0,0,0,0.62)')
+    grd.addColorStop(0.82, 'rgba(0,0,0,0.24)')
     grd.addColorStop(1.0, 'rgba(0,0,0,0)')
     x.fillStyle = grd
     x.fillRect(0, 0, S, S)
     return new THREE.CanvasTexture(c)
+  }
+
+  // 当前压暗强度随时间在 [intensity*minFactor, intensity] 间循环（深→浅→深）
+  function applyCenterDim(time: number) {
+    if (!centerDim) return
+    const phase = (time / centerDimState.period) * Math.PI * 2
+    const osc = (Math.sin(phase) + 1) / 2
+    centerDim.material.opacity = centerDimState.intensity * (centerDimMinFactor + (1 - centerDimMinFactor) * osc)
   }
 
   function createCenterDim() {
@@ -644,7 +654,7 @@ export function createStarryGalaxyScene(
     const mat = new THREE.SpriteMaterial({
       map: tex,
       transparent: true,
-      opacity: 1,
+      opacity: centerDimState.intensity,
       depthWrite: false,
       depthTest: false,
       blending: THREE.NormalBlending,
@@ -804,6 +814,22 @@ export function createStarryGalaxyScene(
     })
   fStardust.add(effState.stardust, 'opacity', 0, 1, 0.01).name(tf('starryBg.opacity'))
 
+  const fCenterDim = gui.addFolder(tf('starryBg.centerDim'))
+  fCenterDim
+    .add(centerDimState, 'enabled')
+    .name(tf('starryBg.enabled'))
+    .onChange((v: boolean) => {
+      if (centerDim) centerDim.visible = v
+    })
+  fCenterDim.add(centerDimState, 'intensity', 0, 1, 0.01).name(tf('starryBg.intensity'))
+  fCenterDim
+    .add(centerDimState, 'radius', 0.05, 1.5, 0.01)
+    .name(tf('starryBg.radius'))
+    .onChange((v: number) => {
+      if (centerDim) centerDim.scale.set(v, v, 1)
+    })
+  fCenterDim.add(centerDimState, 'period', 0.5, 20, 0.1).name(tf('starryBg.period'))
+
   const fDisplay = gui.addFolder(tf('starryBg.display'))
   const inkProxy = { on: useStarryUiStore.getState().inkEnabled }
   fDisplay
@@ -857,6 +883,7 @@ export function createStarryGalaxyScene(
     updateNebula(cycleTime)
     updateTwinkle()
     updateStardust(cycleTime)
+    applyCenterDim(cycleTime)
 
     renderer.render(scene, camera)
 

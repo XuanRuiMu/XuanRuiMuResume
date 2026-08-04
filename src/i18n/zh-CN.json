@@ -23,7 +23,9 @@
     "display": "显示",
     "inkScreen": "水墨遮罩",
     "panelTrigger": "特效面板",
-    "viewAngle": "视角角度"
+    "viewAngle": "视角角度",
+    "centerDim": "中心暗化",
+    "period": "渐变周期"
   },
   "pwa": {
     "offlineTitle": "离线模式",

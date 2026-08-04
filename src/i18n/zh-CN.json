@@ -23,9 +23,7 @@
     "display": "显示",
     "inkScreen": "水墨遮罩",
     "panelTrigger": "特效面板",
-    "viewAngle": "视角角度",
-    "coreOrb": "中心装饰球",
-    "gradientSpeed": "渐变速率"
+    "viewAngle": "视角角度"
   },
   "pwa": {
     "offlineTitle": "离线模式",

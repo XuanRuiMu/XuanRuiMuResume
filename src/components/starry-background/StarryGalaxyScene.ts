@@ -610,11 +610,9 @@ export function createStarryGalaxyScene(
   // 不使用可见装饰球；用「黑色径向透明」贴图以 NormalBlending 叠在最上层，
   // 把该区域星点/星云/星尘的光线与颜色按比例压暗。整体压暗强度随时间做
   // 「深→浅→深」的循环呼吸（透明度渐变），而非固定不变。
-  const centerDimState = { enabled: true, intensity: 1.0, radius: 0.6, period: 5.0 }
+  // 呼吸在两个绝对透明度之间循环：startOpacity=最浅端透明度，endOpacity=最深端透明度。
+  const centerDimState = { enabled: true, startOpacity: 0.7, endOpacity: 1.0, radius: 0.6, period: 5.0 }
   let centerDim: THREE.Sprite | null = null
-  // 呼吸时最浅端占满强度(intensity)的比例：0.70 = 最浅端透明度=强度×0.70（即 70%），
-  // 最深端透明度=强度（即 100%，白色星星完全被压暗）。1=不呼吸，0=最浅端完全消失。
-  const centerDimMinFactor = 0.7
 
   // 固定最大 alpha=1 的径向渐变，实际压暗强度由 material.opacity 控制，
   // 以便逐帧做呼吸渐变而无需重建贴图。
@@ -640,7 +638,8 @@ export function createStarryGalaxyScene(
     if (!centerDim) return
     const phase = (time / centerDimState.period) * Math.PI * 2
     const osc = (Math.sin(phase) + 1) / 2
-    centerDim.material.opacity = centerDimState.intensity * (centerDimMinFactor + (1 - centerDimMinFactor) * osc)
+    centerDim.material.opacity =
+      centerDimState.startOpacity + (centerDimState.endOpacity - centerDimState.startOpacity) * osc
   }
 
   function createCenterDim() {
@@ -655,7 +654,7 @@ export function createStarryGalaxyScene(
     const mat = new THREE.SpriteMaterial({
       map: tex,
       transparent: true,
-      opacity: centerDimState.intensity,
+      opacity: centerDimState.startOpacity,
       depthWrite: false,
       depthTest: false,
       blending: THREE.NormalBlending,
@@ -822,7 +821,8 @@ export function createStarryGalaxyScene(
     .onChange((v: boolean) => {
       if (centerDim) centerDim.visible = v
     })
-  fCenterDim.add(centerDimState, 'intensity', 0, 1, 0.01).name(tf('starryBg.intensity'))
+  fCenterDim.add(centerDimState, 'startOpacity', 0, 1, 0.01).name(tf('starryBg.startOpacity'))
+  fCenterDim.add(centerDimState, 'endOpacity', 0, 1, 0.01).name(tf('starryBg.endOpacity'))
   fCenterDim
     .add(centerDimState, 'radius', 0.05, 1.5, 0.01)
     .name(tf('starryBg.radius'))

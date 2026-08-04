@@ -25,7 +25,9 @@
     "panelTrigger": "特效面板",
     "viewAngle": "视角角度",
     "centerDim": "中心暗化",
-    "period": "渐变周期"
+    "period": "渐变周期",
+    "startOpacity": "起始渐变透明度",
+    "endOpacity": "最终渐变透明度"
   },
   "pwa": {
     "offlineTitle": "离线模式",

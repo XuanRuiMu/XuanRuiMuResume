@@ -50,7 +50,7 @@ describe('NavDock', () => {
   it('highlights the active section', () => {
     render(<NavDock />)
     const activeButton = screen.getByRole('button', { name: t('nav.hero') })
-    expect(activeButton).toHaveClass('bg-surface')
+    expect(activeButton).toHaveAttribute('aria-current', 'true')
   })
 
   it('navigates to section when a nav button is clicked', () => {

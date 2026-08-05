@@ -91,7 +91,7 @@
   },
   "hero": {
     "hint": "按 ⌘K 打开命令面板，或用顶部导航切换模块。",
-    "valueProposition": "写过 Minecraft MMORPG 服务端、Spring Boot 后台和 AI 工具链。复杂需求我习惯先拆成小块，再逐个实现、测试、维护。",
+    "valueProposition": "写过 Minecraft MMORPG 服务端、高并发 Java 后台和 AI 工具链。复杂需求我习惯先拆成小块，再逐个实现、测试、维护。",
     "cta": {
       "copyEmail": "复制邮箱",
       "viewProjects": "查看项目",

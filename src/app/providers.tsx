@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { useInertialScroll } from '../hooks/useInertialScroll'
 import { useAppStore } from '../store/useAppStore'
 import { useThemeSystem } from '../components/theme-toggle/useThemeSystem'
 
@@ -30,6 +31,12 @@ function ReducedMotionSync(): null {
   return null
 }
 
+// FP-05：全局惯性平滑滚动初始化（零依赖，守卫内走原生）
+function InertialScrollInitializer(): null {
+  useInertialScroll()
+  return null
+}
+
 interface ProvidersProps {
   children: ReactNode
 }
@@ -39,6 +46,7 @@ export function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <ThemeSync />
       <ReducedMotionSync />
+      <InertialScrollInitializer />
       {children}
     </QueryClientProvider>
   )

@@ -680,16 +680,43 @@ export function createStarryGalaxyScene(
   guiStyle.maxHeight = 'calc(100vh - 80px)'
   guiStyle.overflowY = 'auto'
 
+  // 面板定位安全边距（px），防止贴边/溢出视口
+  const 面板安全边距 = 12
+  const 夹取 = (值: number, 最小: number, 最大: number) => Math.min(Math.max(值, 最小), 最大)
+  // 依据触发点击坐标，让面板左上角从点击点向右下展开，并做视口边界 clamp
+  const 定位星图面板 = (点击X: number, 点击Y: number) => {
+    if (!guiContainer) return
+    // 先移除 hidden 才能测量面板真实尺寸
+    guiContainer.classList.remove('hidden')
+    const 面板宽 = guiContainer.offsetWidth || 300
+    const 面板高 = guiContainer.offsetHeight || 0
+    const 左 = 夹取(点击X, 面板安全边距, window.innerWidth - 面板宽 - 面板安全边距)
+    const 上 = 夹取(点击Y, 面板安全边距, window.innerHeight - 面板高 - 面板安全边距)
+    guiContainer.style.left = `${左}px`
+    guiContainer.style.top = `${上}px`
+  }
+
   let starryPanelOpen = false
+  // 记录最近一次触发点击坐标，供打开面板时定位
+  let 上次点击X = 0
+  let 上次点击Y = 0
   const setStarryPanel = (open: boolean) => {
     starryPanelOpen = open
-    if (guiContainer) guiContainer.classList.toggle('hidden', !open)
+    if (guiContainer) {
+      if (open) {
+        定位星图面板(上次点击X, 上次点击Y)
+      } else {
+        guiContainer.classList.add('hidden')
+      }
+    }
     starryGuiTrigger?.setAttribute('aria-expanded', String(open))
   }
   const onStarryDocClick = (e: MouseEvent) => {
     const target = e.target as Node
     if (starryGuiTrigger && starryGuiTrigger.contains(target)) {
       e.stopPropagation()
+      上次点击X = e.clientX
+      上次点击Y = e.clientY
       setStarryPanel(!starryPanelOpen)
       return
     }

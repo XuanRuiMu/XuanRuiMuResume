@@ -126,6 +126,42 @@ if (typeof window !== 'undefined') {
   })
 }
 
+// jsdom 在 opaque origin（about:blank）下不暴露 localStorage，提供最小内存实现
+// 以支持 zustand persist 中间件及直接访问 localStorage 的测试（如 useProjectsWindStore）
+if (typeof window !== 'undefined') {
+  let hasLocalStorage = false
+  try {
+    hasLocalStorage = window.localStorage != null
+  } catch {
+    hasLocalStorage = false
+  }
+  if (!hasLocalStorage) {
+    const store = new Map()
+    const localStorageMock = {
+      get length() {
+        return store.size
+      },
+      key: (i) => Array.from(store.keys())[i] ?? null,
+      getItem: (k) => (store.has(String(k)) ? store.get(String(k)) : null),
+      setItem: (k, v) => {
+        store.set(String(k), String(v))
+      },
+      removeItem: (k) => {
+        store.delete(String(k))
+      },
+      clear: () => {
+        store.clear()
+      },
+    }
+    Object.defineProperty(window, 'localStorage', {
+      writable: true,
+      configurable: true,
+      value: localStorageMock,
+    })
+    globalThis.localStorage = localStorageMock
+  }
+}
+
 // Service Worker 在 jsdom 中不可用，提供最小 mock
 const serviceWorkerListeners = new Map()
 Object.defineProperty(global.navigator, 'serviceWorker', {

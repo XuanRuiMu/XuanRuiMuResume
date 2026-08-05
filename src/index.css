@@ -1010,6 +1010,23 @@ html.circular-reveal-active::view-transition-old(root) {
   border-radius: 2px;
 }
 
+/* 打字机块状光标 */
+.caret-blink {
+  animation: caret-blink 1s steps(1, end) infinite;
+}
+
+@keyframes caret-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
 /* Ink Reveal Overlay — 100% mimo.xiaomi.com algorithm */
 .ink-reveal-overlay {
   position: fixed;

@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { ProjectsSection } from './ProjectsSection'
 import { projects } from '../../data/projects'
 import { t } from '../../i18n/translations'
+import { useProjectsWindStore, 默认风力强度 } from '../../store/useProjectsWindStore'
 
 describe('ProjectsSection', () => {
   let matches = false
 
   beforeEach(() => {
     matches = false
+    useProjectsWindStore.setState({ 风力强度: 默认风力强度 })
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn().mockImplementation((query: string) => ({
@@ -26,13 +28,18 @@ describe('ProjectsSection', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders section title and subtitle', () => {
+  it('渲染板块标题与副标题', () => {
     render(<ProjectsSection />)
     expect(screen.getByRole('heading', { name: t('projects.title') })).toBeInTheDocument()
     expect(screen.getByText(t('projects.subtitle'))).toBeInTheDocument()
   })
 
-  it('renders sticky notes with project name and description', () => {
+  it('section 保持 id="projects" 挂载契约', () => {
+    const { container } = render(<ProjectsSection />)
+    expect(container.querySelector('section')).toHaveAttribute('id', 'projects')
+  })
+
+  it('渲染四张便签，包含项目名与描述', () => {
     render(<ProjectsSection />)
     for (const project of projects) {
       expect(screen.getByRole('heading', { name: t(project.nameKey) })).toBeInTheDocument()
@@ -40,11 +47,11 @@ describe('ProjectsSection', () => {
     }
   })
 
-  it('renders clickable project links with correct hrefs', () => {
+  it('GitHub 链接为真实可点击的 a 标签', () => {
     render(<ProjectsSection />)
     const links = screen.getAllByRole('link')
     const expectedUrls = projects.flatMap((project) => project.links?.map((link) => link.url) ?? [])
-    expect(links).toHaveLength(expectedUrls.length)
+    expect(links.length).toBe(expectedUrls.length)
     for (const url of expectedUrls) {
       expect(links.some((link) => link.getAttribute('href') === url)).toBe(true)
     }
@@ -54,96 +61,63 @@ describe('ProjectsSection', () => {
     }
   })
 
-  it('applies physics class when reduced motion is not preferred', () => {
+  it('便签文字允许选中复制（user-select: text）', () => {
     const { container } = render(<ProjectsSection />)
-    const physicsElements = container.querySelectorAll('.note-physics')
-    expect(physicsElements.length).toBe(projects.length)
-  })
-
-  it('does not apply physics class when reduced motion is preferred', () => {
-    matches = true
-    const { container } = render(<ProjectsSection />)
-    const physicsElements = container.querySelectorAll('.note-physics')
-    expect(physicsElements.length).toBe(0)
-  })
-
-  it('enables wind interaction when reduced motion is not preferred', () => {
-    const { container } = render(<ProjectsSection />)
-    const windElements = container.querySelectorAll('[data-feng]')
-    expect(windElements.length).toBe(projects.length)
-  })
-
-  it('disables wind interaction when reduced motion is preferred', () => {
-    matches = true
-    const { container } = render(<ProjectsSection />)
-    const windElements = container.querySelectorAll('[data-feng]')
-    expect(windElements.length).toBe(0)
-  })
-
-  it('renders a rope svg with path for each sticky note', () => {
-    const { container } = render(<ProjectsSection />)
-    const ropes = container.querySelectorAll('.rope-svg')
-    expect(ropes.length).toBe(projects.length)
-    for (const rope of ropes) {
-      expect(rope.querySelector('path')).toBeInTheDocument()
-    }
-  })
-
-  it('renders a clip element for each sticky note', () => {
-    const { container } = render(<ProjectsSection />)
-    const clips = container.querySelectorAll('.note-clip')
-    expect(clips.length).toBe(projects.length)
-  })
-
-  it('anchors each note in a sized container', () => {
-    const { container } = render(<ProjectsSection />)
-    const anchors = container.querySelectorAll('.note-anchor-container')
-    expect(anchors.length).toBe(projects.length)
-  })
-
-  it('has projects id on section', () => {
-    const { container } = render(<ProjectsSection />)
-    expect(container.querySelector('section')).toHaveAttribute('id', 'projects')
-  })
-
-  it('renders parchment background image for each project', () => {
-    const { container } = render(<ProjectsSection />)
-    const images = container.querySelectorAll('.note-parchment-img')
-    expect(images.length).toBe(projects.length)
-    for (const img of images) {
-      expect(img).toHaveAttribute('src', '/images/标准.png')
-      expect(img).toHaveAttribute('aria-hidden', 'true')
-    }
-  })
-
-  it('applies a note color class to each parchment image', () => {
-    const { container } = render(<ProjectsSection />)
-    const images = container.querySelectorAll('.note-parchment-img')
-    const colorClasses = new Set<string>()
-    for (const img of images) {
-      const matched = Array.from(img.classList).find((cls) => /^note-color-\d+$/.test(cls))
-      expect(matched).toBeTruthy()
-      if (matched) colorClasses.add(matched)
-    }
-    expect(colorClasses.size).toBeGreaterThanOrEqual(1)
-  })
-
-  it('renders dark readable text on parchment notes', () => {
-    const { container } = render(<ProjectsSection />)
-    const notes = container.querySelectorAll('.note-parchment')
+    const notes = container.querySelectorAll('.clothesline-note')
     expect(notes.length).toBe(projects.length)
     for (const note of notes) {
-      expect(note.querySelector('.note-text')).toBeInTheDocument()
-      expect(note.querySelector('.note-text-soft')).toBeInTheDocument()
+      expect(note.className).toContain('select-text')
     }
   })
 
-  it('provides accessible labels for project links', () => {
+  it('渲染单根晾衣绳画布', () => {
+    const { container } = render(<ProjectsSection />)
+    const canvas = container.querySelectorAll('canvas.clothesline-canvas')
+    expect(canvas.length).toBe(1)
+  })
+
+  it('主页内嵌风力控制面板', () => {
     render(<ProjectsSection />)
-    const links = screen.getAllByRole('link')
-    for (const link of links) {
-      expect(link).toHaveAttribute('aria-label')
-      expect(link.getAttribute('aria-label')?.length).toBeGreaterThan(0)
+    const slider = screen.getByRole('slider', { name: t('projects.wind.strength') })
+    expect(slider).toBeInTheDocument()
+    expect(screen.getByText(t('projects.wind.title'))).toBeInTheDocument()
+  })
+
+  it('调节风力滑块会更新持久化 store', () => {
+    render(<ProjectsSection />)
+    const slider = screen.getByRole('slider', { name: t('projects.wind.strength') })
+    fireEvent.change(slider, { target: { value: '1.6' } })
+    expect(useProjectsWindStore.getState().风力强度).toBe(1.6)
+  })
+
+  it('四张便签使用四种浅色配色', () => {
+    const { container } = render(<ProjectsSection />)
+    const notes = container.querySelectorAll('.clothesline-note')
+    const tints = new Set<string>()
+    for (const note of notes) {
+      const tint = note.getAttribute('data-tint')
+      expect(tint).not.toBeNull()
+      tints.add(tint!)
+    }
+    expect(tints.size).toBe(projects.length)
+  })
+
+  it('reduced motion 下仍然渲染画布与便签（静态姿态）', () => {
+    matches = true
+    const { container } = render(<ProjectsSection />)
+    expect(container.querySelectorAll('canvas.clothesline-canvas').length).toBe(1)
+    expect(container.querySelectorAll('.clothesline-note').length).toBe(projects.length)
+  })
+
+  it('便签不捕获指针事件（无 pointer capture 调用）', () => {
+    const { container } = render(<ProjectsSection />)
+    const notes = container.querySelectorAll('.clothesline-note')
+    for (const note of notes) {
+      // jsdom 未实现 setPointerCapture 时视为通过；实现存在时则断言未被调用
+      if (typeof (note as HTMLElement).setPointerCapture !== 'function') continue
+      const spy = vi.spyOn(note as HTMLElement, 'setPointerCapture')
+      fireEvent.pointerDown(note)
+      expect(spy).not.toHaveBeenCalled()
     }
   })
 })

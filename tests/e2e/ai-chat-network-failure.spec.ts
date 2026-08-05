@@ -32,7 +32,7 @@ test.describe('AI 聊天网络异常降级', () => {
 
     const projectCard = dialog.getByTestId('ui-component-ProjectCard')
     await expect(projectCard).toBeVisible({ timeout: 15000 })
-    await expect(projectCard.getByRole('heading', { name: '暮澜纪元 MMORPG 服务端' })).toBeVisible()
+    await expect(projectCard.getByRole('heading', { name: '暮澜纪元' })).toBeVisible()
   })
 
   test('LLM 返回 4xx 时降级到本地规则引擎并渲染结构化组件', async ({ page }) => {

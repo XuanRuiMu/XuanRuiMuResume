@@ -866,70 +866,44 @@ html.circular-reveal-active::view-transition-old(root) {
   box-shadow: 0 0 20px color-mix(in srgb, var(--color-primary) 55%, transparent);
 }
 
-/* Projects Rope + Sticky Notes */
-.note-anchor-container {
-  position: relative;
-  width: 11rem;
-  height: calc(64px + 11rem * 638 / 547);
-}
-
-@media (min-width: 768px) {
-  .note-anchor-container {
-    width: 15rem;
-    height: calc(64px + 15rem * 638 / 547);
-  }
-}
-
-.note-physics {
-  will-change: transform;
-}
-
-.rope-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 64px;
-  overflow: visible;
-  pointer-events: none;
-  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-bg) 60%, transparent));
-}
-
-.note-clip {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 22px;
-  height: 12px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #9a6432 0%, #6b4423 60%, #4a2f1a 100%);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-  pointer-events: none;
-  z-index: 3;
-  will-change: transform;
-}
-
-.note-paper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  transform-origin: top center;
-  will-change: transform;
-}
-
-.note-parchment {
+/* Projects Clothesline — 物理晾衣架便签 */
+.clothesline-region {
+  --rope-silver-light: #e8eaed;
+  --rope-silver-mid: #9aa0a6;
+  --rope-silver-dark: #5f6368;
+  --rope-brown-light: #a9743d;
+  --rope-brown-dark: #6b4423;
   --note-text: #2b2118;
   --note-text-soft: #6b5a45;
   --note-link: #8a4d16;
-  --note-border: rgba(61, 48, 36, 0.15);
-  aspect-ratio: 547 / 638;
+  position: relative;
+  height: 26rem;
 }
 
-.note-parchment-img {
+@media (min-width: 768px) {
+  .clothesline-region {
+    height: 30rem;
+  }
+}
+
+.clothesline-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.clothesline-note {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.clothesline-note-img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -937,39 +911,46 @@ html.circular-reveal-active::view-transition-old(root) {
   object-fit: contain;
   object-position: center top;
   pointer-events: none;
-  border-radius: inherit;
   z-index: 0;
 }
 
-.note-color-overlay {
+.clothesline-note-tint {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  border-radius: inherit;
+  /* 染色只落在羊皮卷不透明区域，避免矩形光晕 */
+  -webkit-mask-image: url('/images/标准.png');
+  mask-image: url('/images/标准.png');
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center top;
+  mask-position: center top;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
-/* 每个便签一种淡色：纯白 / 象牙白 / 浅粉 / 浅紫，清晰可见又保留羊皮卷质感 */
-.note-color-overlay[data-color='0'] {
+/* 四张便签浅色系：纯白 / 象牙白 / 浅粉 / 浅杏 */
+.clothesline-note[data-tint='0'] .clothesline-note-tint {
   background: rgba(255, 255, 255, 0.5);
 }
 
-.note-color-overlay[data-color='1'] {
+.clothesline-note[data-tint='1'] .clothesline-note-tint {
   background: rgba(255, 246, 220, 0.34);
 }
 
-.note-color-overlay[data-color='2'] {
+.clothesline-note[data-tint='2'] .clothesline-note-tint {
   background: rgba(255, 205, 216, 0.4);
 }
 
-.note-color-overlay[data-color='3'] {
-  background: rgba(226, 222, 250, 0.42);
+.clothesline-note[data-tint='3'] .clothesline-note-tint {
+  background: rgba(253, 230, 200, 0.42);
 }
 
-.note-parchment-content {
+.clothesline-note-content {
   position: absolute;
-  /* 全宽容器，三段各自左右边距——跟随羊皮卷左边缘内收曲线（标题15%、描述19%、链接17%），与目标图错落对齐 */
-  inset: 27% 0 10% 0;
+  /* 跟随羊皮卷左边缘内收曲线（标题14%、描述19%、链接16%），与卷轴形态错落对齐 */
+  inset: 25% 0 8% 0;
   z-index: 1;
   display: flex;
   flex-direction: column;
@@ -977,103 +958,51 @@ html.circular-reveal-active::view-transition-old(root) {
   pointer-events: none;
 }
 
-.note-paper > .note-parchment-content > * {
+.clothesline-note-content > * {
   pointer-events: auto;
 }
 
-.note-title {
+.clothesline-note-title {
   flex-shrink: 0;
-  margin: 0 13% 0 14%;
-  font-size: clamp(0.95rem, 0.8rem + 0.55vw, 1.18rem);
-  line-height: 1.22;
+  margin: 0 11% 0 13%;
+  font-size: clamp(0.88rem, 0.76rem + 0.5vw, 1.1rem);
+  line-height: 1.2;
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--note-text);
 }
 
-.note-desc {
+.clothesline-note-desc {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
   min-height: 0;
   overflow: hidden;
-  /* 左右都留空隙（对齐目标图：左19%、右16%），右边距避免文字贴到羊皮卷右边框 */
-  margin: 0 16% 0 19%;
-  font-size: clamp(0.72rem, 0.62rem + 0.38vw, 0.84rem);
-  line-height: 1.42;
+  margin: 0 12% 0 15%;
+  font-size: clamp(0.66rem, 0.58rem + 0.35vw, 0.8rem);
+  line-height: 1.38;
   letter-spacing: 0.004em;
   color: var(--note-text-soft);
 }
 
-.note-link-text {
+.clothesline-note-link {
   flex-shrink: 0;
-  align-self: flex-start;
-  margin: 0.3rem 13% 0 16%;
-  font-size: clamp(0.8rem, 0.68rem + 0.4vw, 0.92rem);
+  margin: 0.25rem 11% 0 14%;
+  font-size: clamp(0.76rem, 0.66rem + 0.38vw, 0.88rem);
   font-weight: 600;
   line-height: 1.3;
   color: var(--note-link);
   text-decoration: none;
 }
 
-.note-link-text:hover {
+.clothesline-note-link:hover {
   text-decoration: underline;
 }
 
-.note-link-label {
-  max-width: 7rem;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.note-text {
-  color: var(--note-text);
-}
-
-.note-text-soft {
-  color: var(--note-text-soft);
-}
-
-.note-color-0 {
-  filter: brightness(1.02);
-}
-
-.note-color-1 {
-  filter: brightness(1) sepia(0.04);
-}
-
-.note-color-2 {
-  filter: brightness(1);
-}
-
-.note-color-3 {
-  filter: brightness(1);
-}
-
-.note-paper::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, transparent 45%, rgba(255, 255, 255, 0.18) 100%);
-  pointer-events: none;
-  z-index: 2;
-}
-
-.note-parchment.note-paper::before {
-  content: none;
-}
-
-.note-parchment-content a:focus-visible {
+.clothesline-note-content a:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .note-physics {
-    animation: none;
-  }
 }
 
 /* Ink Reveal Overlay — 100% mimo.xiaomi.com algorithm */

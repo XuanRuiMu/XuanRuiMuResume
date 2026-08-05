@@ -130,7 +130,9 @@ for (const 视图配置 of 视觉视图配置列表) {
     })
 
     test('联系我区域', async ({ page }) => {
-      await page.getByRole('button', { name: '联系', exact: true }).click()
+      // 移动视口下顶部导航横向溢出（nav 缺 min-w-0 收缩，c6feebd 起的历史问题），
+      // 媒体/联系按钮在视口外不可点击；本用例目标是 section 视觉而非导航交互，直接滚动定位
+      await page.locator('#contact').evaluate((el) => el.scrollIntoView())
       await expect(page.locator('#contact')).toBeInViewport()
       // 联系我区域在移动端常因滚动条显隐导致元素宽度抖动，固定 overflow 以保持截图稳定
       await page.evaluate(() => {
@@ -197,7 +199,8 @@ for (const 视图配置 of 视觉视图配置列表) {
     })
 
     test('媒体区域', async ({ page }) => {
-      await page.getByRole('button', { name: '媒体', exact: true }).click()
+      // 同「联系我区域」：移动视口导航溢出，直接滚动定位
+      await page.locator('#media').evaluate((el) => el.scrollIntoView())
       await expect(page.locator('#media')).toBeInViewport()
       await page.evaluate(() => {
         document.documentElement.style.overflow = 'hidden'

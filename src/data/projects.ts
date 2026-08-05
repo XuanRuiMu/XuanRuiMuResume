@@ -1,12 +1,13 @@
 import type { Project } from './types'
 import { personalInfo } from './personalInfo'
+import { ta } from '../i18n/translations'
 
 export const projects: Project[] = [
   {
     id: 'xrm',
     nameKey: 'data.projects.xrm.name',
     descKey: 'data.projects.xrm.desc',
-    tags: ['Java', 'Spigot', 'MySQL', 'Redis'],
+    tags: ta('data.projects.xrm.tags'),
     metricKeys: ['data.projects.xrm.metrics.classes', 'data.projects.xrm.metrics.systems'],
     links: [{ labelKey: 'projects.link.github', url: personalInfo.github }],
   },
@@ -14,7 +15,7 @@ export const projects: Project[] = [
     id: 'admin',
     nameKey: 'data.projects.admin.name',
     descKey: 'data.projects.admin.desc',
-    tags: ['Spring Boot', 'JPA', 'JWT', 'Swagger'],
+    tags: ta('data.projects.admin.tags'),
     metricKeys: ['data.projects.admin.metrics.tables', 'data.projects.admin.metrics.auth'],
     links: [{ labelKey: 'projects.link.github', url: personalInfo.github }],
   },
@@ -22,7 +23,7 @@ export const projects: Project[] = [
     id: 'aiConsole',
     nameKey: 'data.projects.aiConsole.name',
     descKey: 'data.projects.aiConsole.desc',
-    tags: ['Python', 'Git 自动化', 'MCP', 'API 集成'],
+    tags: ta('data.projects.aiConsole.tags'),
     metricKeys: ['data.projects.aiConsole.metrics.lines', 'data.projects.aiConsole.metrics.sources'],
     links: [{ labelKey: 'projects.link.github', url: personalInfo.github }],
   },
@@ -30,7 +31,7 @@ export const projects: Project[] = [
     id: 'slimefun',
     nameKey: 'data.projects.slimefun.name',
     descKey: 'data.projects.slimefun.desc',
-    tags: ['开源', 'MySQL/PostgreSQL/SQLite'],
+    tags: ta('data.projects.slimefun.tags'),
     metricKeys: ['data.projects.slimefun.metrics.databases', 'data.projects.slimefun.metrics.contribution'],
     links: [{ labelKey: 'projects.link.github', url: 'https://github.com/Slimefun/Slimefun4' }],
   },

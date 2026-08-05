@@ -168,6 +168,10 @@
     "link": {
       "github": "GitHub",
       "demo": "演示"
+    },
+    "wind": {
+      "title": "风力设置",
+      "strength": "风力大小"
     }
   },
   "experience": {
@@ -291,6 +295,7 @@
       "xrm": {
         "name": "暮澜纪元",
         "desc": "Minecraft 1.21.4 整合包，融合魔法、科技与冒险，深度自定义世界生成与剧情线。",
+        "tags": ["Java", "Spigot", "MySQL", "Redis"],
         "metrics": {
           "classes": "120+ Java 类",
           "systems": "8 世界 / 32 职业"
@@ -299,6 +304,7 @@
       "admin": {
         "name": "Spring Boot 管理后台",
         "desc": "给暮澜纪元做的管理后台，8 张 MySQL 表管玩家、物品和日志；JWT 鉴权、Redis 缓存，接口文档用 Swagger。",
+        "tags": ["Spring Boot", "JPA", "JWT", "Swagger"],
         "metrics": {
           "tables": "8 张数据表",
           "auth": "JWT + Redis 缓存"
@@ -307,6 +313,7 @@
       "aiConsole": {
         "name": "AI 总控制台",
         "desc": "用 Python 写的 AI 工具管理台，2435 行代码，能批量拉仓库、管多家 API Key、定时更新数据源，也拿来做 MCP 测试。",
+        "tags": ["Python", "Git 自动化", "MCP", "API 集成"],
         "metrics": {
           "lines": "2435 行 Python",
           "sources": "8 源数据更新"
@@ -315,6 +322,7 @@
       "slimefun": {
         "name": "Slimefun4 开源贡献",
         "desc": "Fork Slimefun4 后修了几个多数据库兼容的 Bug，PR 已经合进主分支。",
+        "tags": ["开源", "MySQL/PostgreSQL/SQLite"],
         "metrics": {
           "databases": "MySQL / PostgreSQL / SQLite",
           "contribution": "PR 已合并"

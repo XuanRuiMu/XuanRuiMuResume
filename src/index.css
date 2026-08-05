@@ -956,8 +956,8 @@ html.circular-reveal-active::view-transition-old(root) {
 
 .clothesline-note-content {
   position: absolute;
-  /* 跟随羊皮卷左边缘内收曲线（标题14%、描述19%、链接16%），与卷轴形态错落对齐 */
-  inset: 25% 0 8% 0;
+  /* 羊皮卷内部可写区：上4.2%/右4.9%/下3.9%/左17.6%（像素分析实测），各加~2%留白 */
+  inset: 6% 6% 5% 20%;
   z-index: 1;
   display: flex;
   flex-direction: column;
@@ -971,7 +971,7 @@ html.circular-reveal-active::view-transition-old(root) {
 
 .clothesline-note-title {
   flex-shrink: 0;
-  margin: 0 11% 0 13%;
+  margin: 0 3% 0 1%;
   font-size: clamp(0.88rem, 0.76rem + 0.5vw, 1.1rem);
   line-height: 1.2;
   font-weight: 700;
@@ -981,21 +981,18 @@ html.circular-reveal-active::view-transition-old(root) {
 
 .clothesline-note-desc {
   flex: 1 1 auto;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 6;
-  overflow: hidden;
-  min-height: 0;
-  margin: 0 12% 0 15%;
-  font-size: clamp(0.56rem, 0.48rem + 0.3vw, 0.68rem);
-  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  margin: 0 2% 0 2%;
+  font-size: clamp(0.66rem, 0.58rem + 0.35vw, 0.8rem);
+  line-height: 1.38;
   letter-spacing: 0.004em;
   color: var(--note-text-soft);
 }
 
 .clothesline-note-link {
   flex-shrink: 0;
-  margin: 0.25rem 11% 0 14%;
+  margin: 0.25rem 3% 0 1%;
   font-size: clamp(0.76rem, 0.66rem + 0.38vw, 0.88rem);
   font-weight: 600;
   line-height: 1.3;

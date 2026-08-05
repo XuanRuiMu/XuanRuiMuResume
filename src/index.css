@@ -981,13 +981,14 @@ html.circular-reveal-active::view-transition-old(root) {
 
 .clothesline-note-desc {
   flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  min-height: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
   overflow: hidden;
+  min-height: 0;
   margin: 0 12% 0 15%;
-  font-size: clamp(0.66rem, 0.58rem + 0.35vw, 0.8rem);
-  line-height: 1.38;
+  font-size: clamp(0.56rem, 0.48rem + 0.3vw, 0.68rem);
+  line-height: 1.3;
   letter-spacing: 0.004em;
   color: var(--note-text-soft);
 }

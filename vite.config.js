@@ -116,6 +116,10 @@ export default defineConfig({
     sourcemap: true,
     minify: 'esbuild',
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        notesTest: path.resolve(__dirname, 'notes-test.html'),
+      },
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return
@@ -151,6 +155,6 @@ export default defineConfig({
   optimizeDeps: {
     include: ['zustand'],
     // 仅扫描真实入口，避免预打包扫描器误解析 public/ 下走 CDN importmap 的测试页（如 S2-effects.html）
-    entries: ['index.html'],
+    entries: ['index.html', 'notes-test.html'],
   },
 })

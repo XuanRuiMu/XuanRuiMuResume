@@ -886,6 +886,13 @@ html.circular-reveal-active::view-transition-old(root) {
   }
 }
 
+/* 测试页用：区域撑满父容器剩余高度（flex 列布局） */
+.clothesline-region--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+
 .clothesline-canvas {
   position: absolute;
   inset: 0;

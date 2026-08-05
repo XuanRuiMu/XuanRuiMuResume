@@ -21,9 +21,9 @@ export function Layout({ children }: LayoutProps) {
         <PWAStatusIndicator />
         <header className="fixed inset-x-0 top-0 z-50 border-b border-border">
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4">
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <NavDock />
-              <div id="starry-gui-root" className="relative">
+              <div id="starry-gui-root" className="relative shrink-0">
                 <button
                   id="starry-gui-trigger"
                   type="button"

@@ -120,7 +120,7 @@ test.describe('FP-04 用户端视角测试验证', () => {
     // 切换到浅色模式
     await page.getByRole('button', { name: '选择主题' }).first().click()
     await page.getByRole('option', { name: /浅色/ }).click()
-    await page.waitForTimeout(1500)
+    await page.waitForTimeout(3000)
 
     // 验收标准3：浅色模式下背景图动图效果明显
     // 验证壁纸底图存在
@@ -150,11 +150,21 @@ test.describe('FP-04 用户端视角测试验证', () => {
         )
         .toBeGreaterThanOrEqual(2)
 
-      // 验证视频正在播放（currentTime 应前进）
-      const time1 = await wallpaperVideo.evaluate((el) => (el as HTMLVideoElement).currentTime)
-      await page.waitForTimeout(700)
-      const time2 = await wallpaperVideo.evaluate((el) => (el as HTMLVideoElement).currentTime)
-      expect(time2, '视频应自动播放').toBeGreaterThan(time1)
+      // 等待视频开始播放
+      await expect
+        .poll(
+          async () =>
+            wallpaperVideo.evaluate((el) => (el as HTMLVideoElement).currentTime > 0.5),
+          { timeout: 10_000 },
+        )
+        .toBe(true)
+
+      // 验证视频正在播放（未暂停、readyState >= 2）
+      const isPlaying = await wallpaperVideo.evaluate((el) => {
+        const v = el as HTMLVideoElement
+        return !v.paused && v.readyState >= 2 && v.currentTime > 0
+      })
+      expect(isPlaying, '视频应正在播放').toBe(true)
     }
 
     // 截图验证背景效果

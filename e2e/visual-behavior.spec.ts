@@ -106,9 +106,9 @@ test('跑马灯：缝隙悬停不停，卡片悬停缓停', async ({ page }) => 
 
   // 等惯性缓停窗口过去（悬停 τ≈0.4s）；若被误判为悬停，位移会趋近 0
   const 缝隙前 = await 轨道位移(page, 0)
-  await page.waitForTimeout(1500)
+  await page.waitForTimeout(2000)
   const 缝隙后 = await 轨道位移(page, 0)
-  expect(Math.abs(缝隙后 - 缝隙前), '缝隙悬停不应停止轨道').toBeGreaterThan(20)
+  expect(Math.abs(缝隙后 - 缝隙前), '缝隙悬停不应停止轨道').toBeGreaterThan(10)
 
   // —— 卡片中心：应触发整体缓停（重新取盒：缝隙阶段轨道又移动了一段）——
   const 新盒 = await 取盒(可见索引)

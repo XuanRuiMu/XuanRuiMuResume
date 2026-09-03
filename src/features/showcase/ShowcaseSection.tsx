@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   GraduationCap,
   Code2,
@@ -67,17 +67,7 @@ const NEON_SHADOWS = [
 ]
 
 /** 图标主色与渐变组对应，保证卡内视觉与描边同系 */
-const ICON_COLORS = [
-  '#a78bfa',
-  '#fbbf24',
-  '#f472b6',
-  '#22d3ee',
-  '#a3e635',
-  '#e879f9',
-  '#facc15',
-  '#60a5fa',
-  '#34d399',
-]
+const ICON_COLORS = ['#a78bfa', '#fbbf24', '#f472b6', '#22d3ee', '#a3e635', '#e879f9', '#facc15', '#60a5fa', '#34d399']
 
 interface ShowcaseProductCardProps {
   card: ShowcaseCard
@@ -121,14 +111,14 @@ function ShowcaseProductCard({ card, index, reducedMotion, control }: ShowcasePr
   )
 
   return (
-    <div ref={cardRef} className="group/card relative h-32 w-[11rem] shrink-0 md:h-[26.75rem] md:w-[22rem] lg:h-96 lg:w-[30rem]">
+    <div
+      ref={cardRef}
+      className="group/card relative h-32 w-[11rem] shrink-0 md:h-[26.75rem] md:w-[22rem] lg:h-96 lg:w-[30rem]"
+    >
       {/* 命中补偿带：向下延伸 24px 覆盖 whileHover 抬起位移，
           防止光标停在原底缘时「抬起→离开→回落→再抬起」的振荡；水平方向不扩宽，缝隙仍不受判定 */}
       <span aria-hidden="true" className="absolute inset-x-0 -bottom-6 h-6" />
-      <motion.div
-        whileHover={reducedMotion ? undefined : { y: -20 }}
-        className="h-full w-full"
-      >
+      <motion.div whileHover={reducedMotion ? undefined : { y: -20 }} className="h-full w-full">
         <div className={`h-full w-full rounded-xl bg-gradient-to-r p-[2px] ${gradient} ${neonShadow} md:p-[6px]`}>
           {card.href ? (
             <a
@@ -211,16 +201,19 @@ function useAutoMarquee(opts: {
   const prevScrollYRef = useRef<number | null>(null)
 
   const measure = useRef<() => void>(() => {})
-  measure.current = () => {
-    const el = groupRef.current
-    if (!el) return
-    const w = el.getBoundingClientRect().width
-    if (w <= 0) return
-    groupWidthRef.current = w
-    const vw = window.innerWidth || document.documentElement.clientWidth || 0
-    const needed = Math.max(2, Math.ceil((vw + w) / w) + 1)
-    setCopies((prev) => (prev === needed ? prev : needed))
-  }
+
+  useEffect(() => {
+    measure.current = () => {
+      const el = groupRef.current
+      if (!el) return
+      const w = el.getBoundingClientRect().width
+      if (w <= 0) return
+      groupWidthRef.current = w
+      const vw = window.innerWidth || document.documentElement.clientWidth || 0
+      const needed = Math.max(2, Math.ceil((vw + w) / w) + 1)
+      setCopies((prev) => (prev === needed ? prev : needed))
+    }
+  }, [groupRef, setCopies])
 
   // 轨道不再注册悬停（根因修复）：悬停信号改由每张卡片自身向共享控制器注册，
   // 缝隙位置不触发暂停；此处只负责测量与副本数计算。
@@ -304,14 +297,7 @@ interface ShowcaseMarqueeRowProps {
   control: MarqueeControl
 }
 
-function ShowcaseMarqueeRow({
-  row,
-  rowIndex,
-  direction,
-  baseSpeed,
-  reducedMotion,
-  control,
-}: ShowcaseMarqueeRowProps) {
+function ShowcaseMarqueeRow({ row, rowIndex, direction, baseSpeed, reducedMotion, control }: ShowcaseMarqueeRowProps) {
   const { trackRef, groupRef, copies } = useAutoMarquee({
     control,
     direction,
@@ -353,20 +339,24 @@ export function ShowcaseSection() {
   const ref = useRef<HTMLDivElement>(null)
 
   // 全局唯一共享控制器：三排共用同一悬停集合与滚动信号，实现「视为整体、一起停止、一起移动」。
-  const control = useRef<MarqueeControl>({
-    hovered: new Set<HTMLElement>(),
-    scrollPauseUntilRef: { current: 0 },
-    scrollYRef: { current: typeof window !== 'undefined' ? window.scrollY : 0 },
-  }).current
+  // 使用 useMemo 创建稳定引用，避免在 render 阶段访问 ref.current
+  const controlCurrent = useMemo<MarqueeControl>(
+    () => ({
+      hovered: new Set<HTMLElement>(),
+      scrollPauseUntilRef: { current: 0 },
+      scrollYRef: { current: typeof window !== 'undefined' ? window.scrollY : 0 },
+    }),
+    []
+  )
 
   // 全局只挂一组滚动监听：wheel/touchmove 触发全局暂停 1 秒；scroll 记录最新滚动位置
   // 供各排做滚动联动位移（悬停信号由各轨道自身边界事件注册）。
   useEffect(() => {
     const onScrollActivity = () => {
-      control.scrollPauseUntilRef.current = performance.now() + 1000
+      controlCurrent.scrollPauseUntilRef.current = performance.now() + 1000
     }
     const onScroll = () => {
-      control.scrollYRef.current = window.scrollY
+      controlCurrent.scrollYRef.current = window.scrollY
     }
     window.addEventListener('wheel', onScrollActivity, { passive: true })
     window.addEventListener('touchmove', onScrollActivity, { passive: true })
@@ -375,9 +365,9 @@ export function ShowcaseSection() {
       window.removeEventListener('wheel', onScrollActivity)
       window.removeEventListener('touchmove', onScrollActivity)
       window.removeEventListener('scroll', onScroll)
-      control.hovered.clear()
+      controlCurrent.hovered.clear()
     }
-  }, [control])
+  }, [])
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -417,9 +407,7 @@ export function ShowcaseSection() {
               {t('showcase.titleLine2')}
             </span>
           </h2>
-          <p className="mt-8 max-w-2xl text-xl font-bold text-sky-400 md:text-2xl">
-            {t('showcase.subtitle')}
-          </p>
+          <p className="mt-8 max-w-2xl text-xl font-bold text-sky-400 md:text-2xl">{t('showcase.subtitle')}</p>
         </div>
 
         <motion.div style={entrance}>
@@ -431,7 +419,7 @@ export function ShowcaseSection() {
               direction={rowIndex % 2 === 0 ? -1 : 1}
               baseSpeed={50}
               reducedMotion={reducedMotion}
-              control={control}
+              control={controlCurrent}
             />
           ))}
         </motion.div>

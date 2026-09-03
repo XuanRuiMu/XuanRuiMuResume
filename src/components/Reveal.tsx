@@ -23,7 +23,7 @@ export function Reveal({ children, className, delay = 0, id }: RevealProps) {
     if (!el) return
 
     if (typeof IntersectionObserver === 'undefined') {
-      setVisible(true)
+      queueMicrotask(() => setVisible(true))
       return
     }
 

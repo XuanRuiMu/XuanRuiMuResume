@@ -92,42 +92,48 @@ export function Card({ children, header, footer, glass: _glass, hover = false, t
     element.style.transform = `perspective(${TILT_PERSPECTIVE}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale}) translate3d(${translateX}px, ${translateY}px, ${translateZ}px)`
   }, [])
 
-  const tick = useCallback(() => {
-    const element = cardRef.current
-    if (!element) {
-      rafRef.current = 0
-      return
-    }
+  // tick 使用 ref 避免 ESLint "accessed before declaration" 错误（递归调用自身）
+  // 初始化为空函数，在 useEffect 中赋值真正的逻辑，避免 render 阶段更新 ref.current
+  const tickRef = useRef<() => void>(() => {})
 
-    if (isHoveringRef.current) {
-      targetRef.current = computeTargetFromMouse(mouseRef.current)
-    } else {
-      targetRef.current = { ...NEUTRAL_STATE }
-    }
+  useEffect(() => {
+    tickRef.current = () => {
+      const element = cardRef.current
+      if (!element) {
+        rafRef.current = 0
+        return
+      }
 
-    const target = targetRef.current
-    const current = currentRef.current
+      if (isHoveringRef.current) {
+        targetRef.current = computeTargetFromMouse(mouseRef.current)
+      } else {
+        targetRef.current = { ...NEUTRAL_STATE }
+      }
 
-    current.rotateX = lerp(current.rotateX, target.rotateX, LERP_FACTOR)
-    current.rotateY = lerp(current.rotateY, target.rotateY, LERP_FACTOR)
-    current.scale = lerp(current.scale, target.scale, LERP_FACTOR)
-    current.translateX = lerp(current.translateX, target.translateX, LERP_FACTOR)
-    current.translateY = lerp(current.translateY, target.translateY, LERP_FACTOR)
-    current.translateZ = lerp(current.translateZ, target.translateZ, LERP_FACTOR)
+      const target = targetRef.current
+      const current = currentRef.current
 
-    applyTransform()
+      current.rotateX = lerp(current.rotateX, target.rotateX, LERP_FACTOR)
+      current.rotateY = lerp(current.rotateY, target.rotateY, LERP_FACTOR)
+      current.scale = lerp(current.scale, target.scale, LERP_FACTOR)
+      current.translateX = lerp(current.translateX, target.translateX, LERP_FACTOR)
+      current.translateY = lerp(current.translateY, target.translateY, LERP_FACTOR)
+      current.translateZ = lerp(current.translateZ, target.translateZ, LERP_FACTOR)
 
-    if (isHoveringRef.current || !isAtRest(current, target)) {
-      rafRef.current = requestAnimationFrame(tick)
-    } else {
-      rafRef.current = 0
+      applyTransform()
+
+      if (isHoveringRef.current || !isAtRest(current, target)) {
+        rafRef.current = requestAnimationFrame(tickRef.current)
+      } else {
+        rafRef.current = 0
+      }
     }
   }, [applyTransform])
 
   const startLoop = useCallback(() => {
     if (rafRef.current) return
-    rafRef.current = requestAnimationFrame(tick)
-  }, [tick])
+    rafRef.current = requestAnimationFrame(tickRef.current)
+  }, [])
 
   const stopLoop = useCallback(() => {
     if (rafRef.current) {

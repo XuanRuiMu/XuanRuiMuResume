@@ -26,12 +26,12 @@ export function AboutSection() {
   // 进入视口（threshold≈0.3）触发一次打字；reduced-motion 或无 IO 时直接呈现
   useEffect(() => {
     if (减少动画) {
-      set开始打字(true)
+      queueMicrotask(() => set开始打字(true))
       return
     }
     const 节点 = 区块引用.current
     if (!节点 || typeof IntersectionObserver === 'undefined') {
-      set开始打字(true)
+      queueMicrotask(() => set开始打字(true))
       return
     }
     const 观察器 = new IntersectionObserver(

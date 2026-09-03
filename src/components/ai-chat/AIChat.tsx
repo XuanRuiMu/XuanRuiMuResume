@@ -111,7 +111,9 @@ export function AIChat({ className }: AIChatProps) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   // 同步最新待发图片到 ref：顺序读取循环中取实时长度，避免闭包过期；卸载清理也读它
   const pendingImagesRef = useRef(pendingImages)
-  pendingImagesRef.current = pendingImages
+  useEffect(() => {
+    pendingImagesRef.current = pendingImages
+  }, [pendingImages])
   const 图片序号Ref = useRef(0)
   const abortRef = useRef<AbortController | null>(null)
   // 排队泄放与手动发送共用同一闸门，防止 isPending 翻转间隙双发。
@@ -122,7 +124,9 @@ export function AIChat({ className }: AIChatProps) {
   const generationRef = useRef(0)
   // 同步最新历史到 ref：排队泄放时闭包中的 aiMessages 可能已过期。
   const aiMessagesRef = useRef(aiMessages)
-  aiMessagesRef.current = aiMessages
+  useEffect(() => {
+    aiMessagesRef.current = aiMessages
+  }, [aiMessages])
 
   const [optimisticMessages, addOptimisticMessage] = useOptimistic<AiMessage[], AiMessage>(
     aiMessages,
@@ -275,7 +279,9 @@ export function AIChat({ className }: AIChatProps) {
         void runCommand(content)
         return
       }
-      const images = pendingImages.filter((图片) => 图片.ok && typeof 图片.dataUrl === 'string').map((图片) => 图片.dataUrl as string)
+      const images = pendingImages
+        .filter((图片) => 图片.ok && typeof 图片.dataUrl === 'string')
+        .map((图片) => 图片.dataUrl as string)
       // 排队项带走的是独立 dataURL 字符串，释放 objectURL 不影响已入队消息
       for (const 图片 of pendingImages) URL.revokeObjectURL(图片.previewUrl)
       setPendingImages([])
@@ -525,9 +531,7 @@ export function AIChat({ className }: AIChatProps) {
                         ))}
                       </div>
                     )}
-                    {message.content && (
-                      <span className="whitespace-pre-wrap break-words">{message.content}</span>
-                    )}
+                    {message.content && <span className="whitespace-pre-wrap break-words">{message.content}</span>}
                   </div>
                 </div>
               ) : (
@@ -674,10 +678,7 @@ export function AIChat({ className }: AIChatProps) {
           />
           <span
             aria-hidden="true"
-            className={cn(
-              'inline-block h-4 w-[7px] bg-[#d97757]',
-              !isPending && 'animate-pulse'
-            )}
+            className={cn('inline-block h-4 w-[7px] bg-[#d97757]', !isPending && 'animate-pulse')}
           />
         </div>
         <div className="mt-1.5 flex items-center justify-between text-[10px] text-[#666]">

@@ -21,7 +21,7 @@ export function PWAStatusIndicator(): ReactNode {
 
   useEffect(() => {
     if (offlineReady) {
-      setShowOfflineReady(true)
+      queueMicrotask(() => setShowOfflineReady(true))
       const timer = window.setTimeout(() => {
         setShowOfflineReady(false)
         setOfflineReady(false)
@@ -32,7 +32,7 @@ export function PWAStatusIndicator(): ReactNode {
 
   useEffect(() => {
     if (cacheQuotaWarning) {
-      setShowQuotaWarning(true)
+      queueMicrotask(() => setShowQuotaWarning(true))
       const timer = window.setTimeout(() => {
         setShowQuotaWarning(false)
         setCacheQuotaWarning(false)

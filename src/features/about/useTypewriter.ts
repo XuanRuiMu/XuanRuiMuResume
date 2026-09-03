@@ -32,12 +32,12 @@ export function useTypewriter({ 每行文本, 开始, 减少动画 = false, 每�
 
   useEffect(() => {
     if (减少动画) {
-      set已显字符数(总长)
+      queueMicrotask(() => set已显字符数(总长))
       return
     }
     if (!开始) return
 
-    set已显字符数(0)
+    queueMicrotask(() => set已显字符数(0))
     let 当前 = 0
     const 推进一步 = () => {
       if (当前 >= 总长) {

@@ -30,7 +30,6 @@ function LenisBridge(): null {
     lenisRef.current = 实例
     starrySceneRef.current?.setParallax(实例.scroll)
   })
-  lenisRef.current = lenis ?? null
 
   useEffect(() => {
     const 实例 = lenisRef.current

@@ -56,6 +56,27 @@ export function TechStack() {
 
   const orbs = useMemo(() => buildSphere(techstackV2.length), [])
 
+  // renderFrame 必须在 useEffect 之前声明（避免 hoisting 问题）
+  const renderFrame = (angle: number) => {
+    const cosA = Math.cos(angle)
+    const sinA = Math.sin(angle)
+    for (let i = 0; i < orbs.length; i++) {
+      const el = orbRefs.current[i]
+      if (!el) continue
+      const { bx, by, bz } = orbs[i]
+      // 绕 Y 轴自转
+      const x = bx * cosA + bz * sinA
+      const z = -bx * sinA + bz * cosA
+      const y = by
+      const depth = (z + 1) / 2 // 0(后) → 1(前)
+      const scale = 0.5 + 0.75 * depth
+      const opacity = 0.32 + 0.68 * depth
+      el.style.transform = `translate(-50%, -50%) translate(${x * SPHERE_RADIUS}px, ${y * SPHERE_RADIUS}px) scale(${scale})`
+      el.style.opacity = String(opacity)
+      el.style.zIndex = String(Math.round(depth * 100))
+    }
+  }
+
   useEffect(() => {
     if (reducedMotion) {
       // 静态成球：按初始角度投影一次
@@ -76,26 +97,6 @@ export function TechStack() {
     return () => cancelAnimationFrame(raf)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reducedMotion, orbs])
-
-  const renderFrame = (angle: number) => {
-    const cosA = Math.cos(angle)
-    const sinA = Math.sin(angle)
-    for (let i = 0; i < orbs.length; i++) {
-      const el = orbRefs.current[i]
-      if (!el) continue
-      const { bx, by, bz } = orbs[i]
-      // 绕 Y 轴自转
-      const x = bx * cosA + bz * sinA
-      const z = -bx * sinA + bz * cosA
-      const y = by
-      const depth = (z + 1) / 2 // 0(后) → 1(前)
-      const scale = 0.5 + 0.75 * depth
-      const opacity = 0.32 + 0.68 * depth
-      el.style.transform = `translate(-50%, -50%) translate(${x * SPHERE_RADIUS}px, ${y * SPHERE_RADIUS}px) scale(${scale})`
-      el.style.opacity = String(opacity)
-      el.style.zIndex = String(Math.round(depth * 100))
-    }
-  }
 
   return (
     <div className="w-full flex flex-col items-center" aria-label="技术">
@@ -141,13 +142,7 @@ export function TechStack() {
             className="tech-orb group absolute left-1/2 top-1/2 flex cursor-pointer flex-col items-center justify-center gap-1 will-change-transform no-underline"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-[#0e1424]/90 shadow-[0_0_18px_rgba(124,211,252,0.25)] backdrop-blur-sm transition-transform duration-200 group-hover:scale-110 group-hover:border-[#7dd3fc]/60 light:bg-white/95 light:border-slate-300/70 light:shadow-[0_4px_14px_rgba(15,23,42,0.14)] light:group-hover:border-[#0369a1]/80">
-              <img
-                src={orb.card.icon}
-                alt=""
-                aria-hidden="true"
-                className="h-8 w-8 object-contain"
-                loading="eager"
-              />
+              <img src={orb.card.icon} alt="" aria-hidden="true" className="h-8 w-8 object-contain" loading="eager" />
             </div>
             <span className="rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium text-[#dfe6f2] whitespace-nowrap">
               {orb.card.name}

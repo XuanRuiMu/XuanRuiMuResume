@@ -34,12 +34,9 @@ function parseValue(value: string): ParsedValue | null {
  * 把字符串中的数字按位从 0 滚动到目标值（如 "2022 - 至今" 中的年份）。
  * 非数字部分原样保留。初始渲染即展示终态，触发后再用 rAF 批处理做 easeOutCubic 滚动。
  */
-export function useCountUp({
-  value,
-  durationMs = 320,
-  enabled = true,
-  start = false,
-}: UseCountUpOptions): { display: string } {
+export function useCountUp({ value, durationMs = 320, enabled = true, start = false }: UseCountUpOptions): {
+  display: string
+} {
   const [display, setDisplay] = useState(value)
   const rafRef = useRef<number | null>(null)
   const doneRef = useRef(false)
@@ -48,7 +45,7 @@ export function useCountUp({
   useEffect(() => {
     parsedRef.current = parseValue(value)
     doneRef.current = false
-    setDisplay(value)
+    queueMicrotask(() => setDisplay(value))
   }, [value])
 
   useEffect(() => {

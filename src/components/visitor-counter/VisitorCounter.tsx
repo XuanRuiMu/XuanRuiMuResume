@@ -12,7 +12,9 @@ function VisitorCounterCore() {
   const stats = useAnalyticsStats()
   const trackVisit = useTrackVisit()
   const trackRef = useRef(trackVisit)
-  trackRef.current = trackVisit
+  useEffect(() => {
+    trackRef.current = trackVisit
+  }, [trackVisit])
 
   useEffect(() => {
     if (本次加载已上报) return
@@ -50,4 +52,3 @@ export function VisitorCounter() {
     </QueryClientProvider>
   )
 }
-

@@ -17,6 +17,7 @@ export const projects: Project[] = [
     descKey: 'data.projects.lovewithme.desc',
     tags: ta('data.projects.lovewithme.tags'),
     metricKeys: ['data.projects.lovewithme.metrics.services', 'data.projects.lovewithme.metrics.security'],
+    links: [{ labelKey: 'projects.link.github', url: 'https://github.com/XuanRuiMu/HeWoLianAiBa' }],
   },
   {
     id: 'aiConsole',

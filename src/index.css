@@ -1314,7 +1314,8 @@ html.circular-reveal-active::view-transition-old(root) {
 
 /* 壁纸微脉冲动画：轻微缩放呼吸感，增强动图视觉效果 */
 @keyframes wallpaper-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -1666,4 +1667,33 @@ html.circular-reveal-active::view-transition-old(root) {
 }
 .reduced-motion .visitor-counter-card:hover {
   transform: none;
+}
+
+/* ============ Skill Test Page Animations ============ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
 }

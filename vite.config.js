@@ -69,6 +69,23 @@ export default defineConfig({
         })
       },
     },
+    // Serve /skill-test/ 单页应用
+    {
+      name: 'skill-test-spa',
+      configureServer(server) {
+        server.middlewares.use('/skill-test', async (req, res, next) => {
+          const indexPath = path.resolve(__dirname, 'skill-test.html')
+          if (fs.existsSync(indexPath)) {
+            const html = fs.readFileSync(indexPath, 'utf-8')
+            const transformed = await server.transformIndexHtml('/skill-test', html)
+            res.setHeader('Content-Type', 'text/html; charset=utf-8')
+            res.end(transformed)
+            return
+          }
+          next()
+        })
+      },
+    },
     inlineCriticalCSS(),
     preloadCSSPlugin(),
     react(),
@@ -133,6 +150,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
+        'skill-test': path.resolve(__dirname, 'skill-test.html'),
       },
       output: {
         manualChunks(id) {

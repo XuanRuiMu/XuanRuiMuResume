@@ -55,7 +55,7 @@ test.describe('FP-04 用户端视角测试验证', () => {
     expect(页面错误, '页面不应有运行时错误').toHaveLength(0)
   })
 
-  test('访问人数显示在页面中间，样式美观', async ({ page }) => {
+  test('访问人数与版权信息同行显示在页脚，样式美观', async ({ page }) => {
     const 页面错误: string[] = []
     page.on('pageerror', (err) => 页面错误.push(err.message))
 
@@ -67,38 +67,44 @@ test.describe('FP-04 用户端视角测试验证', () => {
     await page.getByRole('option', { name: /浅色/ }).click()
     await page.waitForTimeout(1500)
 
-    // 验收标准2：访问人数显示在页面中间
+    // 验收标准：访问人数与版权信息同行显示在页脚
     const visitorCard = page.locator('[data-testid="visitor-counter-card"]')
     await expect(visitorCard, '访问人数卡片应存在').toBeAttached({ timeout: 10000 })
 
-    // 验证居中定位：父容器是 fixed + inset-0 + flex居中
-    const parentPosition = await visitorCard.evaluate((el) => {
-      const parent = el.parentElement
-      if (!parent) return null
-      const style = window.getComputedStyle(parent)
+    // 验证在页脚中：父容器是 footer 内的 flex 布局
+    const footer = page.locator('footer')
+    await expect(footer, '页脚应存在').toBeAttached()
+
+    // 验证访问人数卡片在页脚内
+    const visitorInFooter = footer.locator('[data-testid="visitor-counter-card"]')
+    await expect(visitorInFooter, '访问人数卡片应在页脚内').toBeAttached()
+
+    // 验证版权文本与访问人数同行
+    const copyrightText = page.locator('footer >> text=/2026 玄锐暮/')
+    await expect(copyrightText, '版权文本应存在').toBeVisible()
+
+    const statusText = page.locator('footer >> text=/玄锐暮 · 在线简历 · 离线可用/')
+    await expect(statusText, '状态文本应存在').toBeVisible()
+
+    // 验证三者在同一行（通过检查父容器为 flex 布局且 justify-content 为 space-between）
+    const footerContent = footer.locator('div').first()
+    const footerStyle = await footerContent.evaluate((el) => {
+      const style = window.getComputedStyle(el)
       return {
-        position: style.position,
         display: style.display,
-        alignItems: style.alignItems,
         justifyContent: style.justifyContent,
-        top: style.top,
-        left: style.left,
-        right: style.right,
-        bottom: style.bottom,
+        alignItems: style.alignItems,
       }
     })
-    expect(parentPosition, '父容器应存在').toBeTruthy()
-    expect(parentPosition!.position, '父容器应为 fixed 定位').toBe('fixed')
-    expect(parentPosition!.display, '父容器应为 flex 布局').toBe('flex')
-    expect(parentPosition!.alignItems, '父容器应居中对齐').toBe('center')
-    expect(parentPosition!.justifyContent, '父容器应居中排列').toBe('center')
+    expect(footerStyle.display, '页脚内容应为 flex 布局').toBe('flex')
+    expect(footerStyle.justifyContent, '页脚内容应左右分布').toBe('space-between')
 
     // 验证样式美观：检查卡片有尺寸
     const cardBounding = await visitorCard.boundingBox()
     expect(cardBounding, '访问人数卡片应有尺寸').toBeTruthy()
 
     // 截图验证
-    await 截图(page, '02-light-visitor-center')
+    await 截图(page, '02-light-visitor-footer')
 
     // 验证访问人数显示数字
     const visitorText = page.locator('[data-testid="visitor-counter"]')

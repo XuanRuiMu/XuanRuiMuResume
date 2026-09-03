@@ -23,16 +23,12 @@ export function Layout({ children }: LayoutProps) {
         <main className="relative z-10 flex-1 pt-16">{children}</main>
 
         <footer className="border-t border-border px-4 py-6">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 text-xs text-muted text-shadow-readable sm:flex-row">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 text-xs text-muted text-shadow-readable sm:flex-row sm:items-center sm:justify-between">
             <span>{t('footer.copyright')}</span>
             <span>{t('footer.status')}</span>
+            <VisitorCounter />
           </div>
         </footer>
-
-        {/* 访问人数固定居中显示 */}
-        <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
-          <VisitorCounter />
-        </div>
 
         <CommandPalette />
         <AIChat />

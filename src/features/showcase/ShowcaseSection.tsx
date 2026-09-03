@@ -394,7 +394,7 @@ export function ShowcaseSection() {
     <section aria-label={t('showcase.titleLine2')}>
       <div
         ref={ref}
-        className="relative flex h-[1500px] flex-col overflow-hidden pb-40 antialiased [perspective:1000px] [transform-style:preserve-3d] md:h-[2000px] lg:h-[2500px]"
+        className="relative flex h-[1500px] flex-col pb-40 antialiased [perspective:1000px] [transform-style:preserve-3d] md:h-[2000px] lg:h-[2500px] z-[100] isolate"
       >
         {/* 头部：渐变大标题（HeroParallax Header 移植） */}
         <div className="relative mx-auto w-full max-w-7xl px-4 py-20 md:py-40">

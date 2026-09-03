@@ -13,6 +13,7 @@
 export interface InkRevealOptions {
   enabled?: boolean
   coverColor?: string
+  sourceCanvas?: HTMLCanvasElement | null
 }
 
 interface Stamp {
@@ -37,6 +38,7 @@ export class InkRevealRenderer {
   private enabled: boolean
   private readonly coverColor: string
   private readonly coverRgb: string
+  private readonly sourceCanvas: HTMLCanvasElement | null
   private dpr = 1
   private w = 0
   private h = 0
@@ -49,6 +51,7 @@ export class InkRevealRenderer {
     this.enabled = options.enabled ?? true
     this.coverColor = options.coverColor ?? '#05060f'
     this.coverRgb = this.hexToRgb(this.coverColor)
+    this.sourceCanvas = options.sourceCanvas ?? null
 
     this.canvas = document.createElement('canvas')
     this.canvas.className = 'ink-reveal-overlay'
@@ -127,8 +130,12 @@ export class InkRevealRenderer {
   private fillMask() {
     if (!this.enabled) return
     this.ctx.globalCompositeOperation = 'source-over'
-    this.ctx.fillStyle = 'rgb(' + this.coverRgb + ')'
-    this.ctx.fillRect(0, 0, this.w, this.h)
+    if (this.sourceCanvas) {
+      this.ctx.drawImage(this.sourceCanvas, 0, 0, this.w, this.h)
+    } else {
+      this.ctx.fillStyle = 'rgb(' + this.coverRgb + ')'
+      this.ctx.fillRect(0, 0, this.w, this.h)
+    }
   }
 
   private resize = () => {
@@ -156,8 +163,12 @@ export class InkRevealRenderer {
 
     this.ctx.globalCompositeOperation = 'source-over'
     // 不透明遮罩直接重涂覆盖全屏，再经 destination-out 擦出墨迹
-    this.ctx.fillStyle = 'rgb(' + this.coverRgb + ')'
-    this.ctx.fillRect(0, 0, this.w, this.h)
+    if (this.sourceCanvas) {
+      this.ctx.drawImage(this.sourceCanvas, 0, 0, this.w, this.h)
+    } else {
+      this.ctx.fillStyle = 'rgb(' + this.coverRgb + ')'
+      this.ctx.fillRect(0, 0, this.w, this.h)
+    }
 
     this.ctx.globalCompositeOperation = 'destination-out'
     for (let i = this.stamps.length - 1; i >= 0; i--) {

@@ -68,6 +68,10 @@ export class InkRevealRenderer {
   mount(container: HTMLElement) {
     container.appendChild(this.canvas)
     window.addEventListener('resize', this.resize)
+    // 动态源（丝绸遮罩）需要持续重绘，挂载即启动循环
+    if (this.sourceCanvas) {
+      this.startLoop()
+    }
   }
 
   unmount() {
@@ -185,7 +189,7 @@ export class InkRevealRenderer {
       this.carveInk(s.x, s.y, r, alpha, s.seed)
     }
 
-    if (hasStamps) {
+    if (hasStamps || this.sourceCanvas) {
       this.rafId = requestAnimationFrame(this.tick)
     } else {
       this.running = false

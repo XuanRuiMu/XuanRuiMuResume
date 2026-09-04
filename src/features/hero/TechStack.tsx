@@ -12,7 +12,7 @@ import { useReducedMotion } from '../../hooks/useReducedMotion'
  * 标签始终朝向相机（billboard），深度决定缩放/透明度/层级，呈现真实的「技术球」体积感。
  *
  * 交互（本次需求）：
- *  - 自转速度已降为初版的 1/2（SPIN_SPEED 0.0008），更舒缓；
+ *  - 自转速度已降为初版的 1/4（SPIN_SPEED 0.0004），更舒缓；
  *  - 鼠标悬停球体区域 → 暂停自转（暂停时便于精准点击）；
  *  - 单击任一技术球 → 新标签页打开对应官网（GitHub 指向个人主页 https://github.com/XuanRuiMu）。
  * reduced-motion 时静态成球。
@@ -21,7 +21,7 @@ import { useReducedMotion } from '../../hooks/useReducedMotion'
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5))
 const SPHERE_RADIUS = 150 // 球面投影半径（px）
 const TILT_X = (16 * Math.PI) / 180 // 固定 X 轴倾角，制造俯视立体感
-const SPIN_SPEED = 0.0008 // 每毫秒绕 Y 轴弧度，初版的 1/2（更舒缓）
+const SPIN_SPEED = 0.0004 // 每毫秒绕 Y 轴弧度，初版的 1/4（更舒缓）
 
 interface OrbPoint {
   card: TechCard
@@ -100,12 +100,6 @@ export function TechStack() {
 
   return (
     <div className="w-full flex flex-col items-center" aria-label="技术">
-      <h2 className="font-display mb-4 text-center text-3xl font-bold md:text-4xl">
-        <span className="bg-gradient-to-r from-[#A594F9] via-[#7dd3fc] to-[#6EFFB1] bg-clip-text text-transparent">
-          技术
-        </span>
-      </h2>
-
       <div
         ref={wrapRef}
         className="relative mx-auto"

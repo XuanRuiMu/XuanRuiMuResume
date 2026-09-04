@@ -12,9 +12,7 @@ import { useNoteAutoFit } from './useNoteAutoFit'
 const 桌面断点 = '(min-width: 768px)'
 
 function useIsDesktop(): boolean {
-  const [isDesktop, setIsDesktop] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(桌面断点).matches
-  )
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia(桌面断点).matches)
 
   useEffect(() => {
     const query = window.matchMedia(桌面断点)
@@ -131,7 +129,7 @@ interface ClotheslineNotesProps {
  */
 function NoteContent({
   项目,
-  最小字号 = 0.75,
+  最小字号 = 0.6,
   最大字号 = 1.05,
 }: {
   项目: Project

@@ -1,4 +1,6 @@
 import type { ExperienceEntry } from './types'
+import { personalInfo } from './personalInfo'
+import { lovewithmeGithubUrl } from './projects'
 
 export const experiences: ExperienceEntry[] = [
   {
@@ -12,6 +14,7 @@ export const experiences: ExperienceEntry[] = [
       'data.experience.entries.xrm.achievement2',
       'data.experience.entries.xrm.achievement3',
     ],
+    links: [{ labelKey: 'projects.link.github', url: personalInfo.github }],
   },
   {
     id: 'lovewithme',
@@ -24,6 +27,7 @@ export const experiences: ExperienceEntry[] = [
       'data.experience.entries.lovewithme.achievement2',
       'data.experience.entries.lovewithme.achievement3',
     ],
+    links: [{ labelKey: 'projects.link.github', url: lovewithmeGithubUrl }],
   },
   {
     id: 'teacher',

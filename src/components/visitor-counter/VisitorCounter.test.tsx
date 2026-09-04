@@ -60,4 +60,15 @@ describe('VisitorCounter（页脚访问人数，对接后端）', () => {
     render(<VisitorCounter />)
     expect(screen.queryByTestId('visitor-counter')).not.toBeInTheDocument()
   })
+
+  it('徽章呈高级显眼样式：图标+等宽数字', async () => {
+    状态.enabled = true
+    const VisitorCounter = await 载入组件()
+    const { container } = render(<VisitorCounter />)
+    expect(container.querySelector('.visitor-counter-icon')).not.toBeNull()
+    const 数字 = container.querySelector('.visitor-counter-number')
+    expect(数字).not.toBeNull()
+    expect(数字).toHaveClass('tabular-nums')
+    expect(数字).toHaveTextContent('128')
+  })
 })

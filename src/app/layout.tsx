@@ -25,8 +25,8 @@ export function Layout({ children }: LayoutProps) {
         <footer className="border-t border-border px-4 py-6">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 text-xs text-muted text-shadow-readable sm:flex-row sm:items-center sm:justify-between">
             <span>{t('footer.copyright')}</span>
-            <span>{t('footer.status')}</span>
             <VisitorCounter />
+            <span>{t('footer.status')}</span>
           </div>
         </footer>
 

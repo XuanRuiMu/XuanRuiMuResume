@@ -1,4 +1,5 @@
 ﻿import { useEffect, useRef } from 'react'
+import { Eye } from 'lucide-react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { t } from '../../i18n/translations'
 import { ANALYTICS_ENABLED, useAnalyticsStats, useTrackVisit } from '../../lib/api'
@@ -30,9 +31,12 @@ function VisitorCounterCore() {
   const total = stats.data?.total
   return (
     <div className="visitor-counter-card" data-testid="visitor-counter-card">
-      <span className="inline-flex items-center gap-1" data-testid="visitor-counter">
-        <span aria-hidden="true">◈</span>
-        {t('footer.visitorsLabel')}：{typeof total === 'number' ? total.toLocaleString('zh-CN') : '…'}
+      <span className="inline-flex items-center gap-1.5" data-testid="visitor-counter">
+        <Eye size={14} aria-hidden="true" className="visitor-counter-icon" />
+        {t('footer.visitorsLabel')}：
+        <span className="visitor-counter-number tabular-nums">
+          {typeof total === 'number' ? total.toLocaleString('zh-CN') : '…'}
+        </span>
       </span>
     </div>
   )

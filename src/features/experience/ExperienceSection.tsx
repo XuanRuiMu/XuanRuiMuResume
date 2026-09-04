@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { Gamepad2, GitPullRequest, GraduationCap, Clapperboard, type LucideIcon } from 'lucide-react'
+import { Gamepad2, Heart, GraduationCap, Clapperboard, ExternalLink, type LucideIcon } from 'lucide-react'
 import { experiences } from '../../data/experience'
 import { Section } from '../../components/ui/Section'
 import { Card } from '../../components/ui/Card'
@@ -12,7 +12,7 @@ const TIMELINE_PROGRESS_VAR = '--timeline-progress'
 /** 各经历的图标与主题色（色值取自 02-react-three-fiber 卡片配色体系） */
 const ENTRY_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   xrm: { icon: Gamepad2, color: '#00cea8' },
-  openSource: { icon: GitPullRequest, color: '#bf61ff' },
+  lovewithme: { icon: Heart, color: '#f472b6' },
   teacher: { icon: GraduationCap, color: '#38ef7d' },
   multimedia: { icon: Clapperboard, color: '#56ccf2' },
 }
@@ -159,10 +159,7 @@ function ExperienceCard({ entry, isEven, reducedMotion }: ExperienceCardProps) {
           <div className="rounded-[19px] bg-[#151030] px-6 py-5">
             <div className="mb-2 flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3
-                  id={`experience-title-${entry.id}`}
-                  className="text-[20px] font-bold leading-snug text-white"
-                >
+                <h3 id={`experience-title-${entry.id}`} className="text-[20px] font-bold leading-snug text-white">
                   {t(entry.titleKey)}
                 </h3>
                 {entry.organizationKey && (
@@ -179,9 +176,7 @@ function ExperienceCard({ entry, isEven, reducedMotion }: ExperienceCardProps) {
               />
             </div>
 
-            <p className="text-gradient-green mb-2 font-display text-sm font-bold tracking-wide">
-              {periodDisplay}
-            </p>
+            <p className="text-gradient-green mb-2 font-display text-sm font-bold tracking-wide">{periodDisplay}</p>
 
             <ul className="space-y-1">
               {entry.descriptionKeys.map((key) => (
@@ -207,6 +202,24 @@ function ExperienceCard({ entry, isEven, reducedMotion }: ExperienceCardProps) {
               </ul>
             </div>
 
+            {(entry.links ?? []).length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(entry.links ?? []).map((link) => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-white/70 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                    aria-label={`${t(entry.titleKey)}：${t(link.labelKey)}`}
+                  >
+                    <span>{t(link.labelKey)}</span>
+                    <ExternalLink size={12} aria-hidden="true" />
+                  </a>
+                ))}
+              </div>
+            )}
+
             <p className="mt-3 text-xs text-white/40">{t('experience.hoverHint')}</p>
           </div>
         </div>
@@ -226,9 +239,7 @@ export function ExperienceSection() {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
     const target = event.target as HTMLElement
     if (!target.classList.contains('experience-card')) return
-    const cards = Array.from(
-      event.currentTarget.querySelectorAll<HTMLElement>('.experience-card')
-    )
+    const cards = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('.experience-card'))
     const currentIndex = cards.indexOf(target)
     if (currentIndex === -1) return
     event.preventDefault()

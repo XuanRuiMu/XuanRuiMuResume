@@ -2,6 +2,8 @@ import type { Project } from './types'
 import { personalInfo } from './personalInfo'
 import { ta } from '../i18n/translations'
 
+export const lovewithmeGithubUrl = 'https://github.com/XuanRuiMu/HeWoLianAiBa'
+
 export const projects: Project[] = [
   {
     id: 'xrm',
@@ -17,7 +19,7 @@ export const projects: Project[] = [
     descKey: 'data.projects.lovewithme.desc',
     tags: ta('data.projects.lovewithme.tags'),
     metricKeys: ['data.projects.lovewithme.metrics.services', 'data.projects.lovewithme.metrics.security'],
-    links: [{ labelKey: 'projects.link.github', url: 'https://github.com/XuanRuiMu/HeWoLianAiBa' }],
+    links: [{ labelKey: 'projects.link.github', url: lovewithmeGithubUrl }],
   },
   {
     id: 'aiConsole',

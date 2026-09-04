@@ -1616,36 +1616,57 @@ html.circular-reveal-active::view-transition-old(root) {
   outline-offset: 2px;
 }
 
-/* ============ 访问人数卡片 · 居中固定显示 ============ */
+/* ============ 页脚层级体系 · 一级：访问徽章（高级显眼）/ 二级：版权与状态（继承 text-muted） ============ */
+
+@keyframes visitor-counter-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 4px 24px color-mix(in srgb, var(--color-primary) 22%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 4px 32px color-mix(in srgb, var(--color-primary) 38%, transparent),
+      0 0 12px color-mix(in srgb, var(--color-secondary) 25%, transparent);
+  }
+}
 
 .visitor-counter-card {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: var(--color-glass);
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background:
+    linear-gradient(
+        color-mix(in srgb, var(--color-surface-elevated) 85%, transparent),
+        color-mix(in srgb, var(--color-surface-elevated) 85%, transparent)
+      )
+      padding-box,
+    linear-gradient(135deg, var(--color-primary), var(--color-secondary)) border-box;
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   backdrop-filter: blur(12px) saturate(150%);
-  border: 1px solid var(--color-glass-border);
-  border-radius: 9999px;
-  box-shadow:
-    0 4px 24px color-mix(in srgb, var(--color-primary) 12%, transparent),
-    0 1px 4px color-mix(in srgb, var(--color-bg) 20%, transparent);
   color: var(--color-text-secondary);
   font-size: 0.875rem;
   line-height: 1;
   white-space: nowrap;
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: visitor-counter-glow 3s ease-in-out infinite;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.2s;
   pointer-events: auto;
   user-select: none;
 }
 
 .visitor-counter-card:hover {
-  border-color: var(--color-primary);
+  animation: none;
   color: var(--color-primary);
   box-shadow:
-    0 8px 32px color-mix(in srgb, var(--color-primary) 20%, transparent),
-    0 2px 8px color-mix(in srgb, var(--color-primary) 15%, transparent);
+    0 8px 32px color-mix(in srgb, var(--color-primary) 35%, transparent),
+    0 0 16px color-mix(in srgb, var(--color-secondary) 30%, transparent);
   transform: translateY(-2px);
 }
 
@@ -1654,8 +1675,19 @@ html.circular-reveal-active::view-transition-old(root) {
   outline-offset: 2px;
 }
 
+.visitor-counter-icon {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.visitor-counter-number {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .visitor-counter-card {
+    animation: none;
     transition: none;
   }
   .visitor-counter-card:hover {
@@ -1664,6 +1696,7 @@ html.circular-reveal-active::view-transition-old(root) {
 }
 
 .reduced-motion .visitor-counter-card {
+  animation: none;
   transition: none;
 }
 .reduced-motion .visitor-counter-card:hover {

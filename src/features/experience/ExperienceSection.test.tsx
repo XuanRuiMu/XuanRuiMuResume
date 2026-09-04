@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { ExperienceSection } from './ExperienceSection'
 import { experiences } from '../../data/experience'
+import { projects } from '../../data/projects'
+import { personalInfo } from '../../data/personalInfo'
 import { t } from '../../i18n/translations'
 
 describe('ExperienceSection', () => {
@@ -216,5 +218,25 @@ describe('ExperienceSection', () => {
   it('does not render the SVG bezier timeline', () => {
     render(<ExperienceSection />)
     expect(document.querySelector('[data-testid="experience-timeline-svg"]')).toBeNull()
+  })
+
+  it('复现FP-02：lovewithme经历卡片应有可见GitHub链接', () => {
+    render(<ExperienceSection />)
+    const card = document.querySelector('[data-experience-card="lovewithme"]')
+    expect(card).not.toBeNull()
+    const link = within(card as HTMLElement).getByRole('link', {
+      name: `${t('data.experience.entries.lovewithme.title')}：${t('projects.link.github')}`,
+    })
+    expect(link).toHaveAttribute('href', 'https://github.com/XuanRuiMu/HeWoLianAiBa')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('经历链接URL与项目侧同源无漂移', () => {
+    const lovewithmeExp = experiences.find((entry) => entry.id === 'lovewithme')
+    const lovewithmeProj = projects.find((project) => project.id === 'lovewithme')
+    expect(lovewithmeExp?.links?.[0].url).toBe(lovewithmeProj?.links?.[0].url)
+    const xrmExp = experiences.find((entry) => entry.id === 'xrm')
+    expect(xrmExp?.links?.[0].url).toBe(personalInfo.github)
   })
 })

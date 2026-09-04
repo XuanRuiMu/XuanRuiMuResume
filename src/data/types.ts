@@ -42,6 +42,7 @@ export interface ExperienceEntry {
   periodKey: TranslationKey
   descriptionKeys: TranslationKey[]
   achievementKeys?: TranslationKey[]
+  links?: ProjectLink[]
 }
 
 export interface Course {

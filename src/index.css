@@ -644,6 +644,7 @@ html.circular-reveal-active::view-transition-old(root) {
 }
 
 .timeline-card-wrapper {
+  border-radius: 20px;
   transform-style: preserve-3d;
   opacity: 0;
   transform: translateY(24px);

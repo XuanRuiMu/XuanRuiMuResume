@@ -129,3 +129,49 @@ test('跑马灯：缝隙悬停不停，卡片悬停缓停', async ({ page }) => 
 })
 
 
+
+/**
+ * FP-09 根因验证：经历卡片悬停/聚焦时四角不得露出直角「犄角」。
+ * 旧缺陷：.timeline-card-wrapper::before 悬停渐变描边 border-radius: inherit，
+ * 但 wrapper 自身未设圆角 → 继承到 0（直角），与内部卡片 rounded-[20px] 不匹配，
+ * 悬停时直角描边在圆角卡片外露出角部。
+ * 修复：.timeline-card-wrapper 显式 border-radius: 20px，::before 继承生效。
+ */
+test('经历卡片悬停描边与卡片圆角一致', async ({ page }) => {
+  await page.goto('/')
+  const card = page.locator('.experience-card').first()
+  await card.scrollIntoViewIfNeeded()
+  // 等待进入视口动画（1.2s）与懒加载稳定
+  await page.waitForTimeout(1500)
+
+  const wrapper = page.locator('.timeline-card-wrapper').first()
+
+  // 聚焦触发 :focus-within 描边（不触发 tilt，排除 3D 变换干扰）
+  await card.focus()
+  await expect
+    .poll(async () =>
+      wrapper.evaluate((el) => parseFloat(getComputedStyle(el, '::before').opacity))
+    )
+    .toBeGreaterThan(0.99)
+
+  // 硬断言：描边圆角必须等于内部卡片 rounded-[20px]
+  const borderRadius = await wrapper.evaluate(
+    (el) => getComputedStyle(el, '::before').borderRadius
+  )
+  expect(borderRadius, '::before 描边圆角应为 20px（直角即为「犄角」根因）').toBe('20px')
+
+  // 真实 hover 场景截图留档（含 tilt 态），供人工复核角部无直角溢出
+  await card.hover()
+  await page.waitForTimeout(1000)
+  const box = await wrapper.boundingBox()
+  expect(box).toBeTruthy()
+  await page.screenshot({
+    clip: {
+      x: Math.max(0, box!.x - 24),
+      y: Math.max(0, box!.y - 24),
+      width: box!.width + 48,
+      height: box!.height + 48,
+    },
+    path: 'test-results/experience-card-hover.png',
+  })
+})

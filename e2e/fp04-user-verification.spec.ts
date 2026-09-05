@@ -80,7 +80,7 @@ test.describe('FP-04 用户端视角测试验证', () => {
     await expect(visitorInFooter, '访问人数卡片应在页脚内').toBeAttached()
 
     // 验证版权文本与访问人数同行
-    const copyrightText = page.locator('footer >> text=/2026 玄锐暮/')
+    const copyrightText = page.locator('footer >> text=/2026玄锐暮/')
     await expect(copyrightText, '版权文本应存在').toBeVisible()
 
     const statusText = page.locator('footer >> text=/玄锐暮 · 在线简历 · 离线可用/')

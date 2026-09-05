@@ -145,7 +145,7 @@ test('全站用户视角走查（双主题/签字/壁纸/AI面板/留言落盘/�
 
   // ===== AI 面板：模型名 / /help / 图片按钮 / 非法图片提示 =====
   await 到达(page, 'hero')
-  await page.getByRole('button', { name: 'AI 助手' }).first().click()
+  await page.getByRole('button', { name: 'AI助手' }).first().click()
   await page.waitForTimeout(700)
   const 状态栏 = (await page.getByText(/deepseek-v4-flash-vision-exp · /).first().textContent()) ?? ''
   摘要.push(`AI状态栏: ${状态栏.trim()}`)

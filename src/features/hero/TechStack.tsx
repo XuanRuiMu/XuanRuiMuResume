@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { techstackV2, type TechCard } from '../../data/techStack'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
+import { t } from '../../i18n/translations'
 
 /**
  * 技术（原 My Technologies）· 1:1 移植参考站（localhost:8110/#contact）的「技术球」意向。
@@ -11,9 +12,9 @@ import { useReducedMotion } from '../../hooks/useReducedMotion'
  * 每帧直接写入 DOM transform/opacity（不触发 React 重渲染，性能极致），
  * 标签始终朝向相机（billboard），深度决定缩放/透明度/层级，呈现真实的「技术球」体积感。
  *
- * 交互（本次需求）：
+ * 交互：
  *  - 自转速度已降为初版的 1/4（SPIN_SPEED 0.0004），更舒缓；
- *  - 鼠标悬停球体区域 → 暂停自转（暂停时便于精准点击）；
+ *  - 仅当鼠标悬停在技术球本体上才暂停自转（暂停时便于精准点击），悬停容器空白区域不停；
  *  - 单击任一技术球 → 新标签页打开对应官网（GitHub 指向个人主页 https://github.com/XuanRuiMu）。
  * reduced-motion 时静态成球。
  */
@@ -100,18 +101,15 @@ export function TechStack() {
 
   return (
     <div className="w-full flex flex-col items-center" aria-label="技术">
+      <h2 className="mb-4 bg-gradient-to-r from-[#5eead4] via-[#818cf8] to-[#f0abfc] bg-clip-text text-center text-xl font-bold tracking-wide text-transparent">
+        {t('hero.techTitle')}
+      </h2>
       <div
         ref={wrapRef}
         className="relative mx-auto"
         style={{ width: 380, height: 380 }}
         role="group"
         aria-label={`技术栈技术球：${techstackV2.map((t) => t.name).join('、')}`}
-        onMouseEnter={() => {
-          pausedRef.current = true
-        }}
-        onMouseLeave={() => {
-          pausedRef.current = false
-        }}
       >
         {/* 核心光晕 */}
         <div
@@ -133,6 +131,12 @@ export function TechStack() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${orb.card.name} 官网`}
+            onMouseEnter={() => {
+              pausedRef.current = true
+            }}
+            onMouseLeave={() => {
+              pausedRef.current = false
+            }}
             className="tech-orb group absolute left-1/2 top-1/2 flex cursor-pointer flex-col items-center justify-center gap-1 will-change-transform no-underline"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-[#0e1424]/90 shadow-[0_0_18px_rgba(124,211,252,0.25)] backdrop-blur-sm transition-transform duration-200 group-hover:scale-110 group-hover:border-[#7dd3fc]/60 light:bg-white/95 light:border-slate-300/70 light:shadow-[0_4px_14px_rgba(15,23,42,0.14)] light:group-hover:border-[#0369a1]/80">

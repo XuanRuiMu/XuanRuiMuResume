@@ -29,13 +29,13 @@ function buildPersonalInfoChunks(): KnowledgeChunk[] {
   return [
     chunk(
       'personal-info-bio',
-      `姓名：${info.name}。年龄：${info.age}岁。所在地：${info.location}。求职方向：Java 后端开发 / AI 应用开发 / 全栈开发 / 软件工程师。期望城市：${t(info.expectedCityKey)}。薪资期望：${info.salary}。到岗时间：${t(info.availabilityKey)}。`,
+      `姓名：${info.name}。年龄：${info.age}岁。所在地：${info.location}。求职方向：Java后端开发/AI应用开发/全栈开发/软件工程师。期望城市：${t(info.expectedCityKey)}。薪资期望：${info.salary}。到岗时间：${t(info.availabilityKey)}。`,
       'personalInfo',
       'personalInfo.ts'
     ),
     chunk(
       'personal-info-contact',
-      `联系方式：邮箱 ${info.email}，电话 ${info.phone}，GitHub ${info.github}，B站 ${info.bilibili}。`,
+      `联系方式：邮箱${info.email}，电话${info.phone}，GitHub${info.github}，B站${info.bilibili}。`,
       'personalInfo',
       'personalInfo.ts'
     ),
@@ -65,13 +65,13 @@ function buildTechStackChunks(): KnowledgeChunk[] {
   return [
     chunk(
       'tech-stack-core',
-      '核心技术栈：Java 25（GraalVM，Spigot/Purpur 服务端插件开发，HikariCP + MySQL + Guice，JUnit 6 + Mockito 测试）、Node.js（Express + TypeScript 全栈开发）、Python（自动化脚本、AI Agent 工具链）。数据库与中间件：MySQL、Redis、PostgreSQL、SQLite。前端：React 19、Three.js / R3F、Tailwind CSS、Vite。工程化与运维：Docker / docker-compose（6 服务编排上线经验）、Git 工作流、Gradle Kotlin DSL 构建。AI 方向：自定义 Skill（85+）、多 Agent 协作、MCP 协议、DeepSeek API 接入。音视频：ffmpeg、MIDI 编曲。',
+      '核心技术栈：Java 25（GraalVM，Spigot/Purpur服务端插件开发，HikariCP+MySQL+Guice，JUnit 6+Mockito测试）、Node.js（Express+TypeScript全栈开发）、Python（自动化脚本、AI Agent工具链）。数据库与中间件：MySQL、Redis、PostgreSQL、SQLite。前端：React 19、Three.js/R3F、Tailwind CSS、Vite。工程化与运维：Docker/docker-compose（6服务编排上线经验）、Git工作流、Gradle Kotlin DSL构建。AI方向：自定义Skill（85+）、多Agent协作、MCP协议、DeepSeek API接入。音视频：ffmpeg。',
       'techStack',
       'workspace'
     ),
     chunk(
       'tech-stack-frontend',
-      '前端技术：React 19 + TypeScript + Vite + Tailwind v4，动画用 framer-motion，3D 用 Three.js / @react-three/fiber，平滑滚动用 Lenis，命令面板用 cmdk，状态用 zustand，PWA 用 vite-plugin-pwa。',
+      '前端技术：React 19+TypeScript+Vite+Tailwind v4，动画用framer-motion，3D用Three.js/@react-three/fiber，平滑滚动用Lenis，命令面板用cmdk，状态用zustand，PWA用vite-plugin-pwa。',
       'techStack',
       'workspace'
     ),
@@ -82,13 +82,13 @@ function buildWorkspaceChunks(): KnowledgeChunk[] {
   return [
     chunk(
       'workspace-overview',
-      '工作区包含以下项目：暮澜纪元我的世界MMORPG服务端（8 世界 32 职业的服务端，自研 Java 插件 400+ 类，Gradle Kotlin DSL 多模块，HikariCP + MySQL 持久化）、和我恋爱吧（已上线的 AI 恋爱聊天全栈应用：Express + TypeScript + PostgreSQL + Redis + Socket.io + DeepSeek，docker-compose 编排 Nginx + HTTPS）、燃烧之陨系列（我的世界多元生存服、粘液科技服、登录服、多服连接）、燃烧之陨资源包、音乐开发（原创歌曲《逃脱》词曲编曲母带，ffmpeg/MIDI）、总控制台（Python AI 总控制台，2600+ 行，DeepSeek/MiniMax API 接入，多仓库 GitHub 推送封装）、个人简历（本 React 简历站）、开发需求文档、暮澜纪元小说。',
+      '工作区包含以下项目：暮澜纪元我的世界MMORPG服务端（8世界32职业的服务端，自研Java插件400+类，Gradle Kotlin DSL多模块，HikariCP+MySQL持久化）、和我恋爱吧（已上线的AI恋爱聊天全栈应用：Express+TypeScript+PostgreSQL+Redis+Socket.io+DeepSeek，docker-compose编排Nginx+HTTPS）、燃烧之陨系列（我的世界多元生存服、粘液科技服、登录服、多服连接）、燃烧之陨资源包、音乐（曾考取架子鼓九级证书，未创作过歌曲等）、总控制台（Python AI总控制台，2600+行，DeepSeek/MiniMax API接入，多仓库GitHub推送封装）、个人简历（本React简历站）、开发需求文档、暮澜纪元小说。',
       'workspace',
       'workspace'
     ),
     chunk(
       'workspace-ai-console',
-      '总控制台（Python）是 AI 工具链中枢：封装 DeepSeek / MiniMax 等大模型 API，提供非交互式多仓库 git 推送（自带 token 注入、清理 node_modules/dist 等路径），并集中管理 API 凭证。',
+      '总控制台（Python）是AI工具链中枢：封装DeepSeek/MiniMax等大模型API，提供非交互式多仓库git推送（自带token注入、清理node_modules/dist等路径），并集中管理API凭证。',
       'workspace',
       'workspace'
     ),

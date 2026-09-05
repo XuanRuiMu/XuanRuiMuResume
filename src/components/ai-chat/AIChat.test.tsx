@@ -303,7 +303,11 @@ describe('AIChat', () => {
             expect.objectContaining({
               role: 'user',
               content: '混排发送',
-              images: [expect.stringMatching(/^data:image\/png;base64,/), expect.stringMatching(/^data:image\/png;base64,/), expect.stringMatching(/^data:image\/png;base64,/)],
+              images: [
+                expect.stringMatching(/^data:image\/png;base64,/),
+                expect.stringMatching(/^data:image\/png;base64,/),
+                expect.stringMatching(/^data:image\/png;base64,/),
+              ],
             }),
           ],
         })
@@ -519,8 +523,8 @@ describe('AIChat', () => {
     fireEvent.change(input, { target: { value: '/help' } })
     fireEvent.submit(input.closest('form') as HTMLFormElement)
 
-    expect(screen.getByText(/\/clear\s+清空对话历史，开始新会话/)).toBeInTheDocument()
-    expect(screen.getByText(/\/compact\s+压缩对话历史，保留语义/)).toBeInTheDocument()
+    expect(screen.getByText(/\/clear\s*清空对话历史，开始新会话/)).toBeInTheDocument()
+    expect(screen.getByText(/\/compact\s*压缩对话历史，保留语义/)).toBeInTheDocument()
   })
 
   it('未知指令给出 Claude Code 风格的报错', () => {

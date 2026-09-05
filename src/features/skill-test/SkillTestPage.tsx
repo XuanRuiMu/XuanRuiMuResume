@@ -489,8 +489,8 @@ export function SkillTestPage() {
             Classic Silk
           </h2>
           <p className="text-sm mb-6 leading-relaxed" style={{ color: page.textSecondary }}>
-            基于 ShaderToy 经典丝绸着色器（MIT License, Giorgi Azmaipharashvili）。
-            右侧面板可实时调节动画速度、波动振幅、织物纹理、高光颜色、Gamma 校正、页面配色等全部参数。
+            基于ShaderToy经典丝绸着色器（MIT License, Giorgi Azmaipharashvili）。
+            右侧面板可实时调节动画速度、波动振幅、织物纹理、高光颜色、Gamma校正、页面配色等全部参数。
           </p>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="flex items-center gap-2" style={{ color: page.muted }}>
@@ -753,7 +753,7 @@ export function SkillTestPage() {
           {/* 面板底部 */}
           <div className="px-5 py-3 border-t text-center" style={{ borderColor: page.border }}>
             <p className="text-xs" style={{ color: page.muted }}>
-              共 {15 + 8} 个可调节参数 · 实时生效
+              共{15 + 8}个可调节参数 · 实时生效
             </p>
           </div>
         </div>

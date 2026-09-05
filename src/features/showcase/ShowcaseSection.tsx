@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   GraduationCap,
   Code2,
@@ -21,8 +21,19 @@ import { motion, useScroll, useSpring, useTransform } from 'framer-motion'
 import { showcaseRows, type ShowcaseCard } from '../../data/showcase'
 import { t } from '../../i18n/translations'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
+import {
+  创建跑马灯控制,
+  计算份数,
+  是否滚动按键,
+  归一化位移,
+  钳制滚动增量,
+  推进一帧,
+  最大帧步长,
+  滚动暂停时长,
+  type 跑马灯控制,
+  type 轨道槽位,
+} from './marqueeEngine'
 
-/** 卡片图标映射（按卡片 id） */
 const CARD_ICONS: Record<string, LucideIcon> = {
   degree: GraduationCap,
   coding: Code2,
@@ -41,7 +52,6 @@ const CARD_ICONS: Record<string, LucideIcon> = {
   escape: Music,
 }
 
-/** 渐变描边与霓虹光晕（12-next-spline-3d ProductCard 原样移植，9 组循环） */
 const GRADIENTS = [
   'from-purple-500 to-blue-500',
   'from-orange-400 to-yellow-500',
@@ -66,39 +76,37 @@ const NEON_SHADOWS = [
   'shadow-[0_0_30px_5px_rgba(16,185,129,0.4)]',
 ]
 
-/** 图标主色与渐变组对应，保证卡内视觉与描边同系 */
 const ICON_COLORS = ['#a78bfa', '#fbbf24', '#f472b6', '#22d3ee', '#a3e635', '#e879f9', '#facc15', '#60a5fa', '#34d399']
+
+const 弹簧配置 = { stiffness: 300, damping: 30 }
 
 interface ShowcaseProductCardProps {
   card: ShowcaseCard
   index: number
   reducedMotion: boolean
-  control?: MarqueeControl
+  控制?: 跑马灯控制
 }
 
-function ShowcaseProductCard({ card, index, reducedMotion, control }: ShowcaseProductCardProps) {
+function ShowcaseProductCard({ card, index, reducedMotion, 控制 }: ShowcaseProductCardProps) {
   const gradient = GRADIENTS[index % GRADIENTS.length]
   const neonShadow = NEON_SHADOWS[index % NEON_SHADOWS.length]
   const iconColor = ICON_COLORS[index % ICON_COLORS.length]
   const Icon = CARD_ICONS[card.id] ?? Shapes
   const cardRef = useRef<HTMLDivElement>(null)
 
-  // 悬停判定（根因修复）：注册在「每张卡片」而非整条轨道——
-  // 旧实现挂在轨道元素上，指针落在两张卡之间的缝隙也会被判为悬停而暂停；
-  // 现在只有真正命中卡片方框（含抬起后的视觉范围）才计入共享悬停集合。
   useLayoutEffect(() => {
     const el = cardRef.current
-    if (!el || !control || reducedMotion) return
-    const onEnter = () => control.hovered.add(el)
-    const onLeave = () => control.hovered.delete(el)
+    if (!el || !控制 || reducedMotion) return
+    const onEnter = () => 控制.悬停集合.add(el)
+    const onLeave = () => 控制.悬停集合.delete(el)
     el.addEventListener('pointerenter', onEnter)
     el.addEventListener('pointerleave', onLeave)
     return () => {
       el.removeEventListener('pointerenter', onEnter)
       el.removeEventListener('pointerleave', onLeave)
-      control.hovered.delete(el)
+      控制.悬停集合.delete(el)
     }
-  }, [control, reducedMotion])
+  }, [控制, reducedMotion])
 
   const inner = (
     <div className="flex h-full w-full flex-col justify-between rounded-xl bg-black p-5 md:p-6">
@@ -115,8 +123,6 @@ function ShowcaseProductCard({ card, index, reducedMotion, control }: ShowcasePr
       ref={cardRef}
       className="group/card relative h-32 w-[11rem] shrink-0 md:h-[26.75rem] md:w-[22rem] lg:h-96 lg:w-[30rem]"
     >
-      {/* 命中补偿带：向下延伸 24px 覆盖 whileHover 抬起位移，
-          防止光标停在原底缘时「抬起→离开→回落→再抬起」的振荡；水平方向不扩宽，缝隙仍不受判定 */}
       <span aria-hidden="true" className="absolute inset-x-0 -bottom-6 h-6" />
       <motion.div whileHover={reducedMotion ? undefined : { y: -20 }} className="h-full w-full">
         <div className={`h-full w-full rounded-xl bg-gradient-to-r p-[2px] ${gradient} ${neonShadow} md:p-[6px]`}>
@@ -140,169 +146,98 @@ function ShowcaseProductCard({ card, index, reducedMotion, control }: ShowcasePr
   )
 }
 
-/**
- * 三排共享的「暂停/缓动」控制器（根因修复核心）。
- *
- * 旧实现：每一排各自实例化一份 useAutoMarquee，悬停/滚动各自独立判定，
- * 三排的暂停状态完全独立 → 悬停一排只停一排，无法「作为一个整体一起停止、一起移动」，
- * 且 CSS animation-play-state 只能瞬停瞬起，没有惯性缓冲。
- *
- * 新实现：在 ShowcaseSection 建一个全局唯一控制器，所有排共享同一悬停集合、
- * scrollPauseUntilRef 与 scrollYRef。各轨道用自身 pointerenter/pointerleave 注册悬停
- * （边界事件，零持续开销）；wheel/touchmove 触发全局暂停 1 秒；scroll 事件记录最新
- * 滚动位置供各排做滚动联动位移。每排 rAF 只读共享信号做帧率无关指数惯性缓动
- * → 三排天然同步缓停/缓起。
- */
-interface MarqueeControl {
-  hovered: Set<HTMLElement>
-  scrollPauseUntilRef: React.MutableRefObject<number>
-  scrollYRef: React.MutableRefObject<number>
-}
+function useZidongPaomadeng(选项: { 控制: 跑马灯控制; 方向: 1 | -1; 基准速度: number; 减少动画: boolean }) {
+  const { 控制, 方向, 基准速度, 减少动画 } = 选项
+  const 轨道Ref = useRef<HTMLDivElement>(null)
+  const 组Ref = useRef<HTMLDivElement>(null)
+  const 周期Ref = useRef(0)
+  const 位移Ref = useRef(0)
+  const 速度Ref = useRef(0)
+  const [份数, 设置份数] = useState(2)
 
-/**
- * 滚动联动系数：页面每垂直滚动 1px，卡片沿自身方向水平位移该系数 px。
- * 保证上下划动网页时项目框同步左右移动（而非静止），各排因 direction 不同而反向，
- * 形成视差感。
- */
-const SCROLL_LINK_FACTOR = 0.5
-
-/** 单帧滚动增量上限：防止 scrollIntoView/锚点跳转等瞬时大跳让轨道飞出去 */
-const SCROLL_DELTA_CLAMP = 80
-
-/**
- * 单排自动横移轨道。
- * 接收共享控制器：轨道注册自身悬停状态进控制器，rAF 读取共享暂停信号做惯性缓动。
- * - 速度做帧率无关的指数惯性缓动（当前速度向目标速度缓动）：
- *   - 悬停缓停 τ≈0.4s（带惯性的缓冲停止，非瞬停）；
- *   - 滚动缓停 τ≈0.18s（快速停稳，保证 1 秒暂停窗口内真正静止）；
- *   - 恢复/启动 τ≈0.7s（缓缓起步）。
- * - 全局滚动（wheel/touchmove）→ 暂停 1 秒，随后缓缓起步。
- * - 滚动联动：页面垂直滚动时按 SCROLL_LINK_FACTOR 叠加水平位移，划动期间卡片
- *   始终左右移动（与自动速度的暂停规则正交，两者叠加）。
- * - 任意一排被悬停 → 三排同时缓停；全部移开 → 三排同时缓起。
- * - reduced-motion 完全静止，不注入任何 transform。
- */
-function useAutoMarquee(opts: {
-  control: MarqueeControl
-  direction: 1 | -1
-  baseSpeed: number
-  reducedMotion: boolean
-}) {
-  const { control, direction, baseSpeed, reducedMotion } = opts
-  const trackRef = useRef<HTMLDivElement>(null)
-  const groupRef = useRef<HTMLDivElement>(null)
-  const [copies, setCopies] = useState(2)
-
-  const offsetRef = useRef(0)
-  const speedRef = useRef(0)
-  const groupWidthRef = useRef(0)
-  const rafRef = useRef<number | null>(null)
-  const lastTsRef = useRef<number | null>(null)
-  const prevScrollYRef = useRef<number | null>(null)
-
-  const measure = useRef<() => void>(() => {})
-
-  useEffect(() => {
-    measure.current = () => {
-      const el = groupRef.current
-      if (!el) return
-      const w = el.getBoundingClientRect().width
-      if (w <= 0) return
-      groupWidthRef.current = w
-      const vw = window.innerWidth || document.documentElement.clientWidth || 0
-      const needed = Math.max(2, Math.ceil((vw + w) / w) + 1)
-      setCopies((prev) => (prev === needed ? prev : needed))
-    }
-  }, [groupRef, setCopies])
-
-  // 轨道不再注册悬停（根因修复）：悬停信号改由每张卡片自身向共享控制器注册，
-  // 缝隙位置不触发暂停；此处只负责测量与副本数计算。
   useLayoutEffect(() => {
-    measure.current()
-    const onResize = () => measure.current()
-    if (typeof ResizeObserver !== 'undefined' && groupRef.current) {
-      const ro = new ResizeObserver(onResize)
-      ro.observe(groupRef.current)
-      return () => ro.disconnect()
-    }
-    window.addEventListener('resize', onResize)
-    window.addEventListener('load', onResize)
-    return () => {
-      window.removeEventListener('resize', onResize)
-      window.removeEventListener('load', onResize)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (reducedMotion) {
-      if (trackRef.current) trackRef.current.style.transform = ''
+    if (减少动画) {
+      if (轨道Ref.current) 轨道Ref.current.style.transform = ''
       return
     }
-
-    const frame = (ts: number) => {
-      const last = lastTsRef.current
-      lastTsRef.current = ts
-      const dt = last == null ? 0 : Math.min((ts - last) / 1000, 0.05)
-      const W = groupWidthRef.current
-      // 读取共享暂停信号：悬停任一排 或 全局滚动暂停窗口内 → 暂停。
-      const hoverPaused = control.hovered.size > 0
-      const scrollPaused = performance.now() < control.scrollPauseUntilRef.current
-      const paused = hoverPaused || scrollPaused
-      const target = paused ? 0 : baseSpeed
-      // 帧率无关指数惯性，按触发源分取时距：
-      //  - 滚动暂停：τ=0.18（约 0.5s 内停住并保持静止，确保 1 秒窗口内真正暂停）；
-      //    滚动优先于悬停：滚动时用户意图是看页面，停得更快更符合预期；
-      //  - 悬停缓停：τ=0.4（约 1.5s 缓停，符合「不要立刻停止」的惯性缓冲）；
-      //  - 恢复/起步：τ=0.7（缓缓起步）。
-      const tau = paused ? (scrollPaused ? 0.18 : 0.4) : 0.7
-      const ease = 1 - Math.exp(-dt / tau)
-      speedRef.current += (target - speedRef.current) * ease
-      // 接近静止时直接归零，杜绝残余微动（确保悬停/滚动暂停后真正停住）
-      if (paused && Math.abs(speedRef.current) < 0.5) speedRef.current = 0
-      // 滚动联动位移：与自动速度正交叠加——划动网页期间即使自动速度处于暂停窗口，
-      // 卡片仍随垂直滚动左右移动（根因修复：旧版滚动只触发暂停，划动期间卡片静止）
-      const scrollY = control.scrollYRef.current
-      if (prevScrollYRef.current == null) prevScrollYRef.current = scrollY
-      let scrollDelta = scrollY - prevScrollYRef.current
-      prevScrollYRef.current = scrollY
-      scrollDelta = Math.max(-SCROLL_DELTA_CLAMP, Math.min(SCROLL_DELTA_CLAMP, scrollDelta))
-      const delta = direction * speedRef.current * dt + direction * scrollDelta * SCROLL_LINK_FACTOR
-      if (W > 0 && Math.abs(delta) > 0.001) {
-        offsetRef.current += delta
-        let raw = offsetRef.current % W
-        if (raw < 0) raw += W
-        if (trackRef.current) {
-          trackRef.current.style.transform = `translate3d(${-raw}px, 0, 0)`
-        }
+    let 已调度 = false
+    const 执行测量 = () => {
+      已调度 = false
+      const 组 = 组Ref.current
+      if (!组) return
+      const 组宽 = 组.offsetWidth
+      if (!(组宽 > 0)) return
+      const 视口宽 = window.innerWidth || document.documentElement.clientWidth || 0
+      设置份数((旧份数) => {
+        const 目标份数 = 计算份数(视口宽, 组宽)
+        return 旧份数 === 目标份数 ? 旧份数 : 目标份数
+      })
+      if (组宽 !== 周期Ref.current) {
+        周期Ref.current = 组宽
+        位移Ref.current = 归一化位移(位移Ref.current, 组宽)
+        const 轨道元素 = 轨道Ref.current
+        if (轨道元素) 轨道元素.style.transform = `translate3d(${-位移Ref.current}px, 0, 0)`
       }
-      rafRef.current = requestAnimationFrame(frame)
     }
-    rafRef.current = requestAnimationFrame(frame)
+    const 调度测量 = () => {
+      if (已调度) return
+      已调度 = true
+      requestAnimationFrame(执行测量)
+    }
+    执行测量()
+    let 观察器: ResizeObserver | null = null
+    if (typeof ResizeObserver !== 'undefined' && 组Ref.current) {
+      观察器 = new ResizeObserver(调度测量)
+      观察器.observe(组Ref.current)
+    }
+    window.addEventListener('resize', 调度测量)
+    window.addEventListener('load', 调度测量)
+    const 字体集 = document.fonts
+    if (字体集 && typeof 字体集.ready?.then === 'function') {
+      void 字体集.ready.then(调度测量)
+    }
     return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
-      lastTsRef.current = null
+      观察器?.disconnect()
+      window.removeEventListener('resize', 调度测量)
+      window.removeEventListener('load', 调度测量)
     }
-  }, [reducedMotion, direction, baseSpeed, control])
+  }, [减少动画])
 
-  return { trackRef, groupRef, copies }
+  useEffect(() => {
+    if (减少动画) return
+    const 槽位: 轨道槽位 = {
+      轨道: 轨道Ref,
+      周期: 周期Ref,
+      位移: 位移Ref,
+      速度: 速度Ref,
+      方向,
+      基准速度,
+    }
+    控制.轨道表.push(槽位)
+    return () => {
+      const 下标 = 控制.轨道表.indexOf(槽位)
+      if (下标 >= 0) 控制.轨道表.splice(下标, 1)
+    }
+  }, [控制, 方向, 基准速度, 减少动画])
+
+  return { 轨道Ref, 组Ref, 份数 }
 }
 
 interface ShowcaseMarqueeRowProps {
   row: (typeof showcaseRows)[number]
   rowIndex: number
-  direction: 1 | -1
-  baseSpeed: number
-  reducedMotion: boolean
-  control: MarqueeControl
+  方向: 1 | -1
+  基准速度: number
+  减少动画: boolean
+  控制: 跑马灯控制
 }
 
-function ShowcaseMarqueeRow({ row, rowIndex, direction, baseSpeed, reducedMotion, control }: ShowcaseMarqueeRowProps) {
-  const { trackRef, groupRef, copies } = useAutoMarquee({
-    control,
-    direction,
-    baseSpeed,
-    reducedMotion,
+function ShowcaseMarqueeRow({ row, rowIndex, 方向, 基准速度, 减少动画, 控制 }: ShowcaseMarqueeRowProps) {
+  const { 轨道Ref, 组Ref, 份数 } = useZidongPaomadeng({
+    控制,
+    方向,
+    基准速度,
+    减少动画,
   })
 
   return (
@@ -310,16 +245,16 @@ function ShowcaseMarqueeRow({ row, rowIndex, direction, baseSpeed, reducedMotion
       <span id={row.anchorId} className="block scroll-mt-24" aria-hidden="true">
         &nbsp;
       </span>
-      <div ref={trackRef} className="showcase-marquee flex">
-        {Array.from({ length: copies }).map((_, group) => (
-          <div key={group} ref={group === 0 ? groupRef : undefined} className="flex gap-20 pr-20">
+      <div ref={轨道Ref} className="showcase-marquee flex">
+        {Array.from({ length: 份数 }).map((_, group) => (
+          <div key={group} ref={group === 0 ? 组Ref : undefined} className="flex gap-20 pr-20">
             {row.cards.map((card, cardIndex) => (
               <ShowcaseProductCard
                 key={`${card.id}-${group}`}
                 card={card}
                 index={rowIndex * 5 + cardIndex}
-                reducedMotion={reducedMotion}
-                control={control}
+                reducedMotion={减少动画}
+                控制={控制}
               />
             ))}
           </div>
@@ -329,65 +264,87 @@ function ShowcaseMarqueeRow({ row, rowIndex, direction, baseSpeed, reducedMotion
   )
 }
 
-/**
- * 作品展示区 · 移植自 12-next-spline-3d 的 HeroParallax（EXPLORING MODERN DESIGNS）。
- * 三排卡片随滚动反向横移入场（3D 透视翻入），卡片带渐变描边 + 霓虹光晕 + 悬停上浮；
- * 每排卡片由共享 rAF 引擎做真正无缝的自动横移（见 useAutoMarquee + 共享控制器，根因修复版）。
- */
 export function ShowcaseSection() {
   const reducedMotion = useReducedMotion()
   const ref = useRef<HTMLDivElement>(null)
 
-  // 全局唯一共享控制器：三排共用同一悬停集合与滚动信号，实现「视为整体、一起停止、一起移动」。
-  // 使用 useMemo 创建稳定引用，避免在 render 阶段访问 ref.current
-  const controlCurrent = useMemo<MarqueeControl>(
-    () => ({
-      hovered: new Set<HTMLElement>(),
-      scrollPauseUntilRef: { current: 0 },
-      scrollYRef: { current: typeof window !== 'undefined' ? window.scrollY : 0 },
-    }),
-    []
-  )
+  const [控制] = useState(创建跑马灯控制)
 
-  // 全局只挂一组滚动监听：wheel/touchmove 触发全局暂停 1 秒；scroll 记录最新滚动位置
-  // 供各排做滚动联动位移（悬停信号由各轨道自身边界事件注册）。
   useEffect(() => {
-    const onScrollActivity = () => {
-      controlCurrent.scrollPauseUntilRef.current = performance.now() + 1000
+    const 延长暂停 = () => {
+      控制.暂停至.current = performance.now() + 滚动暂停时长
     }
-    const onScroll = () => {
-      controlCurrent.scrollYRef.current = window.scrollY
+    const 同步滚动位置 = () => {
+      控制.滚动位置.current = window.scrollY
+      延长暂停()
     }
-    window.addEventListener('wheel', onScrollActivity, { passive: true })
-    window.addEventListener('touchmove', onScrollActivity, { passive: true })
-    window.addEventListener('scroll', onScroll, { passive: true })
+    const 按键暂停 = (事件: KeyboardEvent) => {
+      if (是否滚动按键(事件.key)) 延长暂停()
+    }
+    window.addEventListener('wheel', 延长暂停, { passive: true })
+    window.addEventListener('touchmove', 延长暂停, { passive: true })
+    window.addEventListener('scroll', 同步滚动位置, { passive: true })
+    window.addEventListener('keydown', 按键暂停)
     return () => {
-      window.removeEventListener('wheel', onScrollActivity)
-      window.removeEventListener('touchmove', onScrollActivity)
-      window.removeEventListener('scroll', onScroll)
-      controlCurrent.hovered.clear()
+      window.removeEventListener('wheel', 延长暂停)
+      window.removeEventListener('touchmove', 延长暂停)
+      window.removeEventListener('scroll', 同步滚动位置)
+      window.removeEventListener('keydown', 按键暂停)
+      控制.悬停集合.clear()
     }
-  }, [])
+  }, [控制])
+
+  useEffect(() => {
+    if (reducedMotion) return
+    let 帧号 = 0
+    let 上次时刻: number | null = null
+    const 帧 = (时刻: number) => {
+      const 上次 = 上次时刻
+      上次时刻 = 时刻
+      const 步长秒 = 上次 == null ? 0 : Math.min(Math.max((时刻 - 上次) / 1000, 0), 最大帧步长)
+      const 悬停暂停 = 控制.悬停集合.size > 0
+      const 滚动暂停中 = performance.now() < 控制.暂停至.current
+      const 已暂停 = 悬停暂停 || 滚动暂停中
+      const 滚动增量 = 钳制滚动增量(控制.滚动位置.current - 控制.上次滚动位置.current)
+      控制.上次滚动位置.current = 控制.滚动位置.current
+      for (const 槽位 of 控制.轨道表) {
+        const 结果 = 推进一帧({
+          位移: 槽位.位移.current,
+          速度: 槽位.速度.current,
+          周期: 槽位.周期.current,
+          方向: 槽位.方向,
+          基准速度: 槽位.基准速度,
+          已暂停,
+          滚动暂停中,
+          步长秒,
+          滚动增量,
+        })
+        槽位.速度.current = 结果.速度
+        if (结果.位移 !== 槽位.位移.current) {
+          槽位.位移.current = 结果.位移
+          const 轨道 = 槽位.轨道.current
+          if (轨道) 轨道.style.transform = `translate3d(${-结果.位移}px, 0, 0)`
+        }
+      }
+      帧号 = requestAnimationFrame(帧)
+    }
+    帧号 = requestAnimationFrame(帧)
+    return () => cancelAnimationFrame(帧号)
+  }, [reducedMotion, 控制])
 
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start start', 'end start'],
   })
 
-  const springConfig = { stiffness: 300, damping: 30, bounce: 100 }
-
-  const rotateX = useSpring(useTransform(scrollYProgress, [0, 0.2], [15, 0]), springConfig)
-  const opacity = useSpring(useTransform(scrollYProgress, [0, 0.2], [0.2, 1]), springConfig)
-  const rotateZ = useSpring(useTransform(scrollYProgress, [0, 0.2], [20, 0]), springConfig)
-  const translateY = useSpring(useTransform(scrollYProgress, [0, 0.2], [-700, 500]), springConfig)
+  const rotateX = useSpring(useTransform(scrollYProgress, [0, 0.2], [15, 0]), 弹簧配置)
+  const rotateZ = useSpring(useTransform(scrollYProgress, [0, 0.2], [20, 0]), 弹簧配置)
 
   const entrance = reducedMotion
     ? undefined
     : {
         rotateX,
         rotateZ,
-        translateY,
-        opacity,
       }
 
   return (
@@ -396,7 +353,6 @@ export function ShowcaseSection() {
         ref={ref}
         className="relative flex h-[1500px] flex-col pb-40 antialiased [perspective:1000px] [transform-style:preserve-3d] md:h-[2000px] lg:h-[2500px] z-[100] isolate"
       >
-        {/* 头部：渐变大标题（HeroParallax Header 移植） */}
         <div className="relative mx-auto w-full max-w-7xl px-4 py-20 md:py-40">
           <h2 className="font-display text-4xl font-bold tracking-widest md:text-6xl">
             <span className="bg-gradient-to-r from-[#6EFFB1] to-[#A594F9] bg-clip-text text-transparent">
@@ -410,16 +366,16 @@ export function ShowcaseSection() {
           <p className="mt-8 max-w-2xl text-xl font-bold text-sky-400 md:text-2xl">{t('showcase.subtitle')}</p>
         </div>
 
-        <motion.div style={entrance}>
+        <motion.div style={entrance} className="[transform-style:preserve-3d]">
           {showcaseRows.map((row, rowIndex) => (
             <ShowcaseMarqueeRow
               key={row.anchorId}
               row={row}
               rowIndex={rowIndex}
-              direction={rowIndex % 2 === 0 ? -1 : 1}
-              baseSpeed={50}
-              reducedMotion={reducedMotion}
-              control={controlCurrent}
+              方向={rowIndex % 2 === 0 ? -1 : 1}
+              基准速度={50}
+              减少动画={reducedMotion}
+              控制={控制}
             />
           ))}
         </motion.div>

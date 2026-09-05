@@ -3,6 +3,7 @@ import { personalInfo } from './personalInfo'
 import { ta } from '../i18n/translations'
 
 export const lovewithmeGithubUrl = 'https://github.com/XuanRuiMu/HeWoLianAiBa'
+export const analyticsGithubUrl = 'https://github.com/XuanRuiMu/LianAiBaDataCenter'
 
 export const projects: Project[] = [
   {
@@ -35,5 +36,6 @@ export const projects: Project[] = [
     descKey: 'data.projects.analytics.desc',
     tags: ta('data.projects.analytics.tags'),
     metricKeys: ['data.projects.analytics.metrics.stack', 'data.projects.analytics.metrics.tests'],
+    links: [{ labelKey: 'projects.link.github', url: analyticsGithubUrl }],
   },
 ]

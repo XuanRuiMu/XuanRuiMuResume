@@ -9,7 +9,7 @@ import { 字符渐变色 } from './roleGradient'
  * 中文岗位由工作区技术栈推导（全栈 / Java 后端 / AI 工具 / 游戏服务端 / DevOps）。
  * reduced-motion 时静态显示首个角色，光标不闪烁。
  */
-const ROLES = ['全栈开发工程师', 'Java 后端开发', 'AI 工具开发', '游戏服务端架构', 'DevOps 工程师']
+const ROLES = ['全栈开发工程师', 'Java后端开发', 'AI工具开发', '游戏服务端架构', 'DevOps工程师']
 
 interface RoleTickerProps {
   roles?: string[]
@@ -92,10 +92,7 @@ export function RoleTicker({
             {char}
           </span>
         ))}
-        <span
-          aria-hidden="true"
-          className={cn('ml-0.5 text-[#f0abfc]', !reducedMotion && 'caret-blink')}
-        >
+        <span aria-hidden="true" className={cn('ml-0.5 text-[#f0abfc]', !reducedMotion && 'caret-blink')}>
           {reducedMotion ? '' : '|'}
         </span>
       </span>

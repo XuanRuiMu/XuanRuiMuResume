@@ -10,20 +10,11 @@ export const music: Music = {
       typeKey: 'data.music.tracks.escape.type',
       descKey: 'data.music.tracks.escape.desc',
     },
-    {
-      id: 'javaInstrument',
-      nameKey: 'data.music.tracks.javaInstrument.name',
-      typeKey: 'data.music.tracks.javaInstrument.type',
-      descKey: 'data.music.tracks.javaInstrument.desc',
-    },
   ],
-  toolKeys: ['data.music.skills.kontakt', 'data.music.skills.midi', 'data.music.skills.spectrum'],
+  toolKeys: ['data.music.skills.spectrum'],
   skillKeys: [
     'data.music.skills.drums',
-    'data.music.skills.guitar',
     'data.music.skills.theory',
-    'data.music.skills.kontakt',
-    'data.music.skills.midi',
     'data.music.skills.spectrum',
   ],
   launchpadNotes: [

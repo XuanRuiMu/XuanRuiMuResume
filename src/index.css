@@ -92,25 +92,6 @@ body,
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 技术栈跑马灯：1:1 移植 12-next-spline-3d / acertenity 的 scroll 关键帧。
-   --animation-duration / --animation-direction 由 InfiniteMovingCards / InfiniteLogoSlider 注入；
-   内容克隆为两份，translateX(-50%) 实现无缝循环。 */
-.scroller {
-  --animation-duration: 40s;
-  --animation-direction: forwards;
-}
-
-.animate-scroll {
-  animation: scroll var(--animation-duration) linear infinite;
-  animation-direction: var(--animation-direction);
-}
-
-@keyframes scroll {
-  to {
-    transform: translateX(calc(-50% - 0.5rem));
-  }
-}
-
 /* Quantico 字体（8112 TECH STACK 标题用） */
 .font-quantico {
   font-family: 'Quantico', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -122,10 +103,9 @@ body,
   }
 }
 
-/* 作品展示区横移轨道：位移由 ShowcaseSection 共享 rAF 控制器写入内联 transform
-   （惯性缓停/缓起、三排整体联动），此处只提供轨道布局基线。 */
 .showcase-marquee {
   width: max-content;
+  overflow: visible;
   will-change: transform;
 }
 

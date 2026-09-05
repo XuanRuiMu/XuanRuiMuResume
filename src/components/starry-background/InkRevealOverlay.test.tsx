@@ -55,13 +55,13 @@ describe('InkRevealOverlay 双主题', () => {
 
   it('深色模式挂载且遮罩色与星空底色一致（不透明）', () => {
     render(<InkRevealOverlay />)
-    expect(rendererMock).toHaveBeenCalledWith({ enabled: true, coverColor: '#05060f' })
+    expect(rendererMock).toHaveBeenCalledWith({ enabled: true, coverColor: '#05060f', sourceCanvas: null })
   })
 
-  it('浅色模式挂载且遮罩与深色同为满不透明实色（偏白砂黄）', () => {
+  it('浅色模式挂载丝绸源且覆盖色为墨黑（jsdom无WebGL回退纯色遮罩）', () => {
     hookState.isDark = false
     render(<InkRevealOverlay />)
-    expect(rendererMock).toHaveBeenCalledWith({ enabled: true, coverColor: '#F5D0C5' })
+    expect(rendererMock).toHaveBeenCalledWith({ enabled: true, coverColor: '#05060f', sourceCanvas: null })
   })
 
   it('非 hover 设备不挂载渲染器', () => {

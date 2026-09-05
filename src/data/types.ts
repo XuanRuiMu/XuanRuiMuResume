@@ -31,7 +31,7 @@ export interface Project {
   nameKey: TranslationKey
   descKey: TranslationKey
   tags: string[]
-  links?: ProjectLink[]
+  links: ProjectLink[]
   metricKeys?: TranslationKey[]
 }
 

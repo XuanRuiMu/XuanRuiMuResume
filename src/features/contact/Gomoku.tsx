@@ -65,7 +65,8 @@ function BoardGrid() {
 let stoneAudioCtx: AudioContext | null = null
 function getStoneAudioCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null
-  const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  const Ctor =
+    window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
   if (!Ctor) return null
   if (!stoneAudioCtx) stoneAudioCtx = new Ctor()
   if (stoneAudioCtx.state === 'suspended') void stoneAudioCtx.resume()
@@ -237,9 +238,7 @@ export function Gomoku() {
     // 「掫桌」：绕垂直轴翻面 0.8s。清盘放在翻转中段（~90° 侧棱朝向观众、两面均不可见时），
     // 而非动画结束瞬间——否则 rotateY 从 180° 归零与清盘同帧发生，会闪回一帧满盘旧棋盘。
     if (flipping) return
-    const reduce =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduce) {
       clearBoard()
       return
@@ -262,8 +261,8 @@ export function Gomoku() {
 
   const status = useMemo(() => {
     if (winner === BLACK) return mode === 'pve' ? '🎉 你赢了！（黑棋）' : '⚫ 黑方胜利！'
-    if (winner === WHITE) return mode === 'pve' ? 'AI 获胜（白棋），再来一局？' : '⚪ 白方胜利！'
-    if (mode === 'pve') return thinking ? 'AI 思考中…' : '轮到你落子（黑棋）'
+    if (winner === WHITE) return mode === 'pve' ? 'AI获胜（白棋），再来一局？' : '⚪ 白方胜利！'
+    if (mode === 'pve') return thinking ? 'AI思考中…' : '轮到你落子（黑棋）'
     return turn === BLACK ? '⚫ 黑方落子' : '⚪ 白方落子'
   }, [winner, turn, mode, thinking])
 
@@ -337,44 +336,44 @@ export function Gomoku() {
           {/* 正面：棋盘（格线/星位/落子/连线），翻转后转到背面不可见 */}
           <div className="gomoku-flip__face gomoku-flip__face--front">
             <div className="relative h-full w-full">
-          <BoardGrid />
+              <BoardGrid />
 
-          {/* 交叉点（可点击落子） */}
-          {board.map((row, r) =>
-            row.map((cell, c) => {
-              const isLast = lastMove?.[0] === r && lastMove?.[1] === c
-              const win = isWin(r, c)
-              return (
-                <button
-                  key={`${r}-${c}`}
-                  type="button"
-                  onClick={() => handleCell(r, c)}
-                  disabled={winner !== null}
-                  aria-label={`第 ${r + 1} 行 第 ${c + 1} 列${
-                    cell === BLACK ? ' 黑子' : cell === WHITE ? ' 白子' : ' 空'
-                  }`}
-                  className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8]/50"
-                  style={{
-                    left: `${(c / 14) * 100}%`,
-                    top: `${(r / 14) * 100}%`,
-                    width: `${100 / 15}%`,
-                    height: `${100 / 15}%`,
-                  }}
-                >
-                  {cell !== EMPTY && (
-                    <span
-                      className={cn(
-                        'gomoku-stone',
-                        cell === BLACK ? 'gomoku-stone--black' : 'gomoku-stone--white',
-                        isLast && 'gomoku-stone--last',
-                        win && 'gomoku-stone--win'
+              {/* 交叉点（可点击落子） */}
+              {board.map((row, r) =>
+                row.map((cell, c) => {
+                  const isLast = lastMove?.[0] === r && lastMove?.[1] === c
+                  const win = isWin(r, c)
+                  return (
+                    <button
+                      key={`${r}-${c}`}
+                      type="button"
+                      onClick={() => handleCell(r, c)}
+                      disabled={winner !== null}
+                      aria-label={`第 ${r + 1} 行 第 ${c + 1} 列${
+                        cell === BLACK ? ' 黑子' : cell === WHITE ? ' 白子' : ' 空'
+                      }`}
+                      className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8]/50"
+                      style={{
+                        left: `${(c / 14) * 100}%`,
+                        top: `${(r / 14) * 100}%`,
+                        width: `${100 / 15}%`,
+                        height: `${100 / 15}%`,
+                      }}
+                    >
+                      {cell !== EMPTY && (
+                        <span
+                          className={cn(
+                            'gomoku-stone',
+                            cell === BLACK ? 'gomoku-stone--black' : 'gomoku-stone--white',
+                            isLast && 'gomoku-stone--last',
+                            win && 'gomoku-stone--win'
+                          )}
+                        />
                       )}
-                    />
-                  )}
-                </button>
-              )
-            })
-          )}
+                    </button>
+                  )
+                })
+              )}
             </div>
           </div>
           {/* 背面：同样是棋盘（现实逻辑：棋盘反面也是棋面），翻面后呈现完整格线 */}

@@ -137,7 +137,7 @@ describe('LogStore', () => {
 describe('WsTransport', () => {
   let ring: RingBuffer
   let transport: WsTransport
-  let mockWebSocketInstance: {
+  let mockWebSocketInstance!: {
     onopen: (() => void) | null
     onclose: ((e: Event) => void) | null
     onerror: (() => void) | null
@@ -146,21 +146,28 @@ describe('WsTransport', () => {
     readyState: number
   }
 
+  class MockWebSocket {
+    static CONNECTING = 0
+    static OPEN = 1
+    static CLOSING = 2
+    static CLOSED = 3
+    onopen: (() => void) | null = null
+    onclose: ((e: Event) => void) | null = null
+    onerror: (() => void) | null = null
+    send = vi.fn()
+    close = vi.fn()
+    readyState = 1
+    binaryType = ''
+    static capture(instance: MockWebSocket): void {
+      mockWebSocketInstance = instance
+    }
+    constructor() {
+      MockWebSocket.capture(this)
+    }
+  }
+
   beforeEach(() => {
     ring = new RingBuffer(4096)
-
-    mockWebSocketInstance = {
-      onopen: null,
-      onclose: null,
-      onerror: null,
-      send: vi.fn(),
-      close: vi.fn(),
-      readyState: 1,
-    }
-
-    const MockWebSocket = vi.fn() as ReturnType<typeof vi.fn>
-    MockWebSocket.mockImplementation(() => mockWebSocketInstance)
-    Object.assign(MockWebSocket, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })
 
     vi.stubGlobal('location', { protocol: 'http:', hostname: 'localhost', port: '5180' })
     vi.stubGlobal('WebSocket', MockWebSocket)

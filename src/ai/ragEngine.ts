@@ -128,7 +128,7 @@ const PATTERN_RULES: PatternRule[] = [
     boostSources: ['design.ts'],
   },
   {
-    patterns: [/音乐/, /歌曲/, /编曲/, /midi/, /乐器/],
+    patterns: [/音乐/, /架子鼓/, /证书/, /乐器/],
     boostCategories: ['music'],
     boostSources: ['music.ts'],
   },

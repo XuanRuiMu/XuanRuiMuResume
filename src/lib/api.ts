@@ -15,7 +15,8 @@ export interface AnalyticsStats {
 
 export interface ContactPayload {
   name: string
-  email: string
+  contact: string
+  email?: string
   message: string
   website?: string
 }

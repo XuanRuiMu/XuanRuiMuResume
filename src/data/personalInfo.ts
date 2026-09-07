@@ -6,6 +6,8 @@ export const personalInfo: PersonalInfo = {
   location: '天津',
   phone: '16622370059',
   email: '1319676572@qq.com',
+  qq: '2760688515',
+  wechat: 'XuanRuiMu',
   github: 'https://github.com/XuanRuiMu',
   bilibili: 'https://space.bilibili.com/383504924',
   expectedCityKey: 'data.personalInfo.expectedCity',

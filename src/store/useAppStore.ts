@@ -1,12 +1,12 @@
 import { create } from 'zustand'
 import type { PerformanceMetrics, FrameMetrics, QualityLevel } from '../domain/types'
 import type { UiComponent } from '../ai/structuredOutput'
+import { 读取已选模型ID, 持久化已选模型ID, 默认模型ID } from '../ai/models'
 import { lenisRef } from '../lib/lenisInstance'
 
 export type AppTheme = 'dark' | 'light' | 'system'
 
-export type AppSection =
-  'hero' | 'about' | 'projects' | 'experience' | 'education' | 'design' | 'media' | 'contact'
+export type AppSection = 'hero' | 'about' | 'projects' | 'experience' | 'education' | 'design' | 'media' | 'contact'
 
 export interface AiMessage {
   role: 'user' | 'assistant'
@@ -22,7 +22,10 @@ export interface AppState {
   commandOpen: boolean
   chatOpen: boolean
   aiMessages: AiMessage[]
+  aiModel: string
   aiThinking: boolean
+  /** /clear 前暂存的上一会话（供 /resume 恢复；只保留最近一次） */
+  stashedSession: AiMessage[]
   reducedMotion: boolean
   isOffline: boolean
   updateAvailable: boolean
@@ -40,6 +43,9 @@ export interface AppState {
   setChatOpen: (open: boolean) => void
   addAiMessage: (message: AiMessage) => void
   clearAiMessages: () => void
+  setAiModel: (model: string) => void
+  stashSession: (messages: AiMessage[]) => void
+  restoreSession: (messages: AiMessage[]) => void
   setAiThinking: (enabled: boolean) => void
   setReducedMotion: (enabled: boolean) => void
   setOffline: (offline: boolean) => void
@@ -81,7 +87,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   commandOpen: false,
   chatOpen: false,
   aiMessages: [],
+  aiModel: 读取已选模型ID() || 默认模型ID,
   aiThinking: true,
+  stashedSession: [],
   reducedMotion: false,
   isOffline: false,
   updateAvailable: false,
@@ -99,6 +107,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   setChatOpen: (open) => set({ chatOpen: open }),
   addAiMessage: (message) => set((state) => ({ aiMessages: [...state.aiMessages, message] })),
   clearAiMessages: () => set({ aiMessages: [] }),
+  setAiModel: (model) => {
+    持久化已选模型ID(model)
+    set({ aiModel: model })
+  },
+  stashSession: (messages) => set({ stashedSession: messages }),
+  restoreSession: (messages) => set({ aiMessages: messages }),
   setAiThinking: (enabled) => set({ aiThinking: enabled }),
   setReducedMotion: (enabled) => set({ reducedMotion: enabled }),
   setOffline: (offline) => set({ isOffline: offline }),

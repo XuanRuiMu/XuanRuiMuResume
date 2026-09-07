@@ -10,8 +10,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const 邮箱正则 = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 /** 读取 JSON 文件；不存在或损坏时返回 fallback（dev 数据损坏不应打崩 dev server） */
 export function 读Json(dataDir, file, fallback) {
   try {
@@ -35,16 +33,17 @@ const 留言上限 = 1000
 
 /**
  * 校验留言载荷（与 functions/api/contact.ts 的 zod schema 对齐的最小实现）：
- * name 1-64、合法 email ≤128、message 1-2000、website 必须为空（蜜罐字段）。
- * 返回 null=合法，否则为错误字符串。
+ * name 1-64、联系方式 2-128（邮箱/手机/微信/QQ 均可）、message 1-2000、website 必须为空（蜜罐字段）。
+ * 返回 null=合法，否则为错误字符串。兼容旧字段 email。
  */
 export function 校验留言(body) {
   if (typeof body !== 'object' || body === null) return 'invalid_json'
-  const { name, email, message, website } = body
+  const { name, message, website } = body
+  const 联系方式 = body.contact ?? body.email
   if (typeof name !== 'string' || name.length < 1 || name.length > 64) return 'validation_error:name'
-  if (typeof email !== 'string' || email.length > 128 || !邮箱正则.test(email)) return 'validation_error:email'
-  if (typeof message !== 'string' || message.length < 1 || message.length > 2000)
-    return 'validation_error:message'
+  if (typeof 联系方式 !== 'string' || 联系方式.trim().length < 2 || 联系方式.length > 128)
+    return 'validation_error:contact'
+  if (typeof message !== 'string' || message.length < 1 || message.length > 2000) return 'validation_error:message'
   if (website !== undefined && website !== '' && website !== null) return 'ignored:honeypot'
   return null
 }
@@ -161,7 +160,7 @@ export function createDevDataHandler({ dataDir, log = () => {} }) {
         const 列表 = 读Json(dataDir, 消息文件, [])
         列表.push({
           name: body.name,
-          email: body.email,
+          contact: (body.contact ?? body.email ?? '').trim(),
           message: body.message,
           receivedAt: new Date().toISOString(),
         })
@@ -170,7 +169,7 @@ export function createDevDataHandler({ dataDir, log = () => {} }) {
         }
         写Json(dataDir, 消息文件, 列表)
         log(
-          `[dev-api] 新留言 #${列表.length} 来自 ${body.name} <${body.email}>：${body.message.slice(0, 40)}`
+          `[dev-api] 新留言 #${列表.length} 来自 ${body.name} <${body.contact ?? body.email}>：${body.message.slice(0, 40)}`
         )
         回复(res, 200, { success: true, mode: 'queued' })
         return

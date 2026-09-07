@@ -10,6 +10,9 @@ const mutateAsync = vi.fn()
 const mutationReset = vi.fn()
 const mockCompact = vi.fn()
 const setAiThinking = vi.fn()
+const setAiModel = vi.fn()
+const stashSession = vi.fn()
+const restoreSession = vi.fn()
 
 // jsdom 未内置 Blob objectURL：stub 供预览与泄漏断言使用，afterEach 还原原生实现
 let objectUrlCounter = 0
@@ -67,12 +70,17 @@ function createMockState(overrides: Record<string, unknown> = {}) {
     chatOpen: false,
     setChatOpen,
     aiMessages: mockAiMessages,
+    aiModel: 'deepseek-v4-flash-vision-exp',
     aiThinking: true,
+    stashedSession: [],
     addAiMessage: vi.fn((message) => {
       mockAiMessages.push(message)
       notifyMockState()
     }),
     clearAiMessages,
+    setAiModel,
+    stashSession,
+    restoreSession,
     setAiThinking,
     ...overrides,
   }
@@ -525,6 +533,92 @@ describe('AIChat', () => {
 
     expect(screen.getByText(/\/clear\s*清空对话历史，开始新会话/)).toBeInTheDocument()
     expect(screen.getByText(/\/compact\s*压缩对话历史，保留语义/)).toBeInTheDocument()
+    expect(screen.getByText(/\/model\s*查看或切换模型/)).toBeInTheDocument()
+    expect(screen.getByText(/\/resume\s*恢复上一次清空前的会话/)).toBeInTheDocument()
+  })
+
+  it('/model 无参数列出可用模型', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(screen.getByText(t('ai.commands.modelHeader'))).toBeInTheDocument()
+    expect(screen.getByText(/glm-4\.7-flash/)).toBeInTheDocument()
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('/model glm-4.7-flash 切换模型', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '/model glm-4.7-flash' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(setAiModel).toHaveBeenCalledWith('glm-4.7-flash')
+    expect(screen.getByText(/已切换模型：glm-4\.7-flash/)).toBeInTheDocument()
+  })
+
+  it('/model 未知模型报错且不切换', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '/model 不存在的模型' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(setAiModel).not.toHaveBeenCalled()
+    expect(screen.getByText(/未知模型：/)).toBeInTheDocument()
+  })
+
+  it('/resume 无暂存时提示且不恢复', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, stashedSession: [] }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '/resume' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(restoreSession).not.toHaveBeenCalled()
+    expect(screen.getByText(t('ai.commands.resumeEmpty'))).toBeInTheDocument()
+  })
+
+  it('/resume 恢复上一次清空前的会话', () => {
+    const 暂存 = [{ role: 'user', content: '旧会话' }]
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, stashedSession: 暂存 }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '/resume' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(restoreSession).toHaveBeenCalledWith(暂存)
+    expect(screen.getByText(t('ai.commands.resumeRestored'))).toBeInTheDocument()
+  })
+
+  it('发送在途时渲染会话视图而非主页（根因回归）', () => {
+    mockRuntime.isPending = true
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, aiMessages: [] }))
+    )
+
+    render(<AIChat />)
+
+    expect(screen.queryByText(t('ai.empty'))).not.toBeInTheDocument()
+    expect(screen.getByText(t('ai.thinking'))).toBeInTheDocument()
   })
 
   it('未知指令给出 Claude Code 风格的报错', () => {

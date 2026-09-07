@@ -47,9 +47,10 @@ describe('ShowcaseSection（12-next-spline-3d HeroParallax 移植）', () => {
 
   it('ports the neon gradient border design on every card', () => {
     render(<ShowcaseSection />)
-    // 30 张 = 15 逻辑卡 × 2 份 marquee 轨道
+    // 逻辑卡总数 × 2份marquee轨道（数据驱动，随showcaseRows扩展自动同步）
+    const expected = showcaseRows.reduce((n, r) => n + r.cards.length, 0) * 2
     const cards = document.querySelectorAll('.group\\/card')
-    expect(cards).toHaveLength(30)
+    expect(cards).toHaveLength(expected)
     for (const card of cards) {
       const border = card.querySelector('.bg-gradient-to-r') as HTMLElement
       expect(border).not.toBeNull()
@@ -86,9 +87,10 @@ describe('ShowcaseSection（12-next-spline-3d HeroParallax 移植）', () => {
     })) as unknown as typeof window.matchMedia
 
     render(<ShowcaseSection />)
-    // 30 张 = 15 逻辑卡 × 2 份 marquee 轨道（reduced-motion 下静止但仍渲染两份）
+    // 逻辑卡总数 × 2份marquee轨道（reduced-motion下静止但仍渲染两份，数据驱动）
+    const expected = showcaseRows.reduce((n, r) => n + r.cards.length, 0) * 2
     const cards = document.querySelectorAll('.group\\/card')
-    expect(cards).toHaveLength(30)
+    expect(cards).toHaveLength(expected)
     for (const card of cards) {
       const el = card as HTMLElement
       // 减少动效时不应注入 transform 行内样式（仅保留 drift 动画所需的 CSS 变量）
@@ -101,6 +103,106 @@ describe('ShowcaseSection（12-next-spline-3d HeroParallax 移植）', () => {
     for (const row of showcaseRows) {
       const anchor = document.getElementById(row.anchorId)
       expect(anchor).not.toBeNull()
+    }
+  })
+})
+
+describe('FP-06探索板块重构：8视频与开源仓库可达', () => {
+  const 视频映射: Array<{ id: string; titleKey: Parameters<typeof t>[0]; href: string }> = [
+    { id: 'coding', titleKey: 'showcase.cards.coding.title', href: 'https://www.bilibili.com/video/BV11r421j7UV' },
+    { id: 'systems', titleKey: 'showcase.cards.systems.title', href: 'https://www.bilibili.com/video/BV1x36HYjEoA' },
+    { id: 'lowlevel', titleKey: 'showcase.cards.lowlevel.title', href: 'https://www.bilibili.com/video/BV1Cw4m1R7SN' },
+    { id: 'teaching', titleKey: 'showcase.cards.teaching.title', href: 'https://www.bilibili.com/video/BV1UYGy6rEmj' },
+    { id: 'assembly', titleKey: 'showcase.cards.assembly.title', href: 'https://www.bilibili.com/video/BV1ghmfYCELF' },
+    { id: 'arch', titleKey: 'showcase.cards.arch.title', href: 'https://www.bilibili.com/video/BV12TVfzfEVu' },
+    { id: 'marx', titleKey: 'showcase.cards.marx.title', href: 'https://www.bilibili.com/video/BV11m421K7vq' },
+    { id: 'comedy', titleKey: 'showcase.cards.comedy.title', href: 'https://www.bilibili.com/video/BV1vkDGY8Eyw' },
+  ]
+
+  const 仓库映射: Array<{ id: string; titleKey: Parameters<typeof t>[0]; href: string; 仓库名?: string }> = [
+    {
+      id: 'resumeTheater',
+      titleKey: 'showcase.cards.resumeTheater.title',
+      href: 'https://github.com/XuanRuiMu/XuanRuiMuResume',
+    },
+    {
+      id: 'repoLoop',
+      titleKey: 'showcase.cards.repoLoop.title',
+      href: 'https://github.com/XuanRuiMu/loop-engineering',
+      仓库名: 'loop-engineering',
+    },
+    {
+      id: 'repoLove',
+      titleKey: 'showcase.cards.repoLove.title',
+      href: 'https://github.com/XuanRuiMu/HeWoLianAiBa',
+      仓库名: 'HeWoLianAiBa',
+    },
+    {
+      id: 'repoData',
+      titleKey: 'showcase.cards.repoData.title',
+      href: 'https://github.com/XuanRuiMu/LianAiBaDataCenter',
+      仓库名: 'LianAiBaDataCenter',
+    },
+  ]
+
+  it('8个B站视频一一对应可跳转且外链新开', () => {
+    render(<ShowcaseSection />)
+    expect(视频映射).toHaveLength(8)
+    for (const 视频 of 视频映射) {
+      const escapedTitle = t(视频.titleKey).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const links = screen.getAllByRole('link', { name: new RegExp(escapedTitle) })
+      expect(links.length).toBeGreaterThanOrEqual(1)
+      for (const link of links) {
+        expect(link).toHaveAttribute('href', 视频.href)
+        expect(link).toHaveAttribute('target', '_blank')
+        const rel = link.getAttribute('rel') ?? ''
+        expect(rel).toContain('noopener')
+        expect(rel).toContain('noreferrer')
+      }
+    }
+  })
+
+  it('数据源中8视频href与卡片一一对应', () => {
+    const href卡片 = showcaseRows
+      .flatMap((row) => row.cards)
+      .filter((card) => card.href?.includes('bilibili.com/video/BV'))
+    expect(href卡片).toHaveLength(8)
+    expect(new Set(href卡片.map((card) => card.href)).size).toBe(8)
+  })
+
+  it('GitHub仓库板块有源且外链新开', () => {
+    render(<ShowcaseSection />)
+    for (const 仓库 of 仓库映射) {
+      if (仓库.仓库名 !== undefined) expect(t(仓库.titleKey)).toContain(仓库.仓库名)
+      const escapedTitle = t(仓库.titleKey).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const links = screen.getAllByRole('link', { name: new RegExp(escapedTitle) })
+      expect(links.length).toBeGreaterThanOrEqual(1)
+      for (const link of links) {
+        expect(link).toHaveAttribute('href', 仓库.href)
+        expect(link).toHaveAttribute('target', '_blank')
+        const rel = link.getAttribute('rel') ?? ''
+        expect(rel).toContain('noopener')
+        expect(rel).toContain('noreferrer')
+      }
+    }
+  })
+
+  it('展示区所有外链统一新开并带安全rel', () => {
+    render(<ShowcaseSection />)
+    const links = screen.getAllByRole('link')
+    expect(links.length).toBeGreaterThanOrEqual(1)
+    for (const link of links) {
+      expect(link).toHaveAttribute('target', '_blank')
+      const rel = link.getAttribute('rel') ?? ''
+      expect(rel).toContain('noopener')
+      expect(rel).toContain('noreferrer')
+    }
+  })
+
+  it('保留教育/设计/媒体锚点并新增开源锚点', () => {
+    render(<ShowcaseSection />)
+    for (const id of ['education', 'design', 'media', 'opensource']) {
+      expect(document.getElementById(id)).not.toBeNull()
     }
   })
 })
@@ -271,7 +373,8 @@ describe('跑马灯布局不变量测量', () => {
   it('按布局宽度计算副本数', async () => {
     render(<ShowcaseSection />)
     await waitFor(() => {
-      expect(document.querySelectorAll('.group\\/card')).toHaveLength(75)
+      const expected = showcaseRows.reduce((n, r) => n + r.cards.length, 0) * 5
+      expect(document.querySelectorAll('.group\\/card')).toHaveLength(expected)
     })
   })
 })

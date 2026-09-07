@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/useAppStore'
 import { cn } from '../../lib/utils'
 import { t, ta } from '../../i18n/translations'
 import { useChatService, compactConversation, 是否中断错误 } from '../../ai/chatService'
-import { DEEPSEEK_MODEL } from '../../ai/deepseekConfig'
+import { 模型列表 } from '../../ai/models'
 import { UiComponentRenderer } from './UiComponentRegistry'
 import type { AiMessage } from '../../store/useAppStore'
 
@@ -88,6 +88,11 @@ export function AIChat({ className }: AIChatProps) {
   const aiMessages = useAppStore((state) => state.aiMessages)
   const addAiMessage = useAppStore((state) => state.addAiMessage)
   const clearAiMessages = useAppStore((state) => state.clearAiMessages)
+  const aiModel = useAppStore((state) => state.aiModel)
+  const setAiModel = useAppStore((state) => state.setAiModel)
+  const stashedSession = useAppStore((state) => state.stashedSession)
+  const stashSession = useAppStore((state) => state.stashSession)
+  const restoreSession = useAppStore((state) => state.restoreSession)
 
   const [input, setInput] = useState('')
   const [sendError, setSendError] = useState<string | null>(null)
@@ -127,6 +132,15 @@ export function AIChat({ className }: AIChatProps) {
   useEffect(() => {
     aiMessagesRef.current = aiMessages
   }, [aiMessages])
+  // 指令闭包同理：/status /model /resume 读到的模型与暂存会话必须是最新值。
+  const aiModelRef = useRef(aiModel)
+  useEffect(() => {
+    aiModelRef.current = aiModel
+  }, [aiModel])
+  const stashedSessionRef = useRef(stashedSession)
+  useEffect(() => {
+    stashedSessionRef.current = stashedSession
+  }, [stashedSession])
 
   const [optimisticMessages, addOptimisticMessage] = useOptimistic<AiMessage[], AiMessage>(
     aiMessages,
@@ -188,20 +202,29 @@ export function AIChat({ className }: AIChatProps) {
     })
   }, [isPending, compacting, queued, sendMessage])
 
-  /** 指令分发（对齐 Claude Code 语义）：/clear 新会话、/compact 语义压缩、/think /help /status、未知指令报错 */
+  /** 指令分发（对齐 Claude Code 语义）：/clear 新会话、/resume 恢复、/model 切换、/compact 语义压缩、/think /help /status、未知指令报错 */
   const runCommand = useCallback(
     async (raw: string) => {
-      const cmd = raw.split(/\s+/)[0].toLowerCase()
+      const parts = raw.split(/\s+/)
+      const cmd = parts[0].toLowerCase()
+      const arg = parts.slice(1).join(' ').trim().toLowerCase()
+      const stashCurrentSession = () => {
+        if (aiMessagesRef.current.length > 0) {
+          stashSession([...aiMessagesRef.current])
+        }
+      }
       switch (cmd) {
         case '/help':
           setSystemLines(t('ai.commands.help').split('\n'))
           break
         case '/clear':
         case '/new': {
-          // Claude Code 的 /clear：清全部历史开新会话（不可恢复）。/new 为兼容别名。
+          // /clear：清全部历史开新会话。/new 为兼容别名。
           // 先自增代数再 abort：异步到达的中断拒绝会被代数校验丢弃，不污染新会话。
+          // 清空前暂存，供 /resume 恢复。
           generationRef.current += 1
           abortRef.current?.abort()
+          stashCurrentSession()
           clearAiMessages()
           chatMutation.reset()
           setQueued([])
@@ -215,12 +238,48 @@ export function AIChat({ className }: AIChatProps) {
         }
         case '/status': {
           const 历史数 = aiMessagesRef.current.length
+          const 当前模型 = 模型列表().find((模型) => 模型.id === aiModelRef.current)?.id ?? aiModelRef.current
           setSystemLines([
-            `${t('ai.commands.statusModel')}：${DEEPSEEK_MODEL}`,
+            `${t('ai.commands.statusModel')}：${当前模型}`,
             `${t('ai.commands.statusThinking')}：${aiThinking ? 'on' : 'off'}`,
             `${t('ai.commands.statusMessages')}：${历史数}`,
-            `${t('ai.commands.statusContext')}：1M`,
+            `${t('ai.commands.statusContext')}：${模型列表().find((模型) => 模型.id === aiModelRef.current)?.contextLabel ?? '—'}`,
           ])
+          break
+        }
+        case '/model': {
+          const 列表 = 模型列表()
+          if (!arg) {
+            setSystemLines([
+              t('ai.commands.modelHeader'),
+              ...列表.map(
+                (模型, index) =>
+                  `  ${index + 1}. ${模型.id}${模型.id === aiModelRef.current ? t('ai.commands.modelCurrent') : ''}`
+              ),
+              t('ai.commands.modelHint'),
+            ])
+            break
+          }
+          const 目标 = 列表.find((模型, index) => 模型.id.toLowerCase() === arg || String(index + 1) === arg)
+          if (!目标) {
+            setSystemLines([`${t('ai.commands.modelUnknownPrefix')}${arg}${t('ai.commands.unknownSuffix')}`])
+            break
+          }
+          setAiModel(目标.id)
+          setSystemLines([`${t('ai.commands.modelSwitchedPrefix')}${目标.id}`])
+          break
+        }
+        case '/resume': {
+          if (stashedSessionRef.current.length === 0) {
+            setSystemLines([t('ai.commands.resumeEmpty')])
+            break
+          }
+          generationRef.current += 1
+          abortRef.current?.abort()
+          restoreSession([...stashedSessionRef.current])
+          chatMutation.reset()
+          setQueued([])
+          setSystemLines([t('ai.commands.resumeRestored')])
           break
         }
         case '/think': {
@@ -266,7 +325,18 @@ export function AIChat({ className }: AIChatProps) {
           setSystemLines([`${t('ai.commands.unknownPrefix')}${cmd}${t('ai.commands.unknownSuffix')}`])
       }
     },
-    [aiThinking, isPending, compacting, clearAiMessages, addAiMessage, chatMutation, setAiThinking]
+    [
+      aiThinking,
+      isPending,
+      compacting,
+      clearAiMessages,
+      addAiMessage,
+      chatMutation,
+      setAiThinking,
+      setAiModel,
+      stashSession,
+      restoreSession,
+    ]
   )
 
   /** 输入提交统一入口：指令分流；忙时排队；空闲时发送。仅合格图随消息发出；待发区（含失败图）消费后整体清空 */
@@ -375,6 +445,9 @@ export function AIChat({ className }: AIChatProps) {
   const handleReset = useCallback(() => {
     generationRef.current += 1
     abortRef.current?.abort()
+    if (aiMessagesRef.current.length > 0) {
+      stashSession([...aiMessagesRef.current])
+    }
     clearAiMessages()
     chatMutation.reset()
     setInput('')
@@ -385,7 +458,7 @@ export function AIChat({ className }: AIChatProps) {
     for (const 图片 of pendingImagesRef.current) URL.revokeObjectURL(图片.previewUrl)
     setPendingImages([])
     setLightboxSrc(null)
-  }, [clearAiMessages, chatMutation])
+  }, [clearAiMessages, chatMutation, stashSession])
 
   // 卸载兜底：释放所有未消费的预览 objectURL，防内存泄漏（发送/移除路径已各自释放）
   useEffect(() => {
@@ -422,6 +495,12 @@ export function AIChat({ className }: AIChatProps) {
     },
     [setChatOpen, isPending, compacting]
   )
+
+  // 会话判定（根因）：只要存在任何会话痕迹（消息/指令输出/排队/在途请求）就渲染会话视图，
+  // 仅完全空白且空闲时展示主页。修复"发送中仍停留主页"——此前仅凭消息数判定，
+  // 首条消息在途、optimistic 尚未落定时仍命中主页分支，连思考指示器一并被吞掉。
+  const 有会话 = optimisticMessages.length > 0 || systemLines.length > 0 || queued.length > 0 || isPending || compacting
+  const 当前模型定义 = 模型列表().find((模型) => 模型.id === aiModel)
 
   if (!chatOpen) {
     return (
@@ -486,29 +565,7 @@ export function AIChat({ className }: AIChatProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3 scrollbar-thin">
-        {optimisticMessages.length === 0 && systemLines.length === 0 ? (
-          <div className="flex h-full flex-col justify-center gap-2 text-[13px]">
-            <p className="text-[#d97757]">
-              <span aria-hidden="true">✻ </span>
-              {t('ai.empty')}
-            </p>
-            <p className="text-xs text-[#9aa0aa]">我可以回答关于玄锐暮简历、技术栈与项目的问题。</p>
-            <p className="text-[11px] text-[#666]">{t('ai.emptyCommands')}</p>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {ta('ai.quickQuestions').map((question) => (
-                <button
-                  key={question}
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => handleQuickQuestion(question)}
-                  className="rounded-full border border-[#2a2a2a] bg-[#161616] px-3 py-1 text-xs text-[#cfcfcf] transition-colors hover:border-[#d97757] hover:text-[#f0f0f0] disabled:opacity-50"
-                >
-                  {question}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
+        {有会话 ? (
           <div className="flex flex-col gap-3">
             {optimisticMessages.map((message, index) =>
               message.role === 'user' ? (
@@ -566,6 +623,28 @@ export function AIChat({ className }: AIChatProps) {
               </div>
             )}
             <div ref={messagesEndRef} />
+          </div>
+        ) : (
+          <div className="flex h-full flex-col justify-center gap-2 text-[13px]">
+            <p className="text-[#d97757]">
+              <span aria-hidden="true">✻ </span>
+              {t('ai.empty')}
+            </p>
+            <p className="text-xs text-[#9aa0aa]">我可以回答关于玄锐暮简历、技术栈与项目的问题。</p>
+            <p className="text-[11px] text-[#666]">{t('ai.emptyCommands')}</p>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {ta('ai.quickQuestions').map((question) => (
+                <button
+                  key={question}
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => handleQuickQuestion(question)}
+                  className="rounded-full border border-[#2a2a2a] bg-[#161616] px-3 py-1 text-xs text-[#cfcfcf] transition-colors hover:border-[#d97757] hover:text-[#f0f0f0] disabled:opacity-50"
+                >
+                  {question}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -683,10 +762,15 @@ export function AIChat({ className }: AIChatProps) {
         </div>
         <div className="mt-1.5 flex items-center justify-between text-[10px] text-[#666]">
           <span>{isPending || compacting ? t('ai.busyHint') : t('ai.idleHint')}</span>
-          <span className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => submitInput('/model')}
+            title={t('ai.commands.modelHint')}
+            className="flex items-center gap-1 rounded transition-colors hover:text-[#d97757]"
+          >
             <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" aria-hidden="true" />
-            {`${DEEPSEEK_MODEL} · ${aiThinking ? 'think on' : 'think off'} · CTX 1M`}
-          </span>
+            {`${aiModel} · ${aiThinking ? 'think on' : 'think off'}${当前模型定义?.contextLabel ? ` · ${当前模型定义.contextLabel}` : ''}`}
+          </button>
         </div>
       </form>
 

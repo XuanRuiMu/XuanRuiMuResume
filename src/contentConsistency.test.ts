@@ -20,8 +20,8 @@ const 知识库文本 = buildResumeKnowledgeBase()
 describe('FP-02内容一致性回归', () => {
   it('群人数多处一致为200人+', () => {
     expect(t('showcase.cards.teaching.desc')).toContain('200人+')
-    expect(t('data.experience.entries.teacher.description')).toContain('200人+')
-    expect(t('data.experience.entries.teacher.achievement3')).toContain('200人+')
+    expect(t('data.experience.entries.educator.description')).toContain('200人+')
+    expect(t('data.experience.entries.educator.achievement3')).toContain('200人+')
   })
 
   it('翻译文本与知识库无旧事实残留', () => {
@@ -48,7 +48,6 @@ describe('FP-02内容一致性回归', () => {
       t('data.music.tracks.escape.desc'),
       t('showcase.cards.escape.title'),
       t('showcase.cards.escape.desc'),
-      t('data.experience.entries.multimedia.achievement1'),
       t('data.radar.dimensions.musicCreation.description'),
     ].join('\n')
     expect(音乐文本).toContain('架子鼓九级证书')

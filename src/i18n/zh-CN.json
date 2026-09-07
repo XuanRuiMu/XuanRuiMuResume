@@ -135,7 +135,7 @@
   },
   "contact": {
     "title": "联系我",
-    "subtitle": "有岗位、合作或想聊技术，发邮件就好，看到会回。",
+    "subtitle": "有岗位、合作或想聊技术，加QQ微信、发邮件都行，看到会回。",
     "copyEmail": "",
     "stillSure": {
       "title": "如果你仍有所顾虑，不如先来把五子棋放松一下"
@@ -144,11 +144,19 @@
       "email": "邮箱",
       "phone": "电话",
       "github": "GitHub",
-      "bilibili": "B站"
+      "bilibili": "B站",
+      "qq": "QQ",
+      "wechat": "微信"
+    },
+    "qr": {
+      "qqAlt": "QQ二维码",
+      "wechatAlt": "微信二维码",
+      "qqHint": "扫码加QQ就行",
+      "wechatHint": "扫码加微信就行"
     },
     "form": {
       "name": "你的名字",
-      "email": "你的邮箱",
+      "contact": "你的联系方式",
       "message": "留言内容",
       "submit": "发送留言",
       "sending": "发送中...",
@@ -157,8 +165,8 @@
     },
     "validation": {
       "nameRequired": "请输入姓名",
-      "emailRequired": "请输入邮箱",
-      "emailInvalid": "邮箱格式不正确",
+      "contactRequired": "请输入联系方式",
+      "contactInvalid": "联系方式至少2个字符",
       "messageRequired": "请输入留言内容",
       "messageMin": "留言至少10个字符",
       "messageMax": "留言最多500个字符"
@@ -169,7 +177,8 @@
     "subtitle": "实际做过并上线的项目，从游戏服务端到AI小工具。",
     "link": {
       "github": "GitHub",
-      "demo": "演示"
+      "demo": "演示",
+      "bilibili": "B站视频"
     },
     "wind": {
       "title": "便签力度设置",
@@ -190,7 +199,8 @@
     "rows": {
       "education": "教育背景",
       "design": "设计",
-      "media": "多媒体创作"
+      "media": "多媒体创作",
+      "opensource": "开源仓库"
     },
     "cards": {
       "degree": {
@@ -212,6 +222,18 @@
       "teaching": {
         "title": "教学成果",
         "desc": "线下小班课计算机培训 · 50+毕业生论文陪跑 · 200人+学习群"
+      },
+      "assembly": {
+        "title": "汇编语言",
+        "desc": "寄存器与指令 · 从最底层看懂程序运行"
+      },
+      "arch": {
+        "title": "计算机组成原理",
+        "desc": "硬件是怎么跑的 · 拆开电脑看懂底层逻辑"
+      },
+      "marx": {
+        "title": "马原串讲",
+        "desc": "大白话拆解原理 · 复习备考搭框架"
       },
       "resumeTheater": {
         "title": "简历3D剧场",
@@ -252,6 +274,18 @@
       "escape": {
         "title": "架子鼓九级证书",
         "desc": "曾考取架子鼓九级证书（未创作过歌曲等）"
+      },
+      "repoLoop": {
+        "title": "循环工程loop-engineering",
+        "desc": "普通模型多角色协作 · 花更多token换顶级质量"
+      },
+      "repoLove": {
+        "title": "和我恋爱吧HeWoLianAiBa",
+        "desc": "AI恋爱聊天应用 · Vue3+Node.js+PostgreSQL"
+      },
+      "repoData": {
+        "title": "恋爱吧数据中心LianAiBaDataCenter",
+        "desc": "运营数据同步聚合 · Java+Python双栈"
       }
     }
   },
@@ -360,9 +394,16 @@
       "hint": "当前回复结束后依次发送 · esc可中断当前回复"
     },
     "commands": {
-      "help": "可用指令（对齐Claude Code）：\n  /clear清空对话历史，开始新会话\n  /new/clear的别名\n  /compact压缩对话历史，保留语义\n  /think切换思考模式\n  /status查看面板状态\n  /help查看指令列表",
+      "help": "可用指令：\n  /clear清空对话历史，开始新会话\n  /new/clear的别名\n  /resume恢复上一次清空前的会话\n  /model查看或切换模型\n  /compact压缩对话历史，保留语义\n  /think切换思考模式\n  /status查看面板状态\n  /help查看指令列表",
       "unknownPrefix": "未知指令：",
       "unknownSuffix": "。输入/help查看可用指令",
+      "modelHeader": "可用模型：",
+      "modelCurrent": "（当前）",
+      "modelHint": "输入/model<序号或模型名>切换",
+      "modelSwitchedPrefix": "已切换模型：",
+      "modelUnknownPrefix": "未知模型：",
+      "resumeRestored": "已恢复上一次清空前的会话",
+      "resumeEmpty": "没有可恢复的上一次会话",
       "compacting": "✻正在压缩对话…",
       "compacted": "✻已压缩对话历史，语义保留",
       "compactFailed": "✗ 压缩失败，历史未变",
@@ -416,11 +457,11 @@
       },
       "aiConsole": {
         "name": "AI总控制台",
-        "desc": "用Python写的AI工具管理台，2600+行代码，能批量拉仓库、管多家API Key、定时更新数据源，也拿来做MCP测试。",
-        "tags": ["Python", "Git自动化", "MCP", "API集成"],
+        "desc": "定个目标，它就自动拆步骤、自己干活、自己检查，直到做完为止。",
+        "tags": ["自动拆解", "自动执行", "自动检查"],
         "metrics": {
-          "lines": "2681行Python",
-          "sources": "8源数据更新"
+          "lines": "自动拆步骤",
+          "sources": "做完才停"
         }
       },
       "analytics": {
@@ -576,41 +617,59 @@
     },
     "experience": {
       "entries": {
-        "xrm": {
-          "title": "独立开发者 · 暮澜纪元MMORPG",
-          "organization": "个人项目",
-          "period": "2022 - 至今",
-          "description": "一个人做暮澜纪元服务端，从一个插件写到400多个类，搭出8世界32职业的MMORPG框架。",
-          "achievement1": "主导战斗、属性、天赋、任务等核心模块从0到1",
-          "achievement2": "设计8世界32职业框架，热更新逻辑不重启服务端",
-          "achievement3": "HikariCP连接池+缓存批量写入，登录加载/退出保存数据不丢"
+        "mcserver": {
+          "title": "服主 · Minecraft《燃烧之陨》多元生存服",
+          "organization": "独立运营",
+          "period": "2019.07至今",
+          "description": "从2019年起独立运营《燃烧之陨》多元生存服与粘液科技服：多元服190+插件、粘液服80+科技附属，10+世界与副本长期在线。",
+          "achievement1": "Purpur1.21.11核心+AuthMe登录+基岩互通，Java版与基岩版同服游玩",
+          "achievement2": "粘液科技配40+扩展附属，科技线从入门烧炉一路玩到终局",
+          "achievement3": "累计超100名玩家到访，QQ群日常答疑，配套群机器人自动推送开服公告"
         },
-        "lovewithme": {
-          "title": "独立开发者 · 和我恋爱吧",
-          "organization": "个人项目（已上线）",
-          "period": "2026.07 - 至今",
-          "description": "从零开发并部署AI恋爱聊天全栈应用：TypeScript+Express后端、PostgreSQL+Redis、Socket.io实时对话、DeepSeek AI接入。",
-          "achievement1": "docker-compose编排6个服务上线，Nginx反代+Let's Encrypt HTTPS自动续期",
-          "achievement2": "JWT鉴权+阿里云短信验证码+接口限流+审计日志，敏感配置全走环境变量注入",
-          "achievement3": "接入OpenTelemetry链路追踪与Prometheus指标，异常自动SMTP告警"
+        "bachelor": {
+          "title": "本科毕业 · 计算机科学与技术",
+          "organization": "天津仁爱学院",
+          "period": "2022.09—2026.06",
+          "description": "天津仁爱学院计算机科学与技术本科，2022.09入学、2026.06顺利毕业。",
+          "achievement1": "系统学完编程与计算机基础课，Python/C语言/MySQL都能写",
+          "achievement2": "按期修完培养方案全部环节，顺利毕业",
+          "achievement3": "在校期间持续运营游戏服并上线AI全栈应用，学与做互相带动"
         },
-        "teacher": {
+        "educator": {
           "title": "教育内容创作者",
-          "organization": "B站/QQ学习群",
-          "period": "2022 - 至今",
-          "description": "录了10多门计算机课，帮50多位毕业生改论文，QQ学习群现在200人+。",
-          "achievement1": "录制10+门计算机课程，覆盖零基础到进阶实战",
-          "achievement2": "一对一指导50+毕业生走完选题到答辩全流程",
+          "organization": "B站/线下小班课",
+          "period": "2024.03.16—2026.06",
+          "description": "线上在B站录课、维护200人+QQ学习交流群；线下带Python基础与计算机基础小班课，做毕业论文指导。",
+          "achievement1": "录制10+门计算机课程，覆盖零基础到进阶",
+          "achievement2": "一对一指导50+毕业生走完选题到答辩，WPS/Microsoft Word排版逐节调格式",
           "achievement3": "维护200人+学习群，沉淀系统化复习资料库"
         },
-        "multimedia": {
-          "title": "多媒体创作者",
-          "organization": "个人创作",
-          "period": "2022 - 至今",
-          "description": "写暮澜纪元的小说和编年史，也剪技术教程视频。",
-          "achievement1": "曾考取架子鼓九级证书（未创作过歌曲等）",
-          "achievement2": "撰写暮澜纪元小说与编年史，搭建完整世界观",
-          "achievement3": "剪辑技术教程视频，单条最高播放量破万"
+        "wowguild": {
+          "title": "会长 · 燃烧之陨公会",
+          "organization": "魔兽世界",
+          "period": "2024.08.13至今",
+          "description": "2024年创办魔兽世界燃烧之陨公会，带团征战各版本BOSS，开荒实况同步发B站。",
+          "achievement1": "各版本BOSS持续开荒，实况录像全公开",
+          "achievement2": "一人创办并带团，团队从零搭到稳定开荒",
+          "achievement3": "与Minecraft《燃烧之陨》服同名，游戏社群双线运营"
+        },
+        "aiengineer": {
+          "title": "AI应用工程师",
+          "organization": "LLM应用开发",
+          "period": "2024.09至今",
+          "description": "深度使用海螺AI/CodeGeex/DeepSeek/GLM-5.3-Flash/GPT-5.6/Muse Spark 1.3等LLM做开发提效。",
+          "achievement1": "熟练使用Claude Code/Codex等AI编程助手完成功能开发",
+          "achievement2": "熟练使用WorkBuddy/TraeWork等AI原生开发环境，Git版本控制与协同开发",
+          "achievement3": "沉淀85+自定义Skill，多Agent协作与MCP协议均有落地"
+        },
+        "indie": {
+          "title": "独立开发者 · 和我恋爱吧",
+          "organization": "个人项目（已上线）",
+          "period": "2026.05.10至今",
+          "description": "用户打开网页就能与AI角色实时聊天，注册登录后聊天记录长期保留。",
+          "achievement1": "docker-compose编排6服务上线，Nginx反代+HTTPS自动续期",
+          "achievement2": "JWT鉴权+短信验证码+接口限流，敏感配置全走环境变量",
+          "achievement3": "OpenTelemetry链路追踪+Prometheus指标，异常自动告警"
         }
       }
     },

@@ -2,12 +2,17 @@ import { z } from 'zod'
 import type { FunctionContext } from '../types'
 import { anonymizeIP, getClientIP } from '../lib/ip'
 
-const contactSchema = z.object({
-  name: z.string().min(1).max(64),
-  email: z.string().email().max(128),
-  message: z.string().min(1).max(2000),
-  website: z.string().max(64).optional(),
-})
+const contactSchema = z
+  .object({
+    name: z.string().min(1).max(64),
+    contact: z.string().min(2).max(128).optional(),
+    email: z.string().max(128).optional(),
+    message: z.string().min(1).max(2000),
+    website: z.string().max(64).optional(),
+  })
+  .refine((data) => (data.contact && data.contact.trim().length >= 2) || (data.email && data.email.trim().length > 0), {
+    message: 'contact_required',
+  })
 
 const RATE_LIMIT_PREFIX = 'contact:ratelimit:'
 const MESSAGE_PREFIX = 'contact:message:'
@@ -19,8 +24,8 @@ function createMessageKey(timestamp: number): string {
   return `${MESSAGE_PREFIX}${timestamp}:${random}`
 }
 
-function createEmailBody(name: string, email: string, message: string): string {
-  return `来自 ${name} <${email}> 的留言\n\n${message}`
+function createEmailBody(name: string, contact: string, message: string): string {
+  return `来自 ${name} <${contact}> 的留言\n\n${message}`
 }
 
 async function sendWithResend(
@@ -28,7 +33,7 @@ async function sendWithResend(
   from: string,
   to: string,
   name: string,
-  email: string,
+  contact: string,
   message: string
 ): Promise<boolean> {
   const response = await fetch('https://api.resend.com/emails', {
@@ -41,7 +46,7 @@ async function sendWithResend(
       from,
       to,
       subject: `新留言来自 ${name}`,
-      text: createEmailBody(name, email, message),
+      text: createEmailBody(name, contact, message),
     }),
   })
   return response.ok
@@ -52,7 +57,7 @@ async function sendWithSendGrid(
   from: string,
   to: string,
   name: string,
-  email: string,
+  contact: string,
   message: string
 ): Promise<boolean> {
   const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
@@ -65,7 +70,7 @@ async function sendWithSendGrid(
       personalizations: [{ to: [{ email: to }] }],
       from: { email: from },
       subject: `新留言来自 ${name}`,
-      content: [{ type: 'text/plain', value: createEmailBody(name, email, message) }],
+      content: [{ type: 'text/plain', value: createEmailBody(name, contact, message) }],
     }),
   })
   return response.ok
@@ -74,7 +79,7 @@ async function sendWithSendGrid(
 async function trySendEmail(
   env: FunctionContext['env'],
   name: string,
-  email: string,
+  contact: string,
   message: string
 ): Promise<boolean> {
   const provider = env.CONTACT_PROVIDER
@@ -86,19 +91,19 @@ async function trySendEmail(
   }
 
   if (provider === 'resend' && env.RESEND_API_KEY) {
-    return sendWithResend(env.RESEND_API_KEY, from, to, name, email, message)
+    return sendWithResend(env.RESEND_API_KEY, from, to, name, contact, message)
   }
 
   if (provider === 'sendgrid' && env.SENDGRID_API_KEY) {
-    return sendWithSendGrid(env.SENDGRID_API_KEY, from, to, name, email, message)
+    return sendWithSendGrid(env.SENDGRID_API_KEY, from, to, name, contact, message)
   }
 
   if (env.RESEND_API_KEY) {
-    return sendWithResend(env.RESEND_API_KEY, from, to, name, email, message)
+    return sendWithResend(env.RESEND_API_KEY, from, to, name, contact, message)
   }
 
   if (env.SENDGRID_API_KEY) {
-    return sendWithSendGrid(env.SENDGRID_API_KEY, from, to, name, email, message)
+    return sendWithSendGrid(env.SENDGRID_API_KEY, from, to, name, contact, message)
   }
 
   return false
@@ -146,7 +151,8 @@ export async function onRequestPost(context: FunctionContext): Promise<Response>
     )
   }
 
-  const { name, email, message, website } = parseResult.data
+  const { name, message, website } = parseResult.data
+  const contact = (parseResult.data.contact ?? parseResult.data.email ?? '').trim()
 
   if (website && website.length > 0) {
     return new Response(JSON.stringify({ success: true, mode: 'ignored' }), {
@@ -166,7 +172,7 @@ export async function onRequestPost(context: FunctionContext): Promise<Response>
 
   await recordRequest(env.CONTACT_KV, ipHash)
 
-  const sent = await trySendEmail(env, name, email, message)
+  const sent = await trySendEmail(env, name, contact, message)
 
   if (sent) {
     return new Response(JSON.stringify({ success: true, mode: 'sent' }), {
@@ -176,7 +182,7 @@ export async function onRequestPost(context: FunctionContext): Promise<Response>
   }
 
   if (env.CONTACT_KV) {
-    const record = { name, email, message, timestamp: Date.now(), ipHash }
+    const record = { name, contact, message, timestamp: Date.now(), ipHash }
     await env.CONTACT_KV.put(createMessageKey(Date.now()), JSON.stringify(record))
   }
 

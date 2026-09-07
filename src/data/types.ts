@@ -6,6 +6,8 @@ export interface PersonalInfo {
   location: string
   phone: string
   email: string
+  qq: string
+  wechat: string
   github: string
   bilibili: string
   expectedCityKey: TranslationKey

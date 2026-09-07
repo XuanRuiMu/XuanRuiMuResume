@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { ExperienceSection } from './ExperienceSection'
-import { experiences } from '../../data/experience'
-import { projects } from '../../data/projects'
+import { experiences, educatorBilibiliUrl, wowguildVideoUrl } from '../../data/experience'
 import { personalInfo } from '../../data/personalInfo'
 import { t } from '../../i18n/translations'
 
@@ -220,23 +219,36 @@ describe('ExperienceSection', () => {
     expect(document.querySelector('[data-testid="experience-timeline-svg"]')).toBeNull()
   })
 
-  it('复现FP-02：lovewithme经历卡片应有可见GitHub链接', () => {
+  it('FP-05：有外链的经历卡片链接可点击跳转', () => {
     render(<ExperienceSection />)
-    const card = document.querySelector('[data-experience-card="lovewithme"]')
-    expect(card).not.toBeNull()
-    const link = within(card as HTMLElement).getByRole('link', {
-      name: `${t('data.experience.entries.lovewithme.title')}：${t('projects.link.github')}`,
-    })
-    expect(link).toHaveAttribute('href', 'https://github.com/XuanRuiMu/HeWoLianAiBa')
-    expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    const cases = [
+      { id: 'educator', labelKey: 'projects.link.bilibili', url: educatorBilibiliUrl },
+      { id: 'wowguild', labelKey: 'projects.link.bilibili', url: wowguildVideoUrl },
+      { id: 'indie', labelKey: 'projects.link.github', url: personalInfo.github },
+    ] as const
+    for (const c of cases) {
+      const card = document.querySelector(`[data-experience-card="${c.id}"]`)
+      expect(card).not.toBeNull()
+      const link = within(card as HTMLElement).getByRole('link', {
+        name: `${t(`data.experience.entries.${c.id}.title`)}：${t(c.labelKey)}`,
+      })
+      expect(link).toHaveAttribute('href', c.url)
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    }
   })
 
-  it('经历链接URL与项目侧同源无漂移', () => {
-    const lovewithmeExp = experiences.find((entry) => entry.id === 'lovewithme')
-    const lovewithmeProj = projects.find((project) => project.id === 'lovewithme')
-    expect(lovewithmeExp?.links?.[0].url).toBe(lovewithmeProj?.links?.[0].url)
-    const xrmExp = experiences.find((entry) => entry.id === 'xrm')
-    expect(xrmExp?.links?.[0].url).toBe(personalInfo.github)
+  it('FP-05：无外链的经历卡片不渲染链接', () => {
+    render(<ExperienceSection />)
+    for (const id of ['mcserver', 'bachelor', 'aiengineer']) {
+      const card = document.querySelector(`[data-experience-card="${id}"]`)
+      expect(card).not.toBeNull()
+      expect(within(card as HTMLElement).queryByRole('link')).toBeNull()
+    }
+  })
+
+  it('FP-05：独立开发者经历挂GitHub主页而非单个项目', () => {
+    const indie = experiences.find((entry) => entry.id === 'indie')
+    expect(indie?.links?.[0].url).toBe(personalInfo.github)
   })
 })

@@ -27,7 +27,7 @@ describe('contact edge function', () => {
   it('queues message when no email provider is configured', async () => {
     const request = createContactRequest({
       name: '测试',
-      email: 'test@example.com',
+      contact: 'test@example.com',
       message: '这是一条留言。',
     })
     const response = await onRequestPost({ request, env })
@@ -43,7 +43,7 @@ describe('contact edge function', () => {
   it('ignores honeypot submissions', async () => {
     const request = createContactRequest({
       name: '测试',
-      email: 'test@example.com',
+      contact: 'test@example.com',
       message: '这是一条留言。',
       website: 'https://spam.example',
     })
@@ -58,7 +58,7 @@ describe('contact edge function', () => {
   })
 
   it('returns 400 for invalid body', async () => {
-    const request = createContactRequest({ name: '', email: 'bad', message: '' })
+    const request = createContactRequest({ name: '', contact: 'a', message: '' })
     const response = await onRequestPost({ request, env })
     const data = await readJson(response)
 
@@ -67,7 +67,7 @@ describe('contact edge function', () => {
   })
 
   it('rate limits repeated submissions from the same IP', async () => {
-    const body = { name: '测试', email: 'test@example.com', message: '留言内容。' }
+    const body = { name: '测试', contact: 'test@example.com', message: '留言内容。' }
     const ip = '10.0.0.7'
 
     for (let i = 0; i < 5; i += 1) {
@@ -90,7 +90,7 @@ describe('contact edge function', () => {
 
     const request = createContactRequest({
       name: '测试',
-      email: 'test@example.com',
+      contact: 'test@example.com',
       message: '这是一条留言。',
     })
     const response = await onRequestPost({ request, env })
@@ -116,7 +116,7 @@ describe('contact edge function', () => {
 
     const request = createContactRequest({
       name: '测试',
-      email: 'test@example.com',
+      contact: 'test@example.com',
       message: '这是一条留言。',
     })
     const response = await onRequestPost({ request, env })
@@ -141,7 +141,7 @@ describe('contact edge function', () => {
 
     const request = createContactRequest({
       name: '测试',
-      email: 'test@example.com',
+      contact: 'test@example.com',
       message: '这是一条留言。',
     })
     const response = await onRequestPost({ request, env })

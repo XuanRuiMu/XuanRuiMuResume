@@ -1,26 +1,10 @@
-import { useState, useCallback, useRef, type FormEvent, type ReactNode } from 'react'
-import { Mail, ExternalLink, Send, Copy, Check } from 'lucide-react'
-import { z } from 'zod'
+import { useState, useCallback, useRef } from 'react'
+import { Mail, ExternalLink, Copy, Check, MessageCircle, MessagesSquare } from 'lucide-react'
 import { Section } from '../../components/ui/Section'
-import { Button } from '../../components/ui/Button'
 import { personalInfo } from '../../data/personalInfo'
 import { cn } from '../../lib/utils'
 import { t } from '../../i18n/translations'
-import { useContactSubmit } from '../../lib/api'
 import { Gomoku } from './Gomoku'
-
-interface FormValues {
-  name: string
-  email: string
-  message: string
-  website: string
-}
-
-interface FormErrors {
-  name?: string
-  email?: string
-  message?: string
-}
 
 const BilibiliIcon = ({ className = 'h-5 w-5' }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
@@ -36,78 +20,39 @@ const GithubIcon = ({ className = 'h-5 w-5' }: { className?: string }) => (
 
 /**
  * 联系区块
- * 左侧联系卡片（邮件含一键复制、GitHub、B站）+ 五子棋小游戏；
- * 右侧留言表单（保留校验/提交/可访问性，移除原先冗赘的 VS Code 终端模拟装饰）。
+ * 左侧联系卡片（邮箱含一键复制、GitHub、B站、QQ/微信二维码）+ 五子棋小游戏。
+ * 留言表单已删除：生产环境无邮件密钥，留言无法送达，保留表单只会误导访客。
  */
 export function ContactSection() {
-  const [values, setValues] = useState<FormValues>({ name: '', email: '', message: '', website: '' })
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
-  const [copiedEmail, setCopiedEmail] = useState(false)
+  const [已复制, set已复制] = useState<string | null>(null)
+  const [二维码缺失, set二维码缺失] = useState<Record<string, boolean>>({})
   const copyTimer = useRef<number | undefined>(undefined)
-  const { mutateAsync: submitContact } = useContactSubmit()
 
-  const handleCopyEmail = useCallback(async () => {
+  const handleCopy = useCallback(async (id: string, 文本: string) => {
     try {
-      await navigator.clipboard.writeText(personalInfo.email)
-      setCopiedEmail(true)
+      await navigator.clipboard.writeText(文本)
+      set已复制(id)
       window.clearTimeout(copyTimer.current)
-      copyTimer.current = window.setTimeout(() => setCopiedEmail(false), 2000)
+      copyTimer.current = window.setTimeout(() => set已复制(null), 2000)
     } catch {
       // 剪贴板不可用时静默降级
     }
   }, [])
 
-  const createSchema = useCallback(
-    () =>
-      z.object({
-        name: z.string().min(1, t('contact.validation.nameRequired')),
-        email: z.string().min(1, t('contact.validation.emailRequired')).email(t('contact.validation.emailInvalid')),
-        message: z.string().min(10, t('contact.validation.messageMin')).max(500, t('contact.validation.messageMax')),
-      }),
-    []
-  )
-
-  const handleChange = useCallback((field: keyof FormValues, value: string) => {
-    setValues((prev) => ({ ...prev, [field]: value }))
-    setErrors((prev) => ({ ...prev, [field]: undefined }))
-  }, [])
-
-  const handleSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      setStatus('idle')
-
-      const schema = createSchema()
-      const result = schema.safeParse(values)
-      if (!result.success) {
-        const formatted: FormErrors = {}
-        for (const issue of result.error.issues) {
-          const field = issue.path[0] as keyof FormErrors
-          if (!formatted[field]) {
-            formatted[field] = issue.message
-          }
-        }
-        setErrors(formatted)
-        return
-      }
-
-      setStatus('submitting')
-      try {
-        await submitContact({
-          name: values.name,
-          email: values.email,
-          message: values.message,
-          website: values.website,
-        })
-        setStatus('success')
-        setValues({ name: '', email: '', message: '', website: '' })
-      } catch {
-        setStatus('error')
-      }
-    },
-    [values, createSchema, submitContact]
-  )
+  const 复制按钮 = (id: string, 文本: string, 标签: string) => {
+    const 命中 = 已复制 === id
+    return (
+      <button
+        type="button"
+        onClick={() => void handleCopy(id, 文本)}
+        className={cn('contact-pill contact-pill--copy', 命中 && 'is-copied')}
+        aria-label={`复制${标签}`}
+      >
+        {命中 ? <Check size={14} className="text-[#22d3ee]" /> : <Copy size={14} />}
+        {命中 && <span>{t('hero.copied')}</span>}
+      </button>
+    )
+  }
 
   const contactLinks = [
     {
@@ -133,19 +78,31 @@ export function ContactSection() {
     },
   ]
 
-  const promptLabel = (htmlFor: string, children: ReactNode) => (
-    <div className="mb-1.5 flex items-center gap-1.5 text-text-secondary">
-      <span className="text-primary" aria-hidden="true">
-        ›
-      </span>
-      <label htmlFor={htmlFor}>{children}</label>
-    </div>
-  )
+  const 二维码卡片 = [
+    {
+      id: 'qq',
+      label: t('contact.info.qq'),
+      value: personalInfo.qq,
+      src: '/images/qq-qr.png',
+      alt: t('contact.qr.qqAlt'),
+      hint: t('contact.qr.qqHint'),
+      icon: ({ className }: { className?: string }) => <MessageCircle className={className} aria-hidden="true" />,
+    },
+    {
+      id: 'wechat',
+      label: t('contact.info.wechat'),
+      value: personalInfo.wechat,
+      src: '/images/wechat-qr.png',
+      alt: t('contact.qr.wechatAlt'),
+      hint: t('contact.qr.wechatHint'),
+      icon: ({ className }: { className?: string }) => <MessagesSquare className={className} aria-hidden="true" />,
+    },
+  ]
 
   return (
     <Section id="contact" title={t('contact.title')} subtitle={t('contact.subtitle')}>
       <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
-        {/* 左：联系卡片 + 五子棋 */}
+        {/* 左：联系卡片 */}
         <div className="grid content-start gap-6">
           {contactLinks.map((link) => {
             const Icon = link.icon
@@ -167,15 +124,7 @@ export function ContactSection() {
                   </span>
                 </a>
                 {isEmail ? (
-                  <button
-                    type="button"
-                    onClick={handleCopyEmail}
-                    className={cn('contact-pill contact-pill--copy', copiedEmail && 'is-copied')}
-                    aria-label="复制"
-                  >
-                    {copiedEmail ? <Check size={14} className="text-[#22d3ee]" /> : <Copy size={14} />}
-                    {copiedEmail && <span>{t('hero.copied')}</span>}
-                  </button>
+                  复制按钮(link.id, personalInfo.email, link.label)
                 ) : (
                   <a
                     href={link.href}
@@ -191,106 +140,47 @@ export function ContactSection() {
             )
           })}
 
-          {/* 五子棋小游戏 */}
-          <div className="mt-2 rounded-xl border border-border bg-surface/40 p-5">
-            <h3 className="mb-4 font-mono text-lg font-semibold text-text-primary">
-              {t('contact.stillSure.title')}
-            </h3>
+          {二维码卡片.map((卡片) => {
+            const Icon = 卡片.icon
+            return (
+              <div key={卡片.id} className="contact-item-link">
+                <div className="flex w-full flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                    <span className="contact-item-icon">
+                      <Icon className="h-7 w-7" />
+                    </span>
+                    <span className="contact-item-details min-w-0 flex-1">
+                      <span className="contact-item-label block text-sm font-semibold">{卡片.label}</span>
+                      <span className="contact-item-value block text-sm font-medium">{卡片.value}</span>
+                    </span>
+                    {复制按钮(卡片.id, 卡片.value, 卡片.label)}
+                  </div>
+                  {!二维码缺失[卡片.id] && (
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={卡片.src}
+                        alt={卡片.alt}
+                        loading="lazy"
+                        className="h-36 w-36 rounded-lg border border-border object-cover"
+                        onError={() => set二维码缺失((prev) => ({ ...prev, [卡片.id]: true }))}
+                      />
+                      <p className="text-sm text-text-secondary">{卡片.hint}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 右：五子棋小游戏 */}
+        <div className="grid content-start gap-6">
+          <div className="rounded-xl border border-border bg-surface/40 p-5">
+            <h3 className="mb-4 font-mono text-lg font-semibold text-text-primary">{t('contact.stillSure.title')}</h3>
             <div className="flex justify-center">
               <Gomoku />
             </div>
           </div>
-        </div>
-
-        {/* 右：留言表单（无终端装饰） */}
-        <div className="rounded-xl border border-border bg-surface/40 p-5">
-          <form onSubmit={handleSubmit} className="grid gap-5" noValidate>
-            <div>
-              {promptLabel('contact-name', t('contact.form.name'))}
-              <input
-                id="contact-name"
-                type="text"
-                value={values.name}
-                onChange={(event) => handleChange('name', event.target.value)}
-                className="w-full rounded-md border border-border bg-black/40 px-3 py-2.5 text-text-primary outline-none transition-colors focus:border-primary light:bg-black/[0.04]"
-                aria-invalid={errors.name ? 'true' : 'false'}
-                aria-describedby={errors.name ? 'contact-name-error' : undefined}
-              />
-              {errors.name && (
-                <p id="contact-name-error" className="mt-1.5 text-xs text-accent">
-                  {errors.name}
-                </p>
-              )}
-            </div>
-
-            <div>
-              {promptLabel('contact-email', t('contact.form.email'))}
-              <input
-                id="contact-email"
-                type="email"
-                value={values.email}
-                onChange={(event) => handleChange('email', event.target.value)}
-                className="w-full rounded-md border border-border bg-black/40 px-3 py-2.5 text-text-primary outline-none transition-colors focus:border-primary light:bg-black/[0.04]"
-                aria-invalid={errors.email ? 'true' : 'false'}
-                aria-describedby={errors.email ? 'contact-email-error' : undefined}
-              />
-              {errors.email && (
-                <p id="contact-email-error" className="mt-1.5 text-xs text-accent">
-                  {errors.email}
-                </p>
-              )}
-            </div>
-
-            <div>
-              {promptLabel('contact-message', t('contact.form.message'))}
-              <textarea
-                id="contact-message"
-                rows={8}
-                value={values.message}
-                onChange={(event) => handleChange('message', event.target.value)}
-                className="w-full resize-none rounded-md border border-border bg-black/40 px-3 py-2.5 text-text-primary outline-none transition-colors focus:border-primary light:bg-black/[0.04]"
-                aria-invalid={errors.message ? 'true' : 'false'}
-                aria-describedby={errors.message ? 'contact-message-error' : undefined}
-              />
-              {errors.message && (
-                <p id="contact-message-error" className="mt-1.5 text-xs text-accent">
-                  {errors.message}
-                </p>
-              )}
-            </div>
-
-            <input
-              type="text"
-              name="website"
-              value={values.website}
-              onChange={(event) => handleChange('website', event.target.value)}
-              className="hidden"
-              tabIndex={-1}
-              autoComplete="off"
-              aria-hidden="true"
-            />
-
-            <Button type="submit" loading={status === 'submitting'} icon={<Send size={18} />}>
-              {status === 'submitting' ? t('contact.form.sending') : t('contact.form.submit')}
-            </Button>
-
-            {status === 'success' && (
-              <p className="flex items-center gap-2 text-sm">
-                <span className="font-extrabold text-green-500" aria-hidden="true">
-                  ✓
-                </span>
-                <span className="text-primary">{t('contact.form.success')}</span>
-              </p>
-            )}
-            {status === 'error' && (
-              <p className="flex items-center gap-2 text-sm">
-                <span className="font-extrabold text-red-500" aria-hidden="true">
-                  ✗
-                </span>
-                <span className="text-accent">{t('contact.form.error')}</span>
-              </p>
-            )}
-          </form>
         </div>
       </div>
     </Section>

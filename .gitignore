@@ -47,5 +47,5 @@ preview-lab/
 redesign-lab/
 references/
 
-# dev 数据接口落盘目录（留言/访问计数）
-data/
+# dev 数据接口落盘目录（留言/访问计数，仅项目根目录；前导斜杠避免误伤 src/data 等源码目录）
+/data/

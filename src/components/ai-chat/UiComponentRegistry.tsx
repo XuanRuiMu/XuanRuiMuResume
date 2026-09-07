@@ -20,7 +20,7 @@ interface ComponentRendererProps<T extends UiComponent> {
 
 const CONTACT_VALIDATION = {
   nameMin: 1,
-  emailPattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  contactMin: 2,
   messageMin: 10,
   messageMax: 500,
 } as const
@@ -141,7 +141,7 @@ function TimelineRenderer({ component }: ComponentRendererProps<TimelineComponen
 
 function ContactFormRenderer(_props: ComponentRendererProps<ContactFormComponent>) {
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  const [contact, setContact] = useState('')
   const [message, setMessage] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -151,8 +151,8 @@ function ContactFormRenderer(_props: ComponentRendererProps<ContactFormComponent
       setError(t('contact.validation.nameRequired'))
       return false
     }
-    if (!CONTACT_VALIDATION.emailPattern.test(email)) {
-      setError(t('contact.validation.emailInvalid'))
+    if (contact.trim().length < CONTACT_VALIDATION.contactMin) {
+      setError(t('contact.validation.contactInvalid'))
       return false
     }
     if (message.trim().length < CONTACT_VALIDATION.messageMin) {
@@ -196,10 +196,10 @@ function ContactFormRenderer(_props: ComponentRendererProps<ContactFormComponent
         maxLength={50}
       />
       <input
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        placeholder={t('contact.form.email')}
+        type="text"
+        value={contact}
+        onChange={(event) => setContact(event.target.value)}
+        placeholder={t('contact.form.contact')}
         className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-xs text-text-primary outline-none placeholder:text-muted focus-visible:border-primary"
         maxLength={100}
       />

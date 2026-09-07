@@ -89,7 +89,8 @@ test('全站用户视角走查（双主题/签字/壁纸/AI面板/留言落盘/�
   await page.evaluate(() => window.scrollBy({ top: 500, behavior: 'instant' }))
   await page.waitForTimeout(800)
   const 壁纸位移 = await page.evaluate(
-    () => (document.querySelector('[data-testid="light-wallpaper"]') as HTMLElement | null)?.style.transform ?? 'missing'
+    () =>
+      (document.querySelector('[data-testid="light-wallpaper"]') as HTMLElement | null)?.style.transform ?? 'missing'
   )
   摘要.push(`浅色壁纸滚动位移: ${壁纸位移}`)
   expect(壁纸位移, '滚动后壁纸应有 translate3d 位移').toContain('translate3d')
@@ -147,7 +148,11 @@ test('全站用户视角走查（双主题/签字/壁纸/AI面板/留言落盘/�
   await 到达(page, 'hero')
   await page.getByRole('button', { name: 'AI助手' }).first().click()
   await page.waitForTimeout(700)
-  const 状态栏 = (await page.getByText(/deepseek-v4-flash-vision-exp · /).first().textContent()) ?? ''
+  const 状态栏 =
+    (await page
+      .getByText(/deepseek-v4-flash-vision-exp · /)
+      .first()
+      .textContent()) ?? ''
   摘要.push(`AI状态栏: ${状态栏.trim()}`)
   expect(状态栏).toContain('think on')
   await page.keyboard.type('/help')
@@ -156,11 +161,13 @@ test('全站用户视角走查（双主题/签字/壁纸/AI面板/留言落盘/�
   await 截图(page, '10-ai-help-light')
   expect(await page.getByRole('button', { name: '添加图片' }).isVisible()).toBe(true)
 
-  await page.setInputFiles(
-    'input[type="file"]',
-    { name: 'fake.txt', mimeType: 'text/plain', buffer: Buffer.from('not an image') },
-    { timeout: 5000 }
-  ).catch(() => {})
+  await page
+    .setInputFiles(
+      'input[type="file"]',
+      { name: 'fake.txt', mimeType: 'text/plain', buffer: Buffer.from('not an image') },
+      { timeout: 5000 }
+    )
+    .catch(() => {})
   await page.waitForTimeout(600)
   expect(await page.getByText('图片上传失败').count(), '非法图片应被拒绝并提示').toBeGreaterThanOrEqual(1)
   摘要.push('非法图片提示: ok')
@@ -169,21 +176,14 @@ test('全站用户视角走查（双主题/签字/壁纸/AI面板/留言落盘/�
   await page.waitForTimeout(300)
   await page.getByRole('button', { name: '关闭' }).click()
 
-  // ===== 留言表单真链路 =====
+  // ===== 联系方式卡片（表单已按需下线：生产链路不可达，保留直连方式） =====
   await 到达(page, 'contact')
-  const 留言内容 = `端到端走查留言 ${Date.now()}`
-  await page.getByLabel('你的名字').fill('走查机器人')
-  await page.getByLabel('你的邮箱').fill('walkthrough@example.com')
-  await page.getByLabel('留言内容').fill(`${留言内容}，超过十个字符的完整留言。`)
   await 截图(page, '11-contact-filled-light')
-  await page.getByRole('button', { name: /发送留言/ }).click()
-  await page.waitForTimeout(1800)
-  expect(await page.getByText('留言已发送，我会尽快回复。').count(), '留言成功提示').toBeGreaterThanOrEqual(1)
-  await 截图(page, '12-contact-success-light')
-  const 留言文件 = path.resolve('data', 'dev-messages.json')
-  const 留言落盘 = fs.existsSync(留言文件) && fs.readFileSync(留言文件, 'utf-8').includes('走查机器人')
-  expect(留言落盘, '留言应落盘 data/dev-messages.json').toBe(true)
-  摘要.push('留言已落盘 data/dev-messages.json: true')
+  expect(await page.getByText('2760688515').count(), 'QQ号应可见').toBeGreaterThanOrEqual(1)
+  expect(await page.getByText('XuanRuiMu').count(), '微信号应可见').toBeGreaterThanOrEqual(1)
+  expect(await page.getByAltText(/QQ/).count(), 'QQ二维码应可见').toBeGreaterThanOrEqual(1)
+  expect(await page.getByAltText(/微信/).count(), '微信二维码应可见').toBeGreaterThanOrEqual(1)
+  摘要.push('联系卡片 QQ/微信二维码: ok')
 
   // ===== 访问人数：页脚显示且刷新自增 =====
   await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }))
@@ -215,4 +215,3 @@ test('全站用户视角走查（双主题/签字/壁纸/AI面板/留言落盘/�
   console.info('===== 走查摘要 =====\n' + 摘要.join('\n'))
   expect(页面错误, `页面不应有运行时错误：${页面错误.slice(0, 5).join('; ')}`).toHaveLength(0)
 })
-

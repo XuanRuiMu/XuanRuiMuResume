@@ -138,6 +138,13 @@ export default defineConfig({
         secure: true,
         rewrite: (path) => path.replace(/^\/api\/deepseek/, '/v1/chat/completions'),
       },
+      // GLM（Anthropic 兼容端点）同理：开发走本地代理，生产直连配置的 BASE（见 src/ai/models.ts）。
+      '/api/glm': {
+        target: process.env.VITE_GLM_BASE_URL || 'https://open.bigmodel.cn/api/anthropic',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api\/glm/, '/v1/messages'),
+      },
     },
   },
   preview: {

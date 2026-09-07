@@ -5,6 +5,9 @@ import {
   Network,
   Database,
   Users,
+  Cpu,
+  Microchip,
+  Landmark,
   Drama,
   Palette,
   Sparkles,
@@ -15,6 +18,8 @@ import {
   Gamepad2,
   MonitorPlay,
   Music,
+  FolderGit2,
+  GitBranch,
   type LucideIcon,
 } from 'lucide-react'
 import { motion, useScroll, useSpring, useTransform } from 'framer-motion'
@@ -40,6 +45,9 @@ const CARD_ICONS: Record<string, LucideIcon> = {
   systems: Network,
   lowlevel: Database,
   teaching: Users,
+  assembly: Cpu,
+  arch: Microchip,
+  marx: Landmark,
   resumeTheater: Drama,
   xrmUi: Palette,
   aiToolchain: Sparkles,
@@ -50,6 +58,9 @@ const CARD_ICONS: Record<string, LucideIcon> = {
   gameWorld: Gamepad2,
   courses: MonitorPlay,
   escape: Music,
+  repoLoop: FolderGit2,
+  repoLove: GitBranch,
+  repoData: Database,
 }
 
 const GRADIENTS = [
@@ -351,7 +362,7 @@ export function ShowcaseSection() {
     <section aria-label={t('showcase.titleLine2')}>
       <div
         ref={ref}
-        className="relative flex h-[1500px] flex-col pb-40 antialiased [perspective:1000px] [transform-style:preserve-3d] md:h-[2000px] lg:h-[2500px] z-[100] isolate"
+        className="relative flex h-[1750px] flex-col pb-40 antialiased [perspective:1000px] [transform-style:preserve-3d] md:h-[2550px] lg:h-[3000px] z-[100] isolate"
       >
         <div className="relative mx-auto w-full max-w-7xl px-4 py-20 md:py-40">
           <h2 className="font-display text-4xl font-bold tracking-widest md:text-6xl">

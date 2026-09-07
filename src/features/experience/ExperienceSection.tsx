@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { Gamepad2, Heart, GraduationCap, Clapperboard, ExternalLink, type LucideIcon } from 'lucide-react'
+import { Gamepad2, Heart, BookOpen, GraduationCap, Swords, Bot, ExternalLink, type LucideIcon } from 'lucide-react'
 import { experiences } from '../../data/experience'
 import { Section } from '../../components/ui/Section'
 import { Card } from '../../components/ui/Card'
@@ -11,10 +11,12 @@ const TIMELINE_PROGRESS_VAR = '--timeline-progress'
 
 /** 各经历的图标与主题色（色值取自 02-react-three-fiber 卡片配色体系） */
 const ENTRY_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
-  xrm: { icon: Gamepad2, color: '#00cea8' },
-  lovewithme: { icon: Heart, color: '#f472b6' },
-  teacher: { icon: GraduationCap, color: '#38ef7d' },
-  multimedia: { icon: Clapperboard, color: '#56ccf2' },
+  mcserver: { icon: Gamepad2, color: '#00cea8' },
+  bachelor: { icon: BookOpen, color: '#56ccf2' },
+  educator: { icon: GraduationCap, color: '#38ef7d' },
+  wowguild: { icon: Swords, color: '#f472b6' },
+  aiengineer: { icon: Bot, color: '#a78bfa' },
+  indie: { icon: Heart, color: '#fb7185' },
 }
 
 /** 成就条目循环使用 8102 的蓝/绿/粉渐变文字 */
@@ -142,7 +144,7 @@ function ExperienceCard({ entry, isEven, reducedMotion }: ExperienceCardProps) {
     start: inView,
   })
 
-  const iconConfig = ENTRY_ICONS[entry.id] ?? ENTRY_ICONS.xrm
+  const iconConfig = ENTRY_ICONS[entry.id] ?? ENTRY_ICONS.mcserver
   const Icon = iconConfig.icon
 
   return (
@@ -202,9 +204,9 @@ function ExperienceCard({ entry, isEven, reducedMotion }: ExperienceCardProps) {
               </ul>
             </div>
 
-            {(entry.links ?? []).length > 0 && (
+            {entry.links && entry.links.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
-                {(entry.links ?? []).map((link) => (
+                {entry.links.map((link) => (
                   <a
                     key={link.url}
                     href={link.url}

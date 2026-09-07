@@ -9,8 +9,8 @@ const mockFetch = vi.fn()
 describe('chatService', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
-    // 锁定思考开关（默认开），避免跨用例状态污染
-    useAppStore.setState({ aiThinking: true })
+    // 锁定思考开关（默认开）与模型（默认 DeepSeek），避免跨用例状态污染
+    useAppStore.setState({ aiThinking: true, aiModel: 'deepseek-v4-flash-vision-exp' })
   })
 
   afterEach(() => {
@@ -223,7 +223,10 @@ describe('chatService', () => {
     })
     const controller = new AbortController()
 
-    await sendChatMessage([{ role: 'user', content: '你是谁' }], { deepseekApiKey: 'sk-test', signal: controller.signal })
+    await sendChatMessage([{ role: 'user', content: '你是谁' }], {
+      deepseekApiKey: 'sk-test',
+      signal: controller.signal,
+    })
 
     const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
     expect(callArgs[1].signal).toBe(controller.signal)
@@ -232,16 +235,75 @@ describe('chatService', () => {
   it('rethrows AbortError without falling back to the local answer（中断不得被兜底吞掉）', async () => {
     mockFetch.mockRejectedValueOnce(new DOMException('The operation was aborted.', 'AbortError'))
 
-    await expect(sendChatMessage([{ role: 'user', content: '你是谁' }], { deepseekApiKey: 'sk-test' })).rejects.toMatchObject({
+    await expect(
+      sendChatMessage([{ role: 'user', content: '你是谁' }], { deepseekApiKey: 'sk-test' })
+    ).rejects.toMatchObject({
       name: 'AbortError',
     })
+  })
+
+  it('routes glm-4.7-flash through the Anthropic messages API', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ content: [{ type: 'text', text: '{"text":"GLM 回答"}' }] }),
+    })
+
+    const result = await sendChatMessage([{ role: 'user', content: '你是谁' }], {
+      model: 'glm-4.7-flash',
+      glmApiKey: 'test-key',
+    })
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(callArgs[0]).toBe('/api/glm')
+    const headers = callArgs[1].headers as Record<string, string>
+    expect(headers['x-api-key']).toBe('test-key')
+    expect(headers['anthropic-version']).toBe('2023-06-01')
+    const body = JSON.parse((callArgs[1].body as string) ?? '{}')
+    expect(body.model).toBe('glm-4.7-flash')
+    expect(body.system).toContain('玄锐暮')
+    expect(body.messages).toEqual([{ role: 'user', content: '你是谁' }])
+    expect(result.message.content).toBe('GLM 回答')
+  })
+
+  it('sends images as Anthropic base64 blocks for GLM', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ content: [{ type: 'text', text: '{"text":"图里是一只猫"}' }] }),
+    })
+
+    const result = await sendChatMessage(
+      [{ role: 'user', content: '这张图里有什么？', images: ['data:image/png;base64,QUJD'] }],
+      { model: 'glm-4.7-flash', glmApiKey: 'test-key' }
+    )
+
+    const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse((callArgs[1].body as string) ?? '{}')
+    expect(body.messages[0].content[0]).toEqual({ type: 'text', text: '这张图里有什么？' })
+    expect(body.messages[0].content[1]).toEqual({
+      type: 'image',
+      source: { type: 'base64', media_type: 'image/png', data: 'QUJD' },
+    })
+    expect(result.message.content).toBe('图里是一只猫')
+  })
+
+  it('falls back to the local answer when the GLM call fails', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401, text: async () => 'Unauthorized' })
+
+    const result = await sendChatMessage([{ role: 'user', content: '怎么联系你' }], {
+      model: 'glm-4.7-flash',
+      glmApiKey: 'bad-key',
+    })
+
+    expect(result.message.content).toContain(personalInfo.email)
+    expect(result.message.component).toEqual({ type: 'ContactForm' })
   })
 })
 
 describe('compactConversation（/compact 语义压缩）', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
-    useAppStore.setState({ aiThinking: true })
+    useAppStore.setState({ aiThinking: true, aiModel: 'deepseek-v4-flash-vision-exp' })
   })
 
   afterEach(() => {

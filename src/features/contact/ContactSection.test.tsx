@@ -1,136 +1,78 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { ReactNode } from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { ContactSection } from './ContactSection'
 import { personalInfo } from '../../data/personalInfo'
 import { t } from '../../i18n/translations'
 
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  })
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  }
-}
-
 describe('ContactSection', () => {
   beforeEach(() => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() =>
-        Promise.resolve(
-          new Response(JSON.stringify({ success: true, mode: 'queued' }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          })
-        )
-      )
-    )
+    Object.defineProperty(window.navigator, 'clipboard', {
+      value: { writeText: vi.fn(() => Promise.resolve()) },
+      configurable: true,
+    })
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('renders section title and contact links', () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
+    render(<ContactSection />)
     expect(screen.getByRole('heading', { name: t('contact.title') })).toBeInTheDocument()
     expect(screen.getByText(personalInfo.email)).toBeInTheDocument()
-    expect(screen.getByText('XuanRuiMu')).toBeInTheDocument()
+    expect(screen.getAllByText('XuanRuiMu')).toHaveLength(2)
     expect(screen.getByText('玄锐暮')).toBeInTheDocument()
   })
 
-  it('renders form fields', () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
-    expect(screen.getByLabelText(t('contact.form.name'))).toBeInTheDocument()
-    expect(screen.getByLabelText(t('contact.form.email'))).toBeInTheDocument()
-    // 留言框扩容为原来的两倍（rows 4→8）
-    expect(screen.getByLabelText(t('contact.form.message'))).toHaveAttribute('rows', '8')
-    expect(screen.getByRole('button', { name: t('contact.form.submit') })).toBeInTheDocument()
+  it('renders QQ and微信 cards with numbers', () => {
+    render(<ContactSection />)
+    const qqCard = screen.getByText(t('contact.info.qq')).closest('.contact-item-link') as HTMLElement
+    within(qqCard).getByText(personalInfo.qq)
+    const wechatCard = screen.getByText(t('contact.info.wechat')).closest('.contact-item-link') as HTMLElement
+    within(wechatCard).getByText(personalInfo.wechat)
   })
 
-  it('shows validation errors for empty form', () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
-    fireEvent.click(screen.getByRole('button', { name: t('contact.form.submit') }))
-    expect(screen.getByText(t('contact.validation.nameRequired'))).toBeInTheDocument()
-    expect(screen.getByText(t('contact.validation.emailRequired'))).toBeInTheDocument()
-    expect(screen.getByText(t('contact.validation.messageMin'))).toBeInTheDocument()
+  it('renders QR images with correct src and alt', () => {
+    render(<ContactSection />)
+    expect(screen.getByAltText(t('contact.qr.qqAlt'))).toHaveAttribute('src', '/images/qq-qr.png')
+    expect(screen.getByAltText(t('contact.qr.wechatAlt'))).toHaveAttribute('src', '/images/wechat-qr.png')
   })
 
-  it('shows email validation error for invalid email', () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
-    fireEvent.change(screen.getByLabelText(t('contact.form.email')), { target: { value: 'not-an-email' } })
-    fireEvent.click(screen.getByRole('button', { name: t('contact.form.submit') }))
-    expect(screen.getByText(t('contact.validation.emailInvalid'))).toBeInTheDocument()
+  it('renders QR hint text for普通人', () => {
+    render(<ContactSection />)
+    expect(screen.getByText(t('contact.qr.qqHint'))).toBeInTheDocument()
+    expect(screen.getByText(t('contact.qr.wechatHint'))).toBeInTheDocument()
   })
 
-  it('shows message max length error', () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
-    fireEvent.change(screen.getByLabelText(t('contact.form.message')), { target: { value: 'a'.repeat(501) } })
-    fireEvent.click(screen.getByRole('button', { name: t('contact.form.submit') }))
-    expect(screen.getByText(t('contact.validation.messageMax'))).toBeInTheDocument()
+  it('keeps number text when QR image fails to load', () => {
+    render(<ContactSection />)
+    const qqImage = screen.getByAltText(t('contact.qr.qqAlt'))
+    fireEvent.error(qqImage)
+    expect(screen.queryByAltText(t('contact.qr.qqAlt'))).not.toBeInTheDocument()
+    expect(screen.getByText(personalInfo.qq)).toBeInTheDocument()
+    expect(screen.getByText(t('contact.qr.wechatHint'))).toBeInTheDocument()
   })
 
-  it('submits valid form and shows success message', async () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
-    fireEvent.change(screen.getByLabelText(t('contact.form.name')), { target: { value: '测试用户' } })
-    fireEvent.change(screen.getByLabelText(t('contact.form.email')), { target: { value: 'test@example.com' } })
-    fireEvent.change(screen.getByLabelText(t('contact.form.message')), {
-      target: { value: '这是一段超过十个字符的留言内容。' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: t('contact.form.submit') }))
-
-    await waitFor(() => {
-      expect(screen.getByText(t('contact.form.success'))).toBeInTheDocument()
-    })
-
-    expect(screen.getByLabelText(t('contact.form.name'))).toHaveValue('')
-    expect(screen.getByLabelText(t('contact.form.email'))).toHaveValue('')
-    expect(screen.getByLabelText(t('contact.form.message'))).toHaveValue('')
+  it('keeps微信 number text when微信 QR image fails to load', () => {
+    render(<ContactSection />)
+    fireEvent.error(screen.getByAltText(t('contact.qr.wechatAlt')))
+    expect(screen.queryByAltText(t('contact.qr.wechatAlt'))).not.toBeInTheDocument()
+    const wechatCard = screen.getByText(t('contact.info.wechat')).closest('.contact-item-link') as HTMLElement
+    within(wechatCard).getByText(personalInfo.wechat)
+    expect(screen.getByText(t('contact.qr.qqHint'))).toBeInTheDocument()
   })
 
-  it('shows error message when submission fails', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() =>
-        Promise.resolve(
-          new Response(JSON.stringify({ success: false, error: 'request_failed' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-          })
-        )
-      )
-    )
-
-    render(<ContactSection />, { wrapper: createWrapper() })
-    fireEvent.change(screen.getByLabelText(t('contact.form.name')), { target: { value: '测试用户' } })
-    fireEvent.change(screen.getByLabelText(t('contact.form.email')), { target: { value: 'test@example.com' } })
-    fireEvent.change(screen.getByLabelText(t('contact.form.message')), {
-      target: { value: '这是一段超过十个字符的留言内容。' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: t('contact.form.submit') }))
-
-    await waitFor(() => {
-      expect(screen.getByText(t('contact.form.error'))).toBeInTheDocument()
-    })
-  })
-
-  it('clears validation error when user types', () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
-    fireEvent.click(screen.getByRole('button', { name: t('contact.form.submit') }))
-    expect(screen.getByText(t('contact.validation.nameRequired'))).toBeInTheDocument()
-
-    fireEvent.change(screen.getByLabelText(t('contact.form.name')), { target: { value: '玄锐暮' } })
-    expect(screen.queryByText(t('contact.validation.nameRequired'))).not.toBeInTheDocument()
+  it('renders no留言 form fields', () => {
+    render(<ContactSection />)
+    expect(screen.queryByLabelText(t('contact.form.name'))).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(t('contact.form.contact'))).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(t('contact.form.message'))).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: t('contact.form.submit') })).not.toBeInTheDocument()
   })
 
   it('contact links have correct href attributes', () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
+    render(<ContactSection />)
     expect(screen.getByRole('link', { name: new RegExp(personalInfo.email) })).toHaveAttribute(
       'href',
       `mailto:${personalInfo.email}`
@@ -140,9 +82,9 @@ describe('ContactSection', () => {
   })
 
   it('renders contact cards with the ported Get In Touch design', () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
+    render(<ContactSection />)
     const cards = document.querySelectorAll('.contact-item-link')
-    expect(cards).toHaveLength(3)
+    expect(cards).toHaveLength(5)
     for (const card of cards) {
       expect(card.querySelector('.contact-item-icon')).not.toBeNull()
       expect(card.querySelector('.contact-item-value')).not.toBeNull()
@@ -150,9 +92,32 @@ describe('ContactSection', () => {
   })
 
   it('renders the copy-email button next to the email link', () => {
-    render(<ContactSection />, { wrapper: createWrapper() })
+    render(<ContactSection />)
     const emailLink = screen.getByRole('link', { name: new RegExp(personalInfo.email) })
     const item = emailLink.closest('.contact-item-link') as HTMLElement
-    expect(item.querySelector('button[aria-label="复制"]')).not.toBeNull()
+    expect(item.querySelector(`button[aria-label="复制${t('contact.info.email')}"]`)).not.toBeNull()
+  })
+
+  it('copies QQ number to clipboard and shows feedback', async () => {
+    render(<ContactSection />)
+    fireEvent.click(screen.getByRole('button', { name: `复制${t('contact.info.qq')}` }))
+    await waitFor(() => {
+      expect(window.navigator.clipboard.writeText).toHaveBeenCalledWith(personalInfo.qq)
+    })
+    expect(screen.getByText(t('hero.copied'))).toBeInTheDocument()
+  })
+
+  it('copies微信 id to clipboard and shows feedback', async () => {
+    render(<ContactSection />)
+    fireEvent.click(screen.getByRole('button', { name: `复制${t('contact.info.wechat')}` }))
+    await waitFor(() => {
+      expect(window.navigator.clipboard.writeText).toHaveBeenCalledWith(personalInfo.wechat)
+    })
+    expect(screen.getByText(t('hero.copied'))).toBeInTheDocument()
+  })
+
+  it('renders the Gomoku panel', () => {
+    render(<ContactSection />)
+    expect(screen.getByText(t('contact.stillSure.title'))).toBeInTheDocument()
   })
 })

@@ -25,7 +25,7 @@ function detectProject(input: string): ProjectCardComponent['projectId'] | undef
   const text = input.toLowerCase()
   if (/暮澜纪元|xrm|mmorpg|服务端/.test(text)) return 'xrm'
   if (/恋爱|lovewithme|聊天应用|全栈应用/.test(text)) return 'lovewithme'
-  if (/控制台|console|总控/.test(text)) return 'aiConsole'
+  if (/循环工程|loop/.test(text)) return 'aiConsole'
   return undefined
 }
 

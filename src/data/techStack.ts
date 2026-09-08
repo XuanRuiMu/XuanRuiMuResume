@@ -73,7 +73,7 @@ export const techstackV2: TechCard[] = [
   {
     name: 'Python',
     title: '自动化与 AI 工具链',
-    quote: '写了 2600+ 行的 AI 总控制台：多仓库 Git 管理、多家 API Key 统一调度、MCP 协议测试。',
+    quote: '用 Python 写循环工程 skill：多仓库 Git 管理、多家 API Key 统一调度、MCP 协议测试。',
     icon: '/logos/python.svg',
     url: 'https://www.python.org',
   },

@@ -619,13 +619,10 @@ html.circular-reveal-active::view-transition-old(root) {
   }
 }
 
-.timeline-item {
-  perspective: 1200px;
-}
-
+/* 不设 perspective、wrapper 不设 preserve-3d：卡片倾斜由 .tilt-card 自带 perspective() 自洽；
+   多层 3D 上下文嵌套会让内部链接的绘制位置与命中位置分离（经历链接点不中的根因，e2e: experience-links） */
 .timeline-card-wrapper {
   border-radius: 20px;
-  transform-style: preserve-3d;
   opacity: 0;
   transform: translateY(24px);
   transition:

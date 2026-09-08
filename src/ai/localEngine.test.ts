@@ -27,7 +27,7 @@ describe('localEngine', () => {
   })
 
   it('detects aiConsole project from input', () => {
-    const result = getLocalAnswer('AI 总控制台')
+    const result = getLocalAnswer('介绍一下循环工程skill')
     expect(result.component).toEqual({ type: 'ProjectCard', projectId: 'aiConsole' })
   })
 

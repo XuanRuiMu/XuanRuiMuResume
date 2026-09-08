@@ -39,10 +39,15 @@ describe('ContactSection', () => {
     expect(screen.getByAltText(t('contact.qr.wechatAlt'))).toHaveAttribute('src', '/images/wechat-qr.png')
   })
 
-  it('renders QR hint text for普通人', () => {
+  it('二维码图片水平居中且不渲染扫码提示文案', () => {
     render(<ContactSection />)
-    expect(screen.getByText(t('contact.qr.qqHint'))).toBeInTheDocument()
-    expect(screen.getByText(t('contact.qr.wechatHint'))).toBeInTheDocument()
+    const qr = screen.getByAltText(t('contact.qr.qqAlt'))
+    const wechat = screen.getByAltText(t('contact.qr.wechatAlt'))
+    for (const img of [qr, wechat]) {
+      expect(img.parentElement).toHaveClass('flex', 'justify-center')
+    }
+    expect(screen.queryByText('扫码加QQ就行')).not.toBeInTheDocument()
+    expect(screen.queryByText('扫码加微信就行')).not.toBeInTheDocument()
   })
 
   it('keeps number text when QR image fails to load', () => {
@@ -51,7 +56,7 @@ describe('ContactSection', () => {
     fireEvent.error(qqImage)
     expect(screen.queryByAltText(t('contact.qr.qqAlt'))).not.toBeInTheDocument()
     expect(screen.getByText(personalInfo.qq)).toBeInTheDocument()
-    expect(screen.getByText(t('contact.qr.wechatHint'))).toBeInTheDocument()
+    expect(screen.getByAltText(t('contact.qr.wechatAlt'))).toBeInTheDocument()
   })
 
   it('keeps微信 number text when微信 QR image fails to load', () => {
@@ -60,7 +65,7 @@ describe('ContactSection', () => {
     expect(screen.queryByAltText(t('contact.qr.wechatAlt'))).not.toBeInTheDocument()
     const wechatCard = screen.getByText(t('contact.info.wechat')).closest('.contact-item-link') as HTMLElement
     within(wechatCard).getByText(personalInfo.wechat)
-    expect(screen.getByText(t('contact.qr.qqHint'))).toBeInTheDocument()
+    expect(screen.getByAltText(t('contact.qr.qqAlt'))).toBeInTheDocument()
   })
 
   it('renders no留言 form fields', () => {

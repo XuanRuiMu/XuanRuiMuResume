@@ -87,14 +87,23 @@ test('跑马灯：缝隙悬停不停，卡片悬停缓停', async ({ page }) => 
   const 卡片们 = 区块.locator('.group\\/card')
   const 总数 = await 卡片们.count()
   const 取盒 = async (i: number) => (await 卡片们.nth(i).boundingBox()) as { x: number; y: number; width: number; height: number }
+  // 区块高于视口，最近对齐可能让 3D 跑马灯行恰好跨在断言带边缘；
+  // 用真实滚轮小幅微调直到有卡片完整落在带内（对页面高度变化鲁棒，不写死滚动量）
   let 可见索引 = -1
   let 盒: { x: number; y: number; width: number; height: number } | null = null
-  for (let i = 0; i < 总数; i++) {
-    const b = await 取盒(i)
-    if (b && b.x > 220 && b.x + b.width < 1220 && b.y > 130 && b.y + b.height < 860) {
-      可见索引 = i
-      盒 = b
-      break
+  for (let 轮 = 0; 轮 < 10 && 可见索引 < 0; 轮++) {
+    for (let i = 0; i < 总数; i++) {
+      const b = await 取盒(i)
+      if (b && b.x > 220 && b.x + b.width < 1220 && b.y > 130 && b.y + b.height < 860) {
+        可见索引 = i
+        盒 = b
+        break
+      }
+    }
+    if (可见索引 < 0) {
+      await page.mouse.move(720, 450)
+      await page.mouse.wheel(0, 160)
+      await page.waitForTimeout(450)
     }
   }
   expect(可见索引, '应存在完整落在视口内的卡片').toBeGreaterThanOrEqual(0)

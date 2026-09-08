@@ -12,7 +12,7 @@
 - 仓库地址：https://github.com/XuanRuiMu/XuanRuiMuResume
 - 默认分支：main
 - 提交信息使用中文描述本次改动。
-- 可通过总控制台「Git 推送」菜单或本地 `git push origin main` 执行。
+- 可通过循环工程skill「Git 推送」菜单或本地 `git push origin main` 执行。
 - 上传前清理临时文件、构建产物、测试截图等非必要文件，保持仓库只含源码、资源与文档。
 
 ## 代码规范

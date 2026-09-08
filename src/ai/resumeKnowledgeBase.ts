@@ -82,13 +82,13 @@ function buildWorkspaceChunks(): KnowledgeChunk[] {
   return [
     chunk(
       'workspace-overview',
-      '工作区包含以下项目：暮澜纪元我的世界MMORPG服务端（8世界32职业的服务端，自研Java插件400+类，Gradle Kotlin DSL多模块，HikariCP+MySQL持久化）、和我恋爱吧（已上线的AI恋爱聊天全栈应用：Express+TypeScript+PostgreSQL+Redis+Socket.io+DeepSeek，docker-compose编排Nginx+HTTPS）、燃烧之陨系列（我的世界多元生存服、粘液科技服、登录服、多服连接）、燃烧之陨资源包、音乐（曾考取架子鼓九级证书，未创作过歌曲等）、AI总控制台（定个目标就自动拆步骤、自己干活、自己检查直到做完，https://github.com/XuanRuiMu/loop-engineering）、个人简历（本React简历站）、开发需求文档、暮澜纪元小说。',
+      '工作区包含以下项目：暮澜纪元我的世界MMORPG服务端（8世界32职业的服务端，自研Java插件400+类，Gradle Kotlin DSL多模块，HikariCP+MySQL持久化）、和我恋爱吧（已上线的AI恋爱聊天全栈应用：Express+TypeScript+PostgreSQL+Redis+Socket.io+DeepSeek，docker-compose编排Nginx+HTTPS）、燃烧之陨系列（我的世界多元生存服、粘液科技服、登录服、多服连接）、燃烧之陨资源包、音乐（曾考取架子鼓九级证书，未创作过歌曲等）、循环工程skill（定个目标就自动拆步骤、自己干活、自己检查直到做完，https://github.com/XuanRuiMu/loop-engineering）、个人简历（本React简历站）、开发需求文档、暮澜纪元小说。',
       'workspace',
       'workspace'
     ),
     chunk(
       'workspace-ai-console',
-      'AI总控制台是一个任务系统：定个目标，它就自动拆步骤、自己干活、自己检查，直到做完为止。地址https://github.com/XuanRuiMu/loop-engineering。',
+      '循环工程skill是一个任务系统：定个目标，它就自动拆步骤、自己干活、自己检查，直到做完为止。地址https://github.com/XuanRuiMu/loop-engineering。',
       'workspace',
       'workspace'
     ),

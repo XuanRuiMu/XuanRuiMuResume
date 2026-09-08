@@ -85,7 +85,6 @@ export function ContactSection() {
       value: personalInfo.qq,
       src: '/images/qq-qr.png',
       alt: t('contact.qr.qqAlt'),
-      hint: t('contact.qr.qqHint'),
       icon: ({ className }: { className?: string }) => <MessageCircle className={className} aria-hidden="true" />,
     },
     {
@@ -94,7 +93,6 @@ export function ContactSection() {
       value: personalInfo.wechat,
       src: '/images/wechat-qr.png',
       alt: t('contact.qr.wechatAlt'),
-      hint: t('contact.qr.wechatHint'),
       icon: ({ className }: { className?: string }) => <MessagesSquare className={className} aria-hidden="true" />,
     },
   ]
@@ -156,7 +154,7 @@ export function ContactSection() {
                     {复制按钮(卡片.id, 卡片.value, 卡片.label)}
                   </div>
                   {!二维码缺失[卡片.id] && (
-                    <div className="flex items-center gap-4">
+                    <div className="flex justify-center">
                       <img
                         src={卡片.src}
                         alt={卡片.alt}
@@ -164,7 +162,6 @@ export function ContactSection() {
                         className="h-36 w-36 rounded-lg border border-border object-cover"
                         onError={() => set二维码缺失((prev) => ({ ...prev, [卡片.id]: true }))}
                       />
-                      <p className="text-sm text-text-secondary">{卡片.hint}</p>
                     </div>
                   )}
                 </div>

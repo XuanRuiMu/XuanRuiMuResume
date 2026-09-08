@@ -119,8 +119,12 @@ describe('ExperienceSection', () => {
       const inner = card.querySelector('.bg-\\[\\#151030\\]')
       expect(inner).not.toBeNull()
       expect(card.querySelector('.tilt-card')).not.toBeNull()
-      expect(within(card as HTMLElement).getByText(t('experience.hoverHint'))).toBeInTheDocument()
     }
+  })
+
+  it('不渲染悬停/聚焦提示行（hoverHint 已移除）', () => {
+    render(<ExperienceSection />)
+    expect(screen.queryByText('悬停或聚焦查看成就与亮点')).not.toBeInTheDocument()
   })
 
   it('renders timeline nodes for each entry', () => {

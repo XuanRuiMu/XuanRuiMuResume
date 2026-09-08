@@ -221,8 +221,6 @@ function ExperienceCard({ entry, isEven, reducedMotion }: ExperienceCardProps) {
                 ))}
               </div>
             )}
-
-            <p className="mt-3 text-xs text-white/40">{t('experience.hoverHint')}</p>
           </div>
         </div>
       </Card>

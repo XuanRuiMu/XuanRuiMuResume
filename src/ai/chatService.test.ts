@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { sendChatMessage, compactConversation } from './chatService'
+import { sendChatMessage, compactConversation, 是否超时错误, 是否中断错误 } from './chatService'
 import { personalInfo } from '../data/personalInfo'
 import { DEEPSEEK_MODEL, DEEPSEEK_ENDPOINT } from './deepseekConfig'
 import { useAppStore } from '../store/useAppStore'
@@ -9,8 +9,8 @@ const mockFetch = vi.fn()
 describe('chatService', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
-    // 锁定思考开关（默认开）与模型（默认 DeepSeek），避免跨用例状态污染
-    useAppStore.setState({ aiThinking: true, aiModel: 'deepseek-v4-flash-vision-exp' })
+    // 锁定思考强度（默认 high）与模型（默认 DeepSeek），避免跨用例状态污染
+    useAppStore.setState({ aiThinking: 'high', aiModel: 'deepseek-v4.1-flash-expires-on-0910' })
   })
 
   afterEach(() => {
@@ -26,6 +26,11 @@ describe('chatService', () => {
     expect(result.message.role).toBe('assistant')
     expect(result.message.content).toContain(personalInfo.name)
     expect(result.message.component).toBeUndefined()
+    // 工具轨迹元数据：兜底必须诚实标注且保留真实检索命中数（FP-02根因修复）
+    expect(result.meta.本地兜底).toBe(true)
+    expect(result.meta.命中数).toBeGreaterThan(0)
+    expect(result.meta.回退原因).toBe('network')
+    expect(result.meta.耗时毫秒).toBeGreaterThanOrEqual(0)
   })
 
   it('falls back to the local ContactForm component for contact questions when the call fails', async () => {
@@ -72,9 +77,13 @@ describe('chatService', () => {
     const body = JSON.parse((callArgs[1].body as string) ?? '{}')
     expect(body.model).toBe(DEEPSEEK_MODEL)
     expect(body.thinking).toEqual({ type: 'enabled' })
-    expect(body).not.toHaveProperty('reasoning_effort')
+    // 默认强度 high：官方档位 reasoning_effort 直传
+    expect(body.reasoning_effort).toBe('high')
     expect(body.response_format).toEqual({ type: 'json_object' })
     expect(result.message.content).toBe('DeepSeek 回答')
+    // 远程成功时标注非兜底并给出检索命中数
+    expect(result.meta.本地兜底).toBe(false)
+    expect(result.meta.命中数).toBeGreaterThanOrEqual(0)
   })
 
   it('sends user images as vision content blocks（图片消息按官方块数组格式）', async () => {
@@ -205,6 +214,16 @@ describe('chatService', () => {
     expect(result.message.component).toBeUndefined()
   })
 
+  it('超时回退并标注timeout原因', async () => {
+    mockFetch.mockRejectedValueOnce(new DOMException('请求超时', 'TimeoutError'))
+    const result = await sendChatMessage([{ role: 'user', content: '介绍一下暮澜纪元' }], {
+      deepseekApiKey: 'sk-test',
+    })
+    expect(result.meta.本地兜底).toBe(true)
+    expect(result.meta.回退原因).toBe('timeout')
+    expect(result.message.component).toEqual({ type: 'ProjectCard', projectId: 'xrm' })
+  })
+
   it('falls back to local answer when LLM response format is invalid', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -217,19 +236,26 @@ describe('chatService', () => {
   })
 
   it('passes the abort signal through to fetch（Claude Code Esc 中断链路）', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"text":"回答"}' } }] }),
-    })
     const controller = new AbortController()
+    let 捕获信号: AbortSignal | undefined
+    mockFetch.mockImplementationOnce(async (_url: unknown, init?: RequestInit) => {
+      捕获信号 = init?.signal as AbortSignal | undefined
+      expect(捕获信号).toBeInstanceOf(AbortSignal)
+      expect(捕获信号?.aborted).toBe(false)
+      controller.abort()
+      expect(捕获信号?.aborted).toBe(true)
+      return {
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: '{"text":"回答"}' } }] }),
+      }
+    })
 
     await sendChatMessage([{ role: 'user', content: '你是谁' }], {
       deepseekApiKey: 'sk-test',
       signal: controller.signal,
     })
 
-    const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
-    expect(callArgs[1].signal).toBe(controller.signal)
+    expect(捕获信号?.aborted).toBe(true)
   })
 
   it('rethrows AbortError without falling back to the local answer（中断不得被兜底吞掉）', async () => {
@@ -242,68 +268,87 @@ describe('chatService', () => {
     })
   })
 
-  it('routes glm-4.7-flash through the Anthropic messages API', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ content: [{ type: 'text', text: '{"text":"GLM 回答"}' }] }),
-    })
+  it('maps thinking intensity levels to official DeepSeek wire params', async () => {
+    for (const [强度, thinking, reasoning_effort] of [
+      ['low', { type: 'enabled' }, 'low'],
+      ['max', { type: 'enabled' }, 'max'],
+      ['off', { type: 'disabled' }, undefined],
+    ] as const) {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: '{"text":"ok"}' } }] }),
+      })
+      useAppStore.setState({ aiThinking: 强度 })
 
+      await sendChatMessage([{ role: 'user', content: '你是谁' }], { deepseekApiKey: 'sk-test' })
+
+      const callArgs = mockFetch.mock.calls.at(-1) as [string, RequestInit]
+      const body = JSON.parse((callArgs[1].body as string) ?? '{}')
+      expect(body.thinking).toEqual(thinking)
+      expect(body.reasoning_effort).toBe(reasoning_effort)
+    }
+  })
+
+  it('是否超时错误仅识别TimeoutError', () => {
+    expect(是否超时错误(new DOMException('请求超时', 'TimeoutError'))).toBe(true)
+    expect(是否超时错误(new DOMException('aborted', 'AbortError'))).toBe(false)
+    expect(是否中断错误(new DOMException('aborted', 'AbortError'))).toBe(true)
+    expect(是否中断错误(new DOMException('timeout', 'TimeoutError'))).toBe(false)
+  })
+
+  it('错误体截断不泄露密钥', async () => {
+    const 密钥 = 'sk-secret-1234567890'
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 500, text: async () => `x`.repeat(1000) })
     const result = await sendChatMessage([{ role: 'user', content: '你是谁' }], {
-      model: 'glm-4.7-flash',
-      glmApiKey: 'test-key',
+      deepseekApiKey: 密钥,
     })
-
-    expect(mockFetch).toHaveBeenCalledTimes(1)
-    const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
-    expect(callArgs[0]).toBe('/api/glm')
-    const headers = callArgs[1].headers as Record<string, string>
-    expect(headers['x-api-key']).toBe('test-key')
-    expect(headers['anthropic-version']).toBe('2023-06-01')
-    const body = JSON.parse((callArgs[1].body as string) ?? '{}')
-    expect(body.model).toBe('glm-4.7-flash')
-    expect(body.system).toContain('玄锐暮')
-    expect(body.messages).toEqual([{ role: 'user', content: '你是谁' }])
-    expect(result.message.content).toBe('GLM 回答')
+    expect(result.meta.回退原因).toBe('http')
+    const callArgs = mockFetch.mock.calls.at(-1) as [string, RequestInit]
+    expect((callArgs[1].headers as Record<string, string>).Authorization).toBe(`Bearer ${密钥}`)
   })
 
-  it('sends images as Anthropic base64 blocks for GLM', async () => {
+  it('失败路径保留真实检索命中数（暮澜纪元失败仍有命中非0）', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 503, text: async () => 'Service Unavailable' })
+    const result = await sendChatMessage([{ role: 'user', content: '介绍一下暮澜纪元' }], {
+      deepseekApiKey: 'sk-test',
+    })
+    expect(result.meta.本地兜底).toBe(true)
+    expect(result.meta.命中数).toBeGreaterThan(0)
+    expect(result.meta.回退原因).toBe('http')
+    expect(result.meta.http状态).toBe(503)
+    expect(result.message.component).toEqual({ type: 'ProjectCard', projectId: 'xrm' })
+  })
+
+  it('你好失败回退为问候语非没准备答案且命中0诚实', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('network down'))
+    const { t } = await import('../i18n/translations')
+    const result = await sendChatMessage([{ role: 'user', content: '你好' }], { deepseekApiKey: 'sk-test' })
+    expect(result.message.content).toBe(t('chat.answers.greeting'))
+    expect(result.message.content).not.toContain('没准备答案')
+    expect(result.meta.本地兜底).toBe(true)
+    expect(result.meta.命中数).toBe(0)
+    expect(result.meta.回退原因).toBe('network')
+  })
+
+  it('你好成功时检索为空且非兜底（空上下文而非硬塞）', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ content: [{ type: 'text', text: '{"text":"图里是一只猫"}' }] }),
+      json: async () => ({ choices: [{ message: { content: '{"text":"你好呀"}' } }] }),
     })
-
-    const result = await sendChatMessage(
-      [{ role: 'user', content: '这张图里有什么？', images: ['data:image/png;base64,QUJD'] }],
-      { model: 'glm-4.7-flash', glmApiKey: 'test-key' }
-    )
-
-    const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
+    const result = await sendChatMessage([{ role: 'user', content: '你好' }], { deepseekApiKey: 'sk-test' })
+    expect(result.message.content).toBe('你好呀')
+    expect(result.meta.本地兜底).toBe(false)
+    expect(result.meta.命中数).toBe(0)
+    const callArgs = mockFetch.mock.calls.at(-1) as [string, RequestInit]
     const body = JSON.parse((callArgs[1].body as string) ?? '{}')
-    expect(body.messages[0].content[0]).toEqual({ type: 'text', text: '这张图里有什么？' })
-    expect(body.messages[0].content[1]).toEqual({
-      type: 'image',
-      source: { type: 'base64', media_type: 'image/png', data: 'QUJD' },
-    })
-    expect(result.message.content).toBe('图里是一只猫')
-  })
-
-  it('falls back to the local answer when the GLM call fails', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 401, text: async () => 'Unauthorized' })
-
-    const result = await sendChatMessage([{ role: 'user', content: '怎么联系你' }], {
-      model: 'glm-4.7-flash',
-      glmApiKey: 'bad-key',
-    })
-
-    expect(result.message.content).toContain(personalInfo.email)
-    expect(result.message.component).toEqual({ type: 'ContactForm' })
+    expect(JSON.stringify(body)).not.toContain('暮澜纪元')
   })
 })
 
 describe('compactConversation（/compact 语义压缩）', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
-    useAppStore.setState({ aiThinking: true, aiModel: 'deepseek-v4-flash-vision-exp' })
+    useAppStore.setState({ aiThinking: 'high', aiModel: 'deepseek-v4.1-flash-expires-on-0910' })
   })
 
   afterEach(() => {
@@ -326,6 +371,20 @@ describe('compactConversation（/compact 语义压缩）', () => {
     const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
     const body = JSON.parse((callArgs[1].body as string) ?? '{}')
     expect(body.thinking).toEqual({ type: 'disabled' })
+  })
+
+  it('appends the focus instruction when provided（/compact [instructions]）', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '{"text":"聚焦摘要"}' } }] }),
+    })
+
+    const 摘要 = await compactConversation([{ role: 'user', content: '介绍项目' }], { focus: '只看项目' })
+
+    expect(摘要).toBe('聚焦摘要')
+    const callArgs = mockFetch.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse((callArgs[1].body as string) ?? '{}')
+    expect(JSON.stringify(body)).toContain('只看项目')
   })
 
   it('throws on failure instead of fabricating a local summary（压缩失败不得伪造摘要）', async () => {

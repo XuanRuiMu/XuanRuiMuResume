@@ -4,12 +4,11 @@ import { retrieveChunks } from './ragEngine'
 import { getLocalAnswer } from './localEngine'
 import { extractJsonFromText, parseAssistantPayload, type AssistantPayload } from './structuredOutput'
 import { DEEPSEEK_MAX_TOKENS, DEEPSEEK_RETRIEVE_TOP_K } from './deepseekConfig'
-import { 解析模型, GLM最大令牌数, 聊天超时毫秒, type 思考强度, type 模型定义 } from './models'
+import { 解析模型, 聊天超时毫秒, type 思考强度, type 模型定义 } from './models'
 import { useAppStore, type 回退原因 } from '../store/useAppStore'
 
 export interface ChatOptions {
   deepseekApiKey?: string
-  glmApiKey?: string
   model?: string
   maxContextChunks?: number
   /** /compact 可选聚焦说明 */
@@ -114,17 +113,6 @@ function 抛出响应错误(响应: Response, 正文: string): never {
   throw 错误
 }
 
-function 提取Anthropic文本(数据: unknown): string | undefined {
-  if (typeof 数据 !== 'object' || 数据 === null || !('content' in 数据)) return undefined
-  const 内容 = (数据 as { content: unknown }).content
-  if (!Array.isArray(内容)) return undefined
-  const 拼接 = 内容
-    .filter((块: unknown) => typeof 块 === 'object' && 块 !== null && 'text' in 块)
-    .map((块: { text: unknown }) => (typeof 块.text === 'string' ? 块.text : ''))
-    .join('')
-  return 拼接.length > 0 ? 拼接 : undefined
-}
-
 function 分类回退原因(err: unknown): { 回退原因: 回退原因; http状态?: number } {
   if (是否超时错误(err)) return { 回退原因: 'timeout' }
   const 状态 = (err as { http状态?: unknown } | null)?.http状态
@@ -159,14 +147,6 @@ function 到Api消息(message: AiMessage): Record<string, unknown> {
 function 思考体OpenAI(强度: 思考强度): Record<string, unknown> {
   if (强度 === 'off') return { thinking: { type: 'disabled' } }
   return { thinking: { type: 'enabled' }, reasoning_effort: 强度 }
-}
-
-/**
- * GLM(Anthropic 兼容)思考体：GLM-4.7 强制思考且不支持 reasoning_effort（5.2+ 才支持），
- * wire 上只区分 thinking.enabled/disabled。
- */
-function 思考体Anthropic(强度: 思考强度): Record<string, unknown> {
-  return { thinking: { type: 强度 === 'off' ? 'disabled' : 'enabled' } }
 }
 
 async function callOpenAICompletions(
@@ -216,71 +196,10 @@ async function callOpenAICompletions(
   return { role: 'assistant', content: payload.text, component: payload.component }
 }
 
-function 到Anthropic消息(message: AiMessage): Record<string, unknown> {
-  const hasImages = message.role === 'user' && !!message.images && message.images.length > 0
-  if (!hasImages) {
-    return { role: message.role, content: message.content }
-  }
-  const blocks: Array<Record<string, unknown>> = [{ type: 'text', text: message.content }]
-  for (const url of message.images ?? []) {
-    const match = url.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/)
-    if (match) {
-      blocks.push({ type: 'image', source: { type: 'base64', media_type: match[1], data: match[2] } })
-    }
-  }
-  return { role: 'user', content: blocks }
-}
-
-async function callAnthropicMessages(
-  模型: 模型定义,
-  apiKey: string,
-  messages: AiMessage[],
-  systemPrompt: string,
-  思考强度档: 思考强度,
-  signal?: AbortSignal
-): Promise<AiMessage> {
-  const response = await 带超时请求(
-    模型.endpoint,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 模型.id,
-        max_tokens: GLM最大令牌数,
-        system: systemPrompt,
-        messages: messages.map(到Anthropic消息),
-        ...思考体Anthropic(思考强度档),
-      }),
-    },
-    signal,
-    聊天超时毫秒
-  )
-
-  if (!response.ok) {
-    const text = await response.text()
-    抛出响应错误(response, text)
-  }
-
-  const data = await response.json()
-  const rawContent = 提取Anthropic文本(data)
-
-  if (typeof rawContent !== 'string' || rawContent.length === 0) {
-    throw new Error('LLM 返回格式异常')
-  }
-
-  const payload = parseDeepSeekResponse(rawContent)
-  return { role: 'assistant', content: payload.text, component: payload.component }
-}
-
 function 解析本次模型与密钥(options: ChatOptions): { 模型: 模型定义; apiKey: string } {
   const storeModel = useAppStore.getState().aiModel
   const 模型 = 解析模型(options.model ?? storeModel)
-  const apiKey =
-    模型.provider === 'anthropic' ? (options.glmApiKey ?? 模型.apiKey) : (options.deepseekApiKey ?? 模型.apiKey)
+  const apiKey = options.deepseekApiKey ?? 模型.apiKey
   return { 模型, apiKey }
 }
 
@@ -291,9 +210,6 @@ async function callChatModel(
   options: ChatOptions
 ): Promise<AiMessage> {
   const { 模型, apiKey } = 解析本次模型与密钥(options)
-  if (模型.provider === 'anthropic') {
-    return callAnthropicMessages(模型, apiKey, messages, systemPrompt, 思考强度档, options.signal)
-  }
   return callOpenAICompletions(模型, apiKey, messages, systemPrompt, 思考强度档, options.signal)
 }
 
@@ -341,65 +257,35 @@ export async function compactConversation(messages: AiMessage[], options: ChatOp
     (options.focus ? `\n聚焦说明：${options.focus}` : '')
 
   const { 模型, apiKey } = 解析本次模型与密钥(options)
-  let rawContent: unknown
-  if (模型.provider === 'anthropic') {
-    const response = await 带超时请求(
-      模型.endpoint,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 模型.id,
-          max_tokens: 1024,
-          system: 压缩指令,
-          messages: [{ role: 'user', content: 对话序列化 }],
-          thinking: { type: 'disabled' },
-        }),
+  const response = await 带超时请求(
+    模型.endpoint,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
       },
-      options.signal,
-      聊天超时毫秒
-    )
-    if (!response.ok) {
-      const text = await response.text()
-      throw new Error(`压缩请求失败：${response.status} ${text.slice(0, 300)}`)
-    }
-    const data = await response.json()
-    rawContent = 提取Anthropic文本(data)
-  } else {
-    const response = await 带超时请求(
-      模型.endpoint,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 模型.id,
-          messages: [
-            { role: 'system', content: 压缩指令 },
-            { role: 'user', content: 对话序列化 },
-          ],
-          temperature: 0.3,
-          max_tokens: 1024,
-          response_format: { type: 'json_object' },
-          thinking: { type: 'disabled' },
-        }),
-      },
-      options.signal,
-      聊天超时毫秒
-    )
-    if (!response.ok) {
-      const text = await response.text()
-      throw new Error(`压缩请求失败：${response.status} ${text.slice(0, 300)}`)
-    }
-    const data = await response.json()
-    rawContent = data.choices?.[0]?.message?.content
+      body: JSON.stringify({
+        model: 模型.id,
+        messages: [
+          { role: 'system', content: 压缩指令 },
+          { role: 'user', content: 对话序列化 },
+        ],
+        temperature: 0.3,
+        max_tokens: 1024,
+        response_format: { type: 'json_object' },
+        thinking: { type: 'disabled' },
+      }),
+    },
+    options.signal,
+    聊天超时毫秒
+  )
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`压缩请求失败：${response.status} ${text.slice(0, 300)}`)
   }
+  const data = await response.json()
+  const rawContent: unknown = data.choices?.[0]?.message?.content
   if (typeof rawContent !== 'string') {
     throw new Error('压缩返回格式异常')
   }

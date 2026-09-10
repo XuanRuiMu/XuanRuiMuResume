@@ -552,22 +552,23 @@ describe('AIChat', () => {
     fireEvent.submit(input.closest('form') as HTMLFormElement)
 
     expect(screen.getByTestId('model-picker')).toBeInTheDocument()
-    expect(screen.getByTestId('model-option-2')).toHaveTextContent('glm-4.7-flash')
+    expect(screen.getByTestId('model-option-1')).toHaveTextContent('deepseek-v4.1-flash-expires-on-0910')
+    expect(screen.queryByTestId('model-option-2')).not.toBeInTheDocument()
     expect(mutateAsync).not.toHaveBeenCalled()
   })
 
-  it('/model glm-4.7-flash 切换模型', () => {
+  it('/model 序号越界报错且不切换', () => {
     mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
       selector(createMockState({ chatOpen: true }))
     )
 
     render(<AIChat />)
     const input = screen.getByPlaceholderText(t('ai.placeholder'))
-    fireEvent.change(input, { target: { value: '/model glm-4.7-flash' } })
+    fireEvent.change(input, { target: { value: '/model 2' } })
     fireEvent.submit(input.closest('form') as HTMLFormElement)
 
-    expect(setAiModel).toHaveBeenCalledWith('glm-4.7-flash')
-    expect(screen.getByText(/已切换模型：glm-4\.7-flash/)).toBeInTheDocument()
+    expect(setAiModel).not.toHaveBeenCalled()
+    expect(screen.getByText(/未知模型：/)).toBeInTheDocument()
   })
 
   it('/model 未知模型报错且不切换', () => {
@@ -615,15 +616,14 @@ describe('AIChat', () => {
     fireEvent.submit(input.closest('form') as HTMLFormElement)
 
     fireEvent.keyDown(input, { key: 'ArrowDown' })
-    expect(screen.getByTestId('model-option-2')).toHaveTextContent('❯')
+    expect(screen.getByTestId('model-option-1')).toHaveTextContent('❯')
 
     fireEvent.keyDown(input, { key: 'ArrowUp' })
     expect(screen.getByTestId('model-option-1')).toHaveTextContent('❯')
 
-    fireEvent.keyDown(input, { key: 'ArrowDown' })
     fireEvent.keyDown(input, { key: 'Enter' })
-    expect(setAiModel).toHaveBeenCalledWith('glm-4.7-flash')
-    expect(screen.getByText(/已切换模型：glm-4\.7-flash/)).toBeInTheDocument()
+    expect(setAiModel).toHaveBeenCalledWith('deepseek-v4.1-flash-expires-on-0910')
+    expect(screen.getByText(/已切换模型：deepseek-v4\.1-flash-expires-on-0910/)).toBeInTheDocument()
     expect(mutateAsync).not.toHaveBeenCalled()
   })
 
@@ -1158,7 +1158,7 @@ describe('AIChat', () => {
     render(<AIChat />)
     fireEvent.keyDown(window, { key: 'p', altKey: true })
     expect(setAiModel).toHaveBeenCalledTimes(1)
-    expect(setAiModel.mock.calls[0][0]).not.toBe('deepseek-v4.1-flash-expires-on-0910')
+    expect(setAiModel.mock.calls[0][0]).toBe('deepseek-v4.1-flash-expires-on-0910')
     expect(screen.getByText(t('ai.commands.modelSwitchedPrefix'), { exact: false })).toBeInTheDocument()
   })
 
@@ -1326,7 +1326,6 @@ describe('AIChat', () => {
     fireEvent.change(input, { target: { value: '/model' } })
     fireEvent.submit(input.closest('form') as HTMLFormElement)
 
-    fireEvent.keyDown(input, { key: 'ArrowDown' })
     fireEvent.keyDown(input, { key: 's' })
     expect(setAiModel).not.toHaveBeenCalled()
     expect(screen.queryByTestId('model-picker')).not.toBeInTheDocument()
@@ -1335,7 +1334,9 @@ describe('AIChat', () => {
     fireEvent.change(input, { target: { value: '你好' } })
     fireEvent.submit(input.closest('form') as HTMLFormElement)
     await waitFor(() => {
-      expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ model: 'glm-4.7-flash' }))
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ model: 'deepseek-v4.1-flash-expires-on-0910' })
+      )
     })
   })
 
@@ -1349,8 +1350,8 @@ describe('AIChat', () => {
     fireEvent.change(input, { target: { value: '/model' } })
     fireEvent.submit(input.closest('form') as HTMLFormElement)
 
-    fireEvent.keyDown(input, { key: '2' })
-    expect(setAiModel).toHaveBeenCalledWith('glm-4.7-flash')
+    fireEvent.keyDown(input, { key: '1' })
+    expect(setAiModel).toHaveBeenCalledWith('deepseek-v4.1-flash-expires-on-0910')
     expect(screen.queryByTestId('model-picker')).not.toBeInTheDocument()
     expect(mutateAsync).not.toHaveBeenCalled()
   })
@@ -1363,7 +1364,7 @@ describe('AIChat', () => {
     render(<AIChat />)
     const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
     fireEvent.keyDown(input, { key: 'Tab', shiftKey: true })
-    expect(setAiModel).toHaveBeenCalledWith('glm-4.7-flash')
+    expect(setAiModel).toHaveBeenCalledWith('deepseek-v4.1-flash-expires-on-0910')
     expect(screen.getByText(t('ai.commands.modelSwitchedPrefix'), { exact: false })).toBeInTheDocument()
   })
 

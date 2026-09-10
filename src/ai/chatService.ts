@@ -1,23 +1,27 @@
 import { useMutation } from '@tanstack/react-query'
-import type { AiMessage } from '../store/useAppStore'
+import type { AiMessage, AiToolMeta } from '../store/useAppStore'
 import { retrieveChunks } from './ragEngine'
 import { getLocalAnswer } from './localEngine'
 import { extractJsonFromText, parseAssistantPayload, type AssistantPayload } from './structuredOutput'
 import { DEEPSEEK_MAX_TOKENS, DEEPSEEK_RETRIEVE_TOP_K } from './deepseekConfig'
-import { 解析模型, type 模型定义 } from './models'
-import { useAppStore } from '../store/useAppStore'
+import { 解析模型, GLM最大令牌数, 聊天超时毫秒, type 思考强度, type 模型定义 } from './models'
+import { useAppStore, type 回退原因 } from '../store/useAppStore'
 
 export interface ChatOptions {
   deepseekApiKey?: string
   glmApiKey?: string
   model?: string
   maxContextChunks?: number
+  /** /compact 可选聚焦说明 */
+  focus?: string
   /** 中断信号（对齐 Claude Code 的 Esc 中断语义）；abort 时抛出 AbortError，不回退本地兜底 */
   signal?: AbortSignal
 }
 
 export interface ChatServiceResult {
   message: AiMessage
+  /** 检索轨迹元数据 */
+  meta: AiToolMeta
 }
 
 function 获取最后用户内容(messages: AiMessage[]): string {
@@ -57,6 +61,78 @@ export function 是否中断错误(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError'
 }
 
+export function 是否超时错误(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'TimeoutError'
+}
+
+function 合并中断信号(用户信号?: AbortSignal, 超时毫秒?: number): { 信号: AbortSignal | undefined; 清理: () => void } {
+  if (!用户信号 && !(超时毫秒 && 超时毫秒 > 0)) {
+    return { 信号: 用户信号, 清理: () => {} }
+  }
+  const 控制器 = new AbortController()
+  const 清理项: Array<() => void> = []
+  if (用户信号) {
+    if (用户信号.aborted) {
+      控制器.abort((用户信号 as AbortSignal & { reason?: unknown }).reason)
+    } else {
+      const 转发中断 = () => 控制器.abort((用户信号 as AbortSignal & { reason?: unknown }).reason)
+      用户信号.addEventListener('abort', 转发中断, { once: true })
+      清理项.push(() => 用户信号.removeEventListener('abort', 转发中断))
+    }
+  }
+  if (超时毫秒 && 超时毫秒 > 0) {
+    const 计时器 = setTimeout(() => {
+      控制器.abort(new DOMException('请求超时', 'TimeoutError'))
+    }, 超时毫秒)
+    清理项.push(() => clearTimeout(计时器))
+  }
+  return {
+    信号: 控制器.signal,
+    清理: () => {
+      for (const 清理单项 of 清理项) 清理单项()
+    },
+  }
+}
+
+async function 带超时请求(
+  地址: string,
+  初始化: RequestInit,
+  用户信号?: AbortSignal,
+  超时毫秒?: number
+): Promise<Response> {
+  const { 信号, 清理 } = 合并中断信号(用户信号, 超时毫秒)
+  try {
+    return await fetch(地址, 信号 ? { ...初始化, signal: 信号 } : 初始化)
+  } finally {
+    清理()
+  }
+}
+
+function 抛出响应错误(响应: Response, 正文: string): never {
+  const 错误 = new Error(`LLM 请求失败：${响应.status} ${正文.slice(0, 300)}`) as Error & { http状态?: number }
+  错误.http状态 = 响应.status
+  throw 错误
+}
+
+function 提取Anthropic文本(数据: unknown): string | undefined {
+  if (typeof 数据 !== 'object' || 数据 === null || !('content' in 数据)) return undefined
+  const 内容 = (数据 as { content: unknown }).content
+  if (!Array.isArray(内容)) return undefined
+  const 拼接 = 内容
+    .filter((块: unknown) => typeof 块 === 'object' && 块 !== null && 'text' in 块)
+    .map((块: { text: unknown }) => (typeof 块.text === 'string' ? 块.text : ''))
+    .join('')
+  return 拼接.length > 0 ? 拼接 : undefined
+}
+
+function 分类回退原因(err: unknown): { 回退原因: 回退原因; http状态?: number } {
+  if (是否超时错误(err)) return { 回退原因: 'timeout' }
+  const 状态 = (err as { http状态?: unknown } | null)?.http状态
+  if (typeof 状态 === 'number') return { 回退原因: 'http', http状态: 状态 }
+  if (err instanceof Error && err.message.includes('返回格式异常')) return { 回退原因: 'format' }
+  return { 回退原因: 'network' }
+}
+
 /**
  * 把一条 AiMessage 转为 API 消息体。
  * 带 images 的 user 消息按 vision 格式拆块数组（text 块 + image_url 块）；
@@ -76,12 +152,29 @@ function 到Api消息(message: AiMessage): Record<string, unknown> {
   }
 }
 
+/**
+ * DeepSeek(OpenAI 兼容)思考体：官方 thinking_mode 档位——关闭即 thinking.disabled 且不带
+ * reasoning_effort；开启档 thinking.enabled + reasoning_effort 直传 low/high/max。
+ */
+function 思考体OpenAI(强度: 思考强度): Record<string, unknown> {
+  if (强度 === 'off') return { thinking: { type: 'disabled' } }
+  return { thinking: { type: 'enabled' }, reasoning_effort: 强度 }
+}
+
+/**
+ * GLM(Anthropic 兼容)思考体：GLM-4.7 强制思考且不支持 reasoning_effort（5.2+ 才支持），
+ * wire 上只区分 thinking.enabled/disabled。
+ */
+function 思考体Anthropic(强度: 思考强度): Record<string, unknown> {
+  return { thinking: { type: 强度 === 'off' ? 'disabled' : 'enabled' } }
+}
+
 async function callOpenAICompletions(
   模型: 模型定义,
   apiKey: string,
   messages: AiMessage[],
   systemPrompt: string,
-  thinkingEnabled: boolean,
+  思考强度档: 思考强度,
   signal?: AbortSignal
 ): Promise<AiMessage> {
   const body: Record<string, unknown> = {
@@ -90,22 +183,26 @@ async function callOpenAICompletions(
     temperature: 0.6,
     max_tokens: DEEPSEEK_MAX_TOKENS,
     response_format: { type: 'json_object' },
-    thinking: { type: thinkingEnabled ? 'enabled' : 'disabled' },
+    ...思考体OpenAI(思考强度档),
   }
 
-  const response = await fetch(模型.endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+  const response = await 带超时请求(
+    模型.endpoint,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
     signal,
-  })
+    聊天超时毫秒
+  )
 
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(`LLM 请求失败：${response.status} ${text}`)
+    抛出响应错误(response, text)
   }
 
   const data = await response.json()
@@ -139,36 +236,37 @@ async function callAnthropicMessages(
   apiKey: string,
   messages: AiMessage[],
   systemPrompt: string,
+  思考强度档: 思考强度,
   signal?: AbortSignal
 ): Promise<AiMessage> {
-  const response = await fetch(模型.endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+  const response = await 带超时请求(
+    模型.endpoint,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 模型.id,
+        max_tokens: GLM最大令牌数,
+        system: systemPrompt,
+        messages: messages.map(到Anthropic消息),
+        ...思考体Anthropic(思考强度档),
+      }),
     },
-    body: JSON.stringify({
-      model: 模型.id,
-      max_tokens: DEEPSEEK_MAX_TOKENS,
-      system: systemPrompt,
-      messages: messages.map(到Anthropic消息),
-    }),
     signal,
-  })
+    聊天超时毫秒
+  )
 
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(`LLM 请求失败：${response.status} ${text}`)
+    抛出响应错误(response, text)
   }
 
   const data = await response.json()
-  const rawContent = Array.isArray(data.content)
-    ? data.content
-        .filter((block: unknown) => typeof block === 'object' && block !== null && 'text' in block)
-        .map((block: { text: string }) => block.text)
-        .join('')
-    : undefined
+  const rawContent = 提取Anthropic文本(data)
 
   if (typeof rawContent !== 'string' || rawContent.length === 0) {
     throw new Error('LLM 返回格式异常')
@@ -189,31 +287,43 @@ function 解析本次模型与密钥(options: ChatOptions): { 模型: 模型定�
 async function callChatModel(
   messages: AiMessage[],
   systemPrompt: string,
-  thinkingEnabled: boolean,
+  思考强度档: 思考强度,
   options: ChatOptions
 ): Promise<AiMessage> {
   const { 模型, apiKey } = 解析本次模型与密钥(options)
   if (模型.provider === 'anthropic') {
-    return callAnthropicMessages(模型, apiKey, messages, systemPrompt, options.signal)
+    return callAnthropicMessages(模型, apiKey, messages, systemPrompt, 思考强度档, options.signal)
   }
-  return callOpenAICompletions(模型, apiKey, messages, systemPrompt, thinkingEnabled, options.signal)
+  return callOpenAICompletions(模型, apiKey, messages, systemPrompt, 思考强度档, options.signal)
 }
 
 export async function sendChatMessage(messages: AiMessage[], options: ChatOptions = {}): Promise<ChatServiceResult> {
   const userQuestion = 获取最后用户内容(messages)
+  const contextChunks = retrieveChunks(userQuestion, DEEPSEEK_RETRIEVE_TOP_K)
+  const context = contextChunks.map((chunk, index) => `[${index + 1}] ${chunk.content}`).join('\n\n')
+  const 开始毫秒 = Date.now()
 
   try {
     // 思考开关来自全局 store；上下文默认拉满：每次请求发送完整对话历史（API 无状态需自行携带）。
     const { aiThinking } = useAppStore.getState()
-    const contextChunks = retrieveChunks(userQuestion, DEEPSEEK_RETRIEVE_TOP_K)
-    const context = contextChunks.map((chunk, index) => `[${index + 1}] ${chunk.content}`).join('\n\n')
     const answer = await callChatModel(messages, buildSystemPrompt(context), aiThinking, options)
-    return { message: answer }
+    return {
+      message: answer,
+      meta: { 命中数: contextChunks.length, 耗时毫秒: Date.now() - 开始毫秒, 本地兜底: false },
+    }
   } catch (err) {
-    // 用户主动中断（Esc，对齐 Claude Code）：原样上抛，不得吞掉后回退本地回复
     if (是否中断错误(err)) throw err
-    // 其他网络/配额异常回退到本地 RAG 兜底，保证对话不中断
-    return { message: getLocalAnswer(userQuestion) }
+    const 分类 = 分类回退原因(err)
+    return {
+      message: getLocalAnswer(userQuestion),
+      meta: {
+        命中数: contextChunks.length,
+        耗时毫秒: Date.now() - 开始毫秒,
+        本地兜底: true,
+        回退原因: 分类.回退原因,
+        ...(typeof 分类.http状态 === 'number' ? { http状态: 分类.http状态 } : {}),
+      },
+    }
   }
 }
 
@@ -227,58 +337,65 @@ export async function compactConversation(messages: AiMessage[], options: ChatOp
     .map((message) => `${message.role === 'user' ? '用户' : '助手'}：${message.content}`)
     .join('\n')
   const 压缩指令 =
-    '你是对话压缩器。把用户给出的对话历史压缩为一段简明中文摘要，保留关键事实与未完成的诉求。必须以 JSON 格式回复：{"text": "摘要内容"}'
+    '你是对话压缩器。把用户给出的对话历史压缩为一段简明中文摘要，保留关键事实与未完成的诉求。必须以 JSON 格式回复：{"text": "摘要内容"}' +
+    (options.focus ? `\n聚焦说明：${options.focus}` : '')
 
   const { 模型, apiKey } = 解析本次模型与密钥(options)
   let rawContent: unknown
   if (模型.provider === 'anthropic') {
-    const response = await fetch(模型.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+    const response = await 带超时请求(
+      模型.endpoint,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 模型.id,
+          max_tokens: 1024,
+          system: 压缩指令,
+          messages: [{ role: 'user', content: 对话序列化 }],
+          thinking: { type: 'disabled' },
+        }),
       },
-      body: JSON.stringify({
-        model: 模型.id,
-        max_tokens: 1024,
-        system: 压缩指令,
-        messages: [{ role: 'user', content: 对话序列化 }],
-      }),
-      signal: options.signal,
-    })
+      options.signal,
+      聊天超时毫秒
+    )
     if (!response.ok) {
-      throw new Error(`压缩请求失败：${response.status}`)
+      const text = await response.text()
+      throw new Error(`压缩请求失败：${response.status} ${text.slice(0, 300)}`)
     }
     const data = await response.json()
-    rawContent = Array.isArray(data.content)
-      ? data.content
-          .filter((block: unknown) => typeof block === 'object' && block !== null && 'text' in block)
-          .map((block: { text: string }) => block.text)
-          .join('')
-      : undefined
+    rawContent = 提取Anthropic文本(data)
   } else {
-    const response = await fetch(模型.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+    const response = await 带超时请求(
+      模型.endpoint,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 模型.id,
+          messages: [
+            { role: 'system', content: 压缩指令 },
+            { role: 'user', content: 对话序列化 },
+          ],
+          temperature: 0.3,
+          max_tokens: 1024,
+          response_format: { type: 'json_object' },
+          thinking: { type: 'disabled' },
+        }),
       },
-      body: JSON.stringify({
-        model: 模型.id,
-        messages: [
-          { role: 'system', content: 压缩指令 },
-          { role: 'user', content: 对话序列化 },
-        ],
-        temperature: 0.3,
-        max_tokens: 1024,
-        response_format: { type: 'json_object' },
-        thinking: { type: 'disabled' },
-      }),
-      signal: options.signal,
-    })
+      options.signal,
+      聊天超时毫秒
+    )
     if (!response.ok) {
-      throw new Error(`压缩请求失败：${response.status}`)
+      const text = await response.text()
+      throw new Error(`压缩请求失败：${response.status} ${text.slice(0, 300)}`)
     }
     const data = await response.json()
     rawContent = data.choices?.[0]?.message?.content
@@ -291,8 +408,16 @@ export async function compactConversation(messages: AiMessage[], options: ChatOp
 
 export function useChatService(options: ChatOptions = {}) {
   return useMutation({
-    mutationFn: async ({ messages, signal }: { messages: AiMessage[]; signal?: AbortSignal }) => {
-      return sendChatMessage(messages, { ...options, signal })
+    mutationFn: async ({
+      messages,
+      signal,
+      model,
+    }: {
+      messages: AiMessage[]
+      signal?: AbortSignal
+      model?: string
+    }) => {
+      return sendChatMessage(messages, { ...options, ...(model ? { model } : {}), signal })
     },
   })
 }

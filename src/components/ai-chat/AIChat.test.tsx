@@ -70,8 +70,8 @@ function createMockState(overrides: Record<string, unknown> = {}) {
     chatOpen: false,
     setChatOpen,
     aiMessages: mockAiMessages,
-    aiModel: 'deepseek-v4-flash-vision-exp',
-    aiThinking: true,
+    aiModel: 'deepseek-v4.1-flash-expires-on-0910',
+    aiThinking: 'high',
     stashedSession: [],
     addAiMessage: vi.fn((message) => {
       mockAiMessages.push(message)
@@ -134,18 +134,21 @@ describe('AIChat', () => {
     }
   })
 
-  it('shows deepseek-v4-flash-vision-exp with thinking on in status bar when open', async () => {
+  it('底部状态条显示 >> 模型·思考与切换提示', async () => {
     mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
       selector(createMockState({ chatOpen: true }))
     )
 
     render(<AIChat />)
-    expect(await screen.findByText('deepseek-v4-flash-vision-exp · think on · CTX 1M')).toBeInTheDocument()
+    const 状态条 = await screen.findByTestId('chat-status-line')
+    expect(状态条).toHaveTextContent('>>')
+    expect(状态条).toHaveTextContent('deepseek-v4.1-flash-expires-on-0910 · think high')
+    expect(状态条).toHaveTextContent(t('ai.statusCycle'))
   })
 
-  it('/think 切换思考开关并输出状态行', () => {
+  it('/think 按档循环思考强度并输出状态行', () => {
     mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector(createMockState({ chatOpen: true }))
+      selector(createMockState({ chatOpen: true, aiThinking: 'high' }))
     )
 
     render(<AIChat />)
@@ -153,7 +156,8 @@ describe('AIChat', () => {
     fireEvent.change(input, { target: { value: '/think' } })
     fireEvent.submit(input.closest('form') as HTMLFormElement)
 
-    expect(setAiThinking).toHaveBeenCalledWith(false)
+    expect(setAiThinking).toHaveBeenCalledWith('max')
+    expect(screen.getByText(t('ai.thinkLevel').replace('{level}', 'max'))).toBeInTheDocument()
   })
 
   /** 造一个指定大小的 File（jsdom 中 File.size 由内容长度决定，用 defineProperty 覆写） */
@@ -547,8 +551,8 @@ describe('AIChat', () => {
     fireEvent.change(input, { target: { value: '/model' } })
     fireEvent.submit(input.closest('form') as HTMLFormElement)
 
-    expect(screen.getByText(t('ai.commands.modelHeader'))).toBeInTheDocument()
-    expect(screen.getByText(/glm-4\.7-flash/)).toBeInTheDocument()
+    expect(screen.getByTestId('model-picker')).toBeInTheDocument()
+    expect(screen.getByTestId('model-option-2')).toHaveTextContent('glm-4.7-flash')
     expect(mutateAsync).not.toHaveBeenCalled()
   })
 
@@ -578,6 +582,124 @@ describe('AIChat', () => {
 
     expect(setAiModel).not.toHaveBeenCalled()
     expect(screen.getByText(/未知模型：/)).toBeInTheDocument()
+  })
+
+  it('/model 裸指令开启键盘选择器（❯高亮当前模型）', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(screen.getByTestId('model-picker')).toBeInTheDocument()
+    expect(screen.getByText(t('ai.modelPicker.selectTitle'))).toBeInTheDocument()
+    expect(screen.getByText(t('ai.modelPicker.confirmHint'))).toBeInTheDocument()
+    const 第一行 = screen.getByTestId('model-option-1')
+    expect(第一行).toHaveTextContent('❯')
+    expect(第一行).toHaveTextContent('deepseek-v4.1-flash-expires-on-0910')
+    expect(第一行).toHaveTextContent('✓')
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('选择器内↑/↓移动高亮，⏎确认切换模型', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    expect(screen.getByTestId('model-option-2')).toHaveTextContent('❯')
+
+    fireEvent.keyDown(input, { key: 'ArrowUp' })
+    expect(screen.getByTestId('model-option-1')).toHaveTextContent('❯')
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(setAiModel).toHaveBeenCalledWith('glm-4.7-flash')
+    expect(screen.getByText(/已切换模型：glm-4\.7-flash/)).toBeInTheDocument()
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('选择器内←/→按档步进思考强度而不发送', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, aiThinking: 'high' }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    fireEvent.keyDown(input, { key: 'ArrowRight' })
+    expect(setAiThinking).toHaveBeenCalledWith('max')
+
+    fireEvent.keyDown(input, { key: 'ArrowLeft' })
+    expect(setAiThinking).toHaveBeenCalledWith('low')
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('选择器在强度两端钳制（max 处 → 无操作）', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, aiThinking: 'max' }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    fireEvent.keyDown(input, { key: 'ArrowRight' })
+    expect(setAiThinking).not.toHaveBeenCalled()
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('选择器内 Esc 关闭选择器而不最小化面板', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+    expect(screen.getByTestId('model-picker')).toBeInTheDocument()
+
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(screen.queryByTestId('model-picker')).not.toBeInTheDocument()
+    expect(setChatOpen).not.toHaveBeenCalled()
+  })
+
+  it('选择器开启后一旦打字方向键恢复编辑语义', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, aiThinking: 'high' }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    fireEvent.change(input, { target: { value: 'hello' } })
+    fireEvent.keyDown(input, { key: 'ArrowLeft' })
+    expect(setAiThinking).not.toHaveBeenCalled()
+  })
+
+  it('对话面板阻止 Lenis 滚轮劫持（原生滚动归面板）', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    expect(screen.getByTestId('chat-messages').hasAttribute('data-lenis-prevent')).toBe(true)
+    expect(screen.getByRole('dialog').hasAttribute('data-lenis-prevent')).toBe(true)
+    expect(screen.getByPlaceholderText(t('ai.placeholder')).hasAttribute('data-lenis-prevent')).toBe(true)
   })
 
   it('/resume 无暂存时提示且不恢复', () => {
@@ -618,7 +740,10 @@ describe('AIChat', () => {
     render(<AIChat />)
 
     expect(screen.queryByText(t('ai.empty'))).not.toBeInTheDocument()
-    expect(screen.getByText(t('ai.thinking'))).toBeInTheDocument()
+    // 思考行带计时与中断提示后缀（对齐 Claude Code 的 Thinking…(Xs)），按前缀包含断言；
+    // 底部忙提示同样含 esc中断，故此处断言忙提示整行唯一文本
+    expect(screen.getByText(t('ai.thinking'), { exact: false })).toBeInTheDocument()
+    expect(screen.getByText(t('ai.busyHint'))).toBeInTheDocument()
   })
 
   it('未知指令给出 Claude Code 风格的报错', () => {
@@ -882,5 +1007,411 @@ describe('AIChat', () => {
     render(<AIChat />)
     expect(screen.getByTestId('ui-component-ContactForm')).toBeInTheDocument()
     expect(screen.getByPlaceholderText(t('contact.form.name'))).toBeInTheDocument()
+  })
+
+  it('Esc 空闲时最小化面板（有输入草稿也不例外，用户确认语义）', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '未发出的草稿' } })
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(setChatOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('Esc 为空输入时最小化面板', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(setChatOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('Enter 提交、Shift+Enter 不提交只换行', async () => {
+    mutateAsync.mockResolvedValue({ message: { role: 'assistant', content: '回答' } })
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '第一行第二行' } })
+    fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })
+    expect(mutateAsync).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalled()
+    })
+  })
+
+  it('? 展开指令与快捷键帮助', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '?' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(screen.getByText(t('ai.shortcuts').split('\n')[0])).toBeInTheDocument()
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('! 开头输入被诚实拦截而不发送', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '!ls -la' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(screen.getByText(t('ai.shellUnsupported'))).toBeInTheDocument()
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('/ 前缀弹出指令补全，Tab 接受选中项', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    expect(screen.queryByTestId('command-palette')).not.toBeInTheDocument()
+
+    fireEvent.change(input, { target: { value: '/mod' } })
+    expect(screen.getByTestId('command-palette')).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /\/model/ })).toBeInTheDocument()
+
+    fireEvent.keyDown(input, { key: 'Tab' })
+    expect(input.value).toBe('/model')
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('补全打开时回车直接执行输入', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/mod' } })
+    expect(screen.getByTestId('command-palette')).toBeInTheDocument()
+
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(screen.getByText(`${t('ai.commands.didYouMean')} /model`)).toBeInTheDocument()
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('补全打开时 Esc 仍最小化面板而不清空输入', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/mod' } })
+    expect(screen.getByTestId('command-palette')).toBeInTheDocument()
+
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(setChatOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('拼写相近的未知指令给出联想建议', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '/modle' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    expect(screen.getByText(`${t('ai.commands.didYouMean')} /model`)).toBeInTheDocument()
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('Alt+T 按档循环思考强度', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, aiThinking: 'high' }))
+    )
+
+    render(<AIChat />)
+    fireEvent.keyDown(window, { key: 't', altKey: true })
+    expect(setAiThinking).toHaveBeenCalledWith('max')
+    expect(screen.getByText(t('ai.thinkLevel').replace('{level}', 'max'))).toBeInTheDocument()
+  })
+
+  it('Alt+P 轮换模型并输出切换行', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, aiModel: 'deepseek-v4.1-flash-expires-on-0910' }))
+    )
+
+    render(<AIChat />)
+    fireEvent.keyDown(window, { key: 'p', altKey: true })
+    expect(setAiModel).toHaveBeenCalledTimes(1)
+    expect(setAiModel.mock.calls[0][0]).not.toBe('deepseek-v4.1-flash-expires-on-0910')
+    expect(screen.getByText(t('ai.commands.modelSwitchedPrefix'), { exact: false })).toBeInTheDocument()
+  })
+
+  it('助手消息渲染 ⏺/⎿ 工具轨迹（含命中数与耗时）', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [
+            { role: 'user', content: '问题' },
+            {
+              role: 'assistant',
+              content: '答案',
+              meta: { 命中数: 3, 耗时毫秒: 42, 本地兜底: false },
+            },
+          ],
+        })
+      )
+    )
+
+    render(<AIChat />)
+    expect(screen.getByText(t('ai.toolName'))).toBeInTheDocument()
+    expect(screen.getByText('命中 3 段 · 42ms')).toBeInTheDocument()
+    expect(screen.queryByText(t('ai.toolLocalFallback'), { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('本地兜底消息明确标注本地兜底', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [
+            { role: 'user', content: '问题' },
+            {
+              role: 'assistant',
+              content: '兜底答案',
+              meta: { 命中数: 0, 耗时毫秒: 5, 本地兜底: true },
+            },
+          ],
+        })
+      )
+    )
+
+    render(<AIChat />)
+    expect(screen.getByText(t('ai.toolLocalFallback'), { exact: false })).toBeInTheDocument()
+  })
+
+  it('无元数据的历史消息回退为通用知识库标注', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [
+            { role: 'user', content: '问题' },
+            { role: 'assistant', content: '老答案' },
+          ],
+        })
+      )
+    )
+
+    render(<AIChat />)
+    expect(screen.getByText(t('ai.toolGeneric'))).toBeInTheDocument()
+  })
+
+  it('标题栏显示三行式头部（名称版本/模型计费/路径），底部状态只读不可点', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(
+        createMockState({
+          chatOpen: true,
+          aiMessages: [
+            { role: 'user', content: '问题' },
+            { role: 'assistant', content: '答案' },
+          ],
+        })
+      )
+    )
+
+    render(<AIChat />)
+    expect(screen.getByText(t('ai.headerName'))).toBeInTheDocument()
+    const 标题状态 = screen.getByTestId('chat-header-status')
+    expect(标题状态).toHaveTextContent('deepseek-v4.1-flash-expires-on-0910')
+    expect(标题状态).toHaveTextContent(t('ai.headerBilling'))
+    expect(screen.getByText(t('ai.headerCwd'))).toBeInTheDocument()
+    expect(screen.queryByTitle(t('ai.commands.modelHint'))).not.toBeInTheDocument()
+  })
+
+  it('↑/↓ 翻看输入历史', async () => {
+    mutateAsync.mockResolvedValue({ message: { role: 'assistant', content: '回答' } })
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    const 表单 = input.closest('form') as HTMLFormElement
+    fireEvent.change(input, { target: { value: '第一个问题' } })
+    fireEvent.submit(表单)
+    fireEvent.change(input, { target: { value: '第二个问题' } })
+    fireEvent.submit(表单)
+
+    fireEvent.keyDown(input, { key: 'ArrowUp' })
+    expect(input.value).toBe('第二个问题')
+    fireEvent.keyDown(input, { key: 'ArrowUp' })
+    expect(input.value).toBe('第一个问题')
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    expect(input.value).toBe('第二个问题')
+  })
+
+  it('/compact 支持聚焦说明并透传给压缩', async () => {
+    mockCompact.mockResolvedValueOnce('聚焦摘要')
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, aiMessages: [{ role: 'user', content: '旧消息' }] }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    fireEvent.change(input, { target: { value: '/compact 只看项目' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    await waitFor(() => {
+      expect(mockCompact).toHaveBeenCalledWith(
+        [{ role: 'user', content: '旧消息' }],
+        expect.objectContaining({ focus: '只看项目' })
+      )
+    })
+    expect(screen.getByText(t('ai.commands.compacted'))).toBeInTheDocument()
+  })
+
+  it('拖拽图片进入待发区', async () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const 面板 = screen.getByRole('dialog', { name: t('ai.title') })
+    fireEvent.drop(面板, { dataTransfer: { files: [创建图片文件()] } })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pending-images')).toBeInTheDocument()
+    })
+  })
+
+  it('输入框为多行且上限放宽到 2000', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder'))
+    expect(input.tagName).toBe('TEXTAREA')
+    expect(input).toHaveAttribute('maxlength', '2000')
+  })
+
+  it('选择器内 s 仅本次会话切换且发送时透传模型', async () => {
+    mutateAsync.mockResolvedValue({
+      message: { role: 'assistant', content: '答' },
+      meta: { 命中数: 0, 耗时毫秒: 1, 本地兜底: false },
+    })
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    fireEvent.keyDown(input, { key: 's' })
+    expect(setAiModel).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('model-picker')).not.toBeInTheDocument()
+    expect(screen.getByTestId('chat-status-line')).toHaveTextContent(t('ai.modelPicker.sessionBadge'))
+
+    fireEvent.change(input, { target: { value: '你好' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+    await waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ model: 'glm-4.7-flash' }))
+    })
+  })
+
+  it('选择器内数字键直选并持久化', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    fireEvent.keyDown(input, { key: '2' })
+    expect(setAiModel).toHaveBeenCalledWith('glm-4.7-flash')
+    expect(screen.queryByTestId('model-picker')).not.toBeInTheDocument()
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('Shift+Tab 轮换默认模型', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, aiModel: 'deepseek-v4.1-flash-expires-on-0910' }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.keyDown(input, { key: 'Tab', shiftKey: true })
+    expect(setAiModel).toHaveBeenCalledWith('glm-4.7-flash')
+    expect(screen.getByText(t('ai.commands.modelSwitchedPrefix'), { exact: false })).toBeInTheDocument()
+  })
+
+  it('指令补全为双列且最多显示5行', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/' } })
+
+    const 选项 = screen.getAllByRole('option')
+    expect(选项.length).toBe(5)
+    expect(选项[0]).toHaveTextContent('/help')
+    expect(选项[0]).toHaveTextContent(t('ai.cmdDesc.help'))
+  })
+
+  it('选择器展示思考强度行与调整提示', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true, aiThinking: 'high' }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    const 选择器 = screen.getByTestId('model-picker')
+    expect(选择器).toHaveTextContent('High effort')
+    expect(选择器).toHaveTextContent(t('ai.modelPicker.effortAdjust'))
+  })
+
+  it('/clear 清除本次会话模型回到默认', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const input = screen.getByPlaceholderText(t('ai.placeholder')) as HTMLTextAreaElement
+    fireEvent.change(input, { target: { value: '/model' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    fireEvent.keyDown(input, { key: 's' })
+    expect(screen.getByTestId('chat-status-line')).toHaveTextContent(t('ai.modelPicker.sessionBadge'))
+
+    fireEvent.change(input, { target: { value: '/clear' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+    expect(screen.getByTestId('chat-status-line')).not.toHaveTextContent(t('ai.modelPicker.sessionBadge'))
   })
 })

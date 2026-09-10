@@ -186,13 +186,12 @@
   "experience": {
     "title": "经历",
     "subtitle": "写代码、修Bug、录课和做创作的时间线。",
-    "timelineLabel": "经历时间线",
-    "achievementsTitle": "成就与亮点"
+    "timelineLabel": "经历时间线"
   },
   "showcase": {
     "titleLine1": "持续探索",
-    "titleLine2": "教育与多维创作",
-    "subtitle": "课程、设计、写作、音乐和游戏世界观，把一个个想法真正做出来。",
+    "titleLine2": "多维创作",
+    "subtitle": "设计、教育、艺术，探索未至之境。",
     "rows": {
       "education": "教育背景",
       "design": "设计",
@@ -205,39 +204,39 @@
         "desc": "计算机科学与技术（本科）· 2022.09 - 2026.06"
       },
       "coding": {
-        "title": "编程基础",
-        "desc": "Python从入门到能写项目 · C语言基础和指针"
+        "title": "Python编程题精讲",
+        "desc": "0基础逐题手写演示 · 覆盖多角度的基础知识"
       },
       "systems": {
-        "title": "系统与网络",
-        "desc": "计算机网络系统串讲 · 组成原理搞懂硬件怎么跑"
+        "title": "计算机网络",
+        "desc": "分层体系与网络协议 · 重点内容一次拉齐"
       },
       "lowlevel": {
-        "title": "数据与底层",
-        "desc": "数据结构与算法 · 汇编寄存器与指令 · MySQL数据库"
+        "title": "MySQL数据库精讲",
+        "desc": "E-R建模与关系代数 · SQL查询增删改/视图连接，Navicat全程实操"
       },
       "teaching": {
-        "title": "教学成果",
-        "desc": "线下小班课计算机培训 · 50+毕业生论文陪跑 · 200人+学习群"
+        "title": "毕业论文全流程指导",
+        "desc": "编写、格式规范到提交全链路拆解"
       },
       "assembly": {
-        "title": "汇编语言",
-        "desc": "寄存器与指令 · 从最底层看懂程序运行"
+        "title": "汇编语言程序设计",
+        "desc": "寄存器与指令系统手写程序 · 从机器底层看懂代码如何执行"
       },
       "arch": {
         "title": "计算机组成原理",
-        "desc": "硬件是怎么跑的 · 拆开电脑看懂底层逻辑"
+        "desc": "CPU、存储系统与指令周期 · 硬件运行机制连讲"
       },
       "marx": {
-        "title": "马原串讲",
-        "desc": "大白话拆解原理 · 复习备考搭框架"
+        "title": "马克思主义原理精讲",
+        "desc": "全知识点逐题精讲 · 选择、简答与论述题型全拆解"
       },
       "resumeTheater": {
-        "title": "简历3D剧场",
-        "desc": "你正在看的这个网站，React+Three.js个人作品集"
+        "title": "个人简历网站",
+        "desc": "React+Three.js沉浸式个人站 · 内置AI助手、五子棋与中文打字机动效"
       },
       "xrmUi": {
-        "title": "暮澜纪元UI体系",
+        "title": "暮澜纪元UI设计",
         "desc": "游戏菜单、技能面板和HUD的整套设计"
       },
       "aiToolchain": {
@@ -257,32 +256,32 @@
         "desc": "世界观编年史与角色故事的长期写作"
       },
       "comedy": {
-        "title": "原创单口相声",
-        "desc": "从文本创作到角色语音差异化设计"
+        "title": "原创相声《传统与科技》",
+        "desc": "自改自演歌颂型新相声 · 从文本创作到差异化角色设计"
       },
       "gameWorld": {
         "title": "游戏世界设计",
         "desc": "8世界32职业MMORPG · BOSS技能循环与阶段切换"
       },
       "courses": {
-        "title": "B站10+门课程",
-        "desc": "计算机课程录制 · 剪辑与知识可视化"
+        "title": "B站课程主页·玄锐暮",
+        "desc": "编程、底层硬件到公共课成套系列课 · 录制剪辑与知识可视化"
       },
       "escape": {
-        "title": "架子鼓九级证书",
-        "desc": "曾考取架子鼓九级证书（未创作过歌曲等）"
+        "title": "爵士乐",
+        "desc": "考取架子鼓九级证书"
       },
       "repoLoop": {
         "title": "循环工程loop-engineering",
-        "desc": "普通模型多角色协作 · 花更多token换顶级质量"
+        "desc": "子代理循环+三轴审查+熔断自改进 · 9个Agent技能打包开箱即用"
       },
       "repoLove": {
-        "title": "和我恋爱吧HeWoLianAiBa",
-        "desc": "AI恋爱聊天应用 · Vue3+Node.js+PostgreSQL"
+        "title": "和我恋爱吧HeWoLianAiBa（AI恋爱模拟）",
+        "desc": "仿微信恋爱聊天 · 16型MBTI角色+AI军师实时支招，Vue3全栈Docker部署"
       },
       "repoData": {
         "title": "恋爱吧数据中心LianAiBaDataCenter",
-        "desc": "运营数据同步聚合 · Java+Python双栈"
+        "desc": "Java+Python四服务Monorepo · Kafka/RAG/MCP与运营数据大屏"
       }
     }
   },
@@ -363,6 +362,9 @@
       "skills": "主要用Java和Node.js/Express，也写Python脚本和React前端，MySQL、Redis、PostgreSQL都在项目里用过，最近在折腾AI Agent和MCP。",
       "education": "我就读于{school}，{major}专业{degree}，预计 {period} 毕业。",
       "experience": "独立开发暮澜纪元和和我恋爱吧全栈应用、在B站 录课、帮毕业生改论文。",
+      "greeting": "你好！我是玄锐暮的简历助手，可以问我技术栈、项目经历、教育背景或联系方式。",
+      "thanks": "不客气，有其他简历问题随时问我。",
+      "farewell": "再见，祝你今天顺利！",
       "fallback": "这个问题我本地没准备答案，你可以发邮件 {email} 问我。"
     }
   },
@@ -374,29 +376,65 @@
     "loading": "正在想...",
     "error": "发送失败，请重试",
     "empty": "有什么可以帮你的？",
+    "welcomeTitle": "✻ Welcome to Xuan Harness!",
+    "welcomeIntro": "我是玄锐暮简历助手，可回答简历、技术栈与项目问题。",
+    "welcomeTips": "?查看快捷键 · /查看指令 · Ctrl+V粘贴图片 · 支持拖拽图片",
+    "extendedLabel": "扩展 · 试试问问：",
     "localMode": "当前是本地自动回复",
     "reset": "清空对话",
     "busyHint": "esc中断 · ⏎排队发送",
-    "idleHint": "esc关闭 · ⏎发送",
+    "idleHint": "esc最小化 · ?快捷键 · /指令 · ⇧⏎换行 · ⏎发送",
     "thinking": "✻思考中…",
-    "emptyCommands": "/help查看全部指令",
+    "cancelHint": "esc中断",
+    "toolName": "Retrieve(简历知识库)",
+    "toolGeneric": "本地知识库",
+    "toolHits": "命中",
+    "toolSegments": "段",
+    "toolLocalFallback": "本地兜底",
+    "toolTimeout": "超时回退",
+    "toolHttpError": "请求失败",
+    "toolNetworkError": "网络异常",
+    "toolFormatError": "格式异常",
+    "dropHint": "松开以添加图片（扩展功能）",
+    "shellUnsupported": "!shell模式在此助手不可用，请输入问题或/help",
+    "emptyCommands": "/help查看指令 · ?查看快捷键",
+    "shortcuts": "快捷键：\n  ?显示本帮助\n  /打开指令补全（Tab接受，回车执行）\n  Alt+T切换思考强度\n  Alt+P切换模型\n  Enter发送 · Shift+Enter换行\n  ↑/↓翻看输入历史\n  esc忙时中断 · esc空闲最小化面板",
     "attachImage": "添加图片",
     "removeImage": "移除图片",
     "imageUploadFailed": "图片上传失败：仅支持JPEG/PNG/GIF/WebP，且单张不超过16MiB",
     "imageRejected": "上传失败",
-    "thinkOn": "✻思考模式：开（/think关闭）",
-    "thinkOff": "○思考模式：关（/think开启）",
+    "thinkLevel": "✻思考强度：{level}（/think切换）",
+    "headerName": "Xuan Harness",
+    "headerVersion": "v1.0.0",
+    "headerBilling": "API Usage Billing",
+    "headerCwd": "~/xuanruimu-resume",
+    "statusCycle": "(shift+tab to cycle)",
+    "modelPicker": {
+      "selectTitle": "Select model",
+      "selectDesc": "Switch between models. Your pick becomes the default for new sessions.",
+      "sessionLinePrefix": "Currently using",
+      "sessionLineSuffix": "for this session only",
+      "effortAdjust": "←/→ to adjust",
+      "effortUnit": "effort",
+      "effortNames": ["Off", "Low", "High", "Max"],
+      "confirmHint": "Enter to set as default · s to use this session only · Esc to cancel",
+      "sessionOnlyPrefix": "Using",
+      "sessionOnlySuffix": "for this session only",
+      "sessionBadge": "session-only"
+    },
     "queue": {
       "label": "已排队",
       "hint": "当前回复结束后依次发送 · esc可中断当前回复"
     },
     "commands": {
-      "help": "可用指令：\n  /clear清空对话历史，开始新会话\n  /new/clear的别名\n  /resume恢复上一次清空前的会话\n  /model查看或切换模型\n  /compact压缩对话历史，保留语义\n  /think切换思考模式\n  /status查看面板状态\n  /help查看指令列表",
+      "help": "可用指令：\n  /clear清空对话历史，开始新会话\n  /new · /clear的别名\n  /resume恢复上一次清空前的会话\n  /model查看或切换模型\n  /compact压缩对话历史，保留语义（可加聚焦说明）\n  /think切换思考强度（Alt+T）\n  /status查看面板状态\n  /help查看指令列表",
       "unknownPrefix": "未知指令：",
       "unknownSuffix": "。输入/help查看可用指令",
+      "didYouMean": "您是指：",
       "modelHeader": "可用模型：",
       "modelCurrent": "（当前）",
-      "modelHint": "输入/model<序号或模型名>切换",
+      "modelHint": "输入/model<序号或模型名>切换 · 选择器内↑↓←→⏎操作",
+      "modelPickerHint": "↑/↓切模型 · ←/→切思考强度 · ⏎确认 · esc取消",
       "modelSwitchedPrefix": "已切换模型：",
       "modelUnknownPrefix": "未知模型：",
       "resumeRestored": "已恢复上一次清空前的会话",
@@ -412,7 +450,18 @@
       "statusModel": "模型",
       "statusThinking": "思考",
       "statusMessages": "消息数",
+      "statusQueued": "排队",
       "statusContext": "上下文"
+    },
+    "cmdDesc": {
+      "help": "查看指令列表与快捷键",
+      "clear": "清空对话，开始新会话",
+      "news": "/clear的别名",
+      "resume": "恢复上一次清空前的会话",
+      "model": "查看或切换模型",
+      "compact": "压缩对话历史，保留语义",
+      "think": "切换思考强度",
+      "status": "查看面板状态"
     },
     "quickQuestions": ["你是谁", "你的技术栈", "介绍一下暮澜纪元", "联系方式"],
     "component": {
@@ -436,7 +485,7 @@
     "projects": {
       "xrm": {
         "name": "暮澜纪元",
-        "desc": "在《我的世界》里搭出一个大型网游：8个世界、32种职业，打怪、天赋、任务和组队系统全部自研。",
+        "desc": "以Java 25自研400+类插件体系（HikariCP+MySQL持久化、Guice解耦），在《我的世界》里搭出8世界32职业大型网游：打怪、天赋、任务与组队全链路自研。",
         "tags": ["Java 25", "Gradle Kotlin DSL", "HikariCP+MySQL", "Guice"],
         "metrics": {
           "classes": "400+Java类",
@@ -445,7 +494,7 @@
       },
       "lovewithme": {
         "name": "和我恋爱吧",
-        "desc": "已上线的AI恋爱聊天网站：注册后就能和AI角色实时聊天，对话记录长期保存。",
+        "desc": "已上线的AI恋爱聊天全栈应用（Express+TypeScript+PostgreSQL+Redis，docker-compose六服务编排）：注册即聊、Socket.io实时对话，JWT+HTTPS保障长期留存。",
         "tags": ["Node.js", "TypeScript", "Express", "PostgreSQL", "Redis", "Docker"],
         "metrics": {
           "services": "6服务容器编排",
@@ -454,7 +503,7 @@
       },
       "aiConsole": {
         "name": "循环工程skill",
-        "desc": "定个目标，它就自动拆步骤、自己干活、自己检查，直到做完为止。",
+        "desc": "面向普通模型的多角色协作Skill：定个目标即自动拆步骤、自己干活自己检查直到做完，以更多token换顶级交付质量。",
         "tags": ["自动拆解", "自动执行", "自动检查"],
         "metrics": {
           "lines": "自动拆步骤",
@@ -463,7 +512,7 @@
       },
       "analytics": {
         "name": "恋爱吧数据中心",
-        "desc": "给恋爱应用做的运营后台：自动汇总业务数据生成可视化大屏，还能用AI直接查数据。",
+        "desc": "恋爱应用的运营数据中心（Spring Boot 3+Kafka+LangGraph RAG+FastAPI MCP+ECharts）：自动聚合业务数据生成可视化大屏，还能用自然语言直接查数。",
         "tags": ["Spring Boot 3", "Kafka", "Redis", "LangGraph", "RAG", "FastAPI", "MCP", "ECharts"],
         "metrics": {
           "stack": "Java+Python双栈",
@@ -615,58 +664,56 @@
     "experience": {
       "entries": {
         "mcserver": {
-          "title": "服主 · Minecraft《燃烧之陨》多元生存服",
+          "title": "Minecraft《燃烧之陨》多元生存服",
           "organization": "独立运营",
           "period": "2019.07至今",
-          "description": "从2019年起独立运营《燃烧之陨》多元生存服与粘液科技服：多元服190+插件、粘液服80+科技附属，10+世界与副本长期在线。",
+          "description": "从2019年起独立承担《燃烧之陨》多元生存服与粘液科技服的服务器运维：Purpur核心版本升级、190+插件与80+科技附属的选型调优、AuthMe登录与基岩互通联调、多世界与副本的日常巡检，配合群机器人自动推送开服公告，保障10+世界长期稳定在线。",
           "achievement1": "Purpur1.21.11核心+AuthMe登录+基岩互通，Java版与基岩版同服游玩",
           "achievement2": "粘液科技配40+扩展附属，科技线从入门烧炉一路玩到终局",
           "achievement3": "累计超100名玩家到访，QQ群日常答疑，配套群机器人自动推送开服公告"
         },
         "bachelor": {
-          "title": "本科毕业 · 计算机科学与技术",
+          "title": "本科毕业 · 计算机科学与技术专业",
           "organization": "天津仁爱学院",
           "period": "2022.09—2026.06",
           "description": "天津仁爱学院计算机科学与技术本科，2022.09入学、2026.06顺利毕业。",
-          "achievement1": "系统学完编程与计算机基础课，Python/C语言/MySQL都能写",
-          "achievement2": "按期修完培养方案全部环节，顺利毕业",
-          "achievement3": "在校期间持续运营游戏服并上线AI全栈应用，学与做互相带动"
+          "achievement1": "顺利学修完成多门IT相关课程。",
+          "achievement2": "成绩优异，项目扎实。"
         },
         "educator": {
           "title": "教育内容创作者",
           "organization": "B站/线下小班课",
           "period": "2024.03.16—2026.06",
-          "description": "线上在B站录课、维护200人+QQ学习交流群；线下带Python基础与计算机基础小班课，做毕业论文指导。",
+          "description": "在B站录课、维护200人+QQ学习交流群；面向社会带过Python基础与计算机基础小班课，做毕业论文指导。",
           "achievement1": "录制10+门计算机课程，覆盖零基础到进阶",
           "achievement2": "一对一指导50+毕业生走完选题到答辩，WPS/Microsoft Word排版逐节调格式",
           "achievement3": "维护200人+学习群，沉淀系统化复习资料库"
         },
         "wowguild": {
-          "title": "会长 · 燃烧之陨公会",
+          "title": "燃烧之陨公会",
           "organization": "魔兽世界",
           "period": "2024.08.13至今",
           "description": "2024年创办魔兽世界燃烧之陨公会，带团征战各版本BOSS，开荒实况同步发B站。",
-          "achievement1": "各版本BOSS持续开荒，实况录像全公开",
-          "achievement2": "一人创办并带团，团队从零搭到稳定开荒",
-          "achievement3": "与Minecraft《燃烧之陨》服同名，游戏社群双线运营"
+          "achievement1": "团队从零起步，目前稳定开荒",
+          "achievement2": "时刻保持和谐友善的团队氛围"
         },
         "aiengineer": {
           "title": "AI应用工程师",
           "organization": "LLM应用开发",
           "period": "2024.09至今",
-          "description": "深度使用海螺AI/CodeGeex/DeepSeek/GLM-5.3-Flash/GPT-5.6/Muse Spark 1.3等LLM做开发提效。",
-          "achievement1": "熟练使用Claude Code/Codex等AI编程助手完成功能开发",
-          "achievement2": "熟练使用WorkBuddy/TraeWork等AI原生开发环境，Git版本控制与协同开发",
-          "achievement3": "沉淀85+自定义Skill，多Agent协作与MCP协议均有落地"
+          "description": "深度使用过从海螺AI/CodeGeex/DeepSeek，到GLM-5.3-Flash/GPT-6-Astra/Muse Spark 1.3等AI进行开发任务或在其他领域进行探索尝试。",
+          "achievement1": "熟练使用Claude Code/Codex等AI编码智能体完成项目开发",
+          "achievement2": "熟练使用WorkBuddy/TraeWork等AI办公智能体完成日常任务",
+          "achievement3": "使用及创建上百种skill，熟悉MCP，Hooks，Rules等功能和使用方式。"
         },
         "indie": {
-          "title": "独立开发者 · 和我恋爱吧",
+          "title": "独立开发者 · 和我恋爱吧及其他项目",
           "organization": "个人项目（已上线）",
           "period": "2026.05.10至今",
-          "description": "用户打开网页就能与AI角色实时聊天，注册登录后聊天记录长期保留。",
-          "achievement1": "docker-compose编排6服务上线，Nginx反代+HTTPS自动续期",
-          "achievement2": "JWT鉴权+短信验证码+接口限流，敏感配置全走环境变量",
-          "achievement3": "OpenTelemetry链路追踪+Prometheus指标，异常自动告警"
+          "description": "开发过如“和我恋爱吧、恋爱吧数据中心、个人简历、MMORPG插件”等多领域项目。具备全栈开发能力，可独立完成从前端页面、接口设计到后端服务与数据库的端到端开发。具备多技术栈开发经验，能够根据业务场景快速完成技术选型并落地。具备前后端分离项目的架构设计与开发经验。所使用的技术栈如下。",
+          "achievement1": "前端：Vue3+Vite+TypeScript、React19+Three.js+TailwindCSS、Socket.io实时通信、Pinia/Vue-Router/Zustand状态与路由",
+          "achievement2": "后端：Node.js+Express+TypeScript、SpringBoot+MyBatis-Plus、Python+FastAPI+LangGraph、PostgreSQL/MySQL/Redis/Kafka",
+          "achievement3": "工程与AI：Docker/docker-compose+Nginx+HTTPS、GradleKotlinDSL+Guice+HikariCP、MCP/RAG/pgvector/ECharts、JUnit/Mockito/Vitest/Playwright"
         }
       }
     },

@@ -1,12 +1,12 @@
-﻿import { useRef, useState, useEffect, useCallback, useOptimistic, startTransition } from 'react'
+﻿import { useRef, useState, useEffect, useCallback, useMemo, useOptimistic, startTransition } from 'react'
 import { X, Loader2, RefreshCw, ImagePlus } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
+import type { AiMessage } from '../../store/useAppStore'
 import { cn } from '../../lib/utils'
 import { t, ta } from '../../i18n/translations'
 import { useChatService, compactConversation, 是否中断错误 } from '../../ai/chatService'
-import { 模型列表 } from '../../ai/models'
+import { 模型列表, 循环思考强度, 步进思考强度, 思考强度顺序, type 思考强度 } from '../../ai/models'
 import { UiComponentRenderer } from './UiComponentRegistry'
-import type { AiMessage } from '../../store/useAppStore'
 
 interface AIChatProps {
   className?: string
@@ -45,6 +45,14 @@ function 读取为DataUrl(file: File): Promise<string> {
   })
 }
 
+function 走历史可行(输入框: HTMLTextAreaElement, 方向: 'up' | 'down'): boolean {
+  const 值 = 输入框.value
+  if (!值.includes('\n')) return true
+  const 光标 = 输入框.selectionStart ?? 0
+  if (方向 === 'up') return !值.slice(0, 光标).includes('\n')
+  return !值.slice(光标).includes('\n')
+}
+
 function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
@@ -59,27 +67,67 @@ function renderMarkdown(content: string): string {
     .replace(/\n/g, '<br />')
 }
 
-/** 终端工具块：用 box-drawing 字符（╭─ ╰─）还原 Claude Code CLI 的工具调用框 */
-function ToolBlock({ name, ok = true }: { name: string; ok?: boolean }) {
+function ToolBlock({ name, detail }: { name: string; detail: string }) {
   return (
     <div className="my-1 font-mono text-[12px] leading-relaxed">
-      <div className="flex items-center text-[#d9864f]">
-        <span>╭─</span>
-        <span className="px-1">{name}</span>
-        <span className="h-px flex-1 bg-[#d9864f]/40" />
-        <span>╮</span>
+      <div className="flex items-center gap-1.5 text-[#d97757]">
+        <span aria-hidden="true">⏺</span>
+        <span>{name}</span>
       </div>
-      <div className="flex items-center gap-1 px-1 py-0.5 text-[#9aa0aa]">
-        <span>{ok ? '✓' : '…'}</span>
-        <span>{ok ? '已检索本地知识库并生成回答' : '检索中'}</span>
-      </div>
-      <div className="flex items-center text-[#d9864f]">
-        <span>╰</span>
-        <span className="h-px flex-1 bg-[#d9864f]/40" />
-        <span>╯</span>
+      <div className="flex items-center gap-1.5 pl-5 text-[#9aa0aa]">
+        <span aria-hidden="true">⎿</span>
+        <span>{detail}</span>
       </div>
     </div>
   )
+}
+
+function 工具轨迹描述(消息: AiMessage): string {
+  const 元 = 消息.meta
+  if (!元) return t('ai.toolGeneric')
+  const 基础 = `${t('ai.toolHits')} ${元.命中数} ${t('ai.toolSegments')} · ${元.耗时毫秒}ms`
+  if (!元.本地兜底) return 基础
+  const 原因 =
+    元.回退原因 === 'timeout'
+      ? ` · ${t('ai.toolTimeout')}`
+      : 元.回退原因 === 'http'
+        ? ` · ${t('ai.toolHttpError')}${typeof 元.http状态 === 'number' ? ` ${元.http状态}` : ''}`
+        : 元.回退原因 === 'network'
+          ? ` · ${t('ai.toolNetworkError')}`
+          : 元.回退原因 === 'format'
+            ? ` · ${t('ai.toolFormatError')}`
+            : ''
+  return `${基础} · ${t('ai.toolLocalFallback')}${原因}`
+}
+
+const 已知指令 = ['/help', '/clear', '/new', '/resume', '/model', '/compact', '/think', '/status'] as const
+
+const 努力符号表: Record<思考强度, string> = { off: '○', low: '○', high: '●', max: '◉' }
+
+const 标志徽标行 = ['▐▛███▜▌', '▝▜█████▛▘', '▘▘ ▝▝']
+
+function 最接近指令(输入: string): string | undefined {
+  let 最佳: string | undefined
+  let 最小 = 3
+  for (const 候选 of 已知指令) {
+    const 矩阵: number[][] = Array.from({ length: 输入.length + 1 }, (_, i) => [i])
+    for (let j = 1; j <= 候选.length; j++) 矩阵[0][j] = j
+    for (let i = 1; i <= 输入.length; i++) {
+      for (let j = 1; j <= 候选.length; j++) {
+        矩阵[i][j] = Math.min(
+          矩阵[i - 1][j] + 1,
+          矩阵[i][j - 1] + 1,
+          矩阵[i - 1][j - 1] + (输入[i - 1] === 候选[j - 1] ? 0 : 1)
+        )
+      }
+    }
+    const 距离 = 矩阵[输入.length][候选.length]
+    if (距离 < 最小) {
+      最小 = 距离
+      最佳 = 候选
+    }
+  }
+  return 最佳
 }
 
 export function AIChat({ className }: AIChatProps) {
@@ -97,7 +145,7 @@ export function AIChat({ className }: AIChatProps) {
   const [input, setInput] = useState('')
   const [sendError, setSendError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const chatMutation = useChatService()
   const isPending = chatMutation.isPending
@@ -147,6 +195,93 @@ export function AIChat({ className }: AIChatProps) {
     (state, message) => [...state, message]
   )
 
+  const [输入历史, set输入历史] = useState<string[]>([])
+  const 历史下标Ref = useRef(-1)
+  const 草稿Ref = useRef('')
+  const 记录输入历史 = useCallback((内容: string) => {
+    set输入历史((prev) => (prev[prev.length - 1] === 内容 ? prev : [...prev.slice(-49), 内容]))
+    历史下标Ref.current = -1
+  }, [])
+
+  const 走输入历史 = useCallback(
+    (方向: 1 | -1) => {
+      if (输入历史.length === 0) return
+      if (历史下标Ref.current === -1) {
+        if (方向 === -1) return
+        草稿Ref.current = input
+      }
+      const 下一个 = 历史下标Ref.current + 方向
+      if (下一个 < -1 || 下一个 >= 输入历史.length) return
+      历史下标Ref.current = 下一个
+      setInput(下一个 === -1 ? 草稿Ref.current : 输入历史[输入历史.length - 1 - 下一个])
+    },
+    [input, 输入历史]
+  )
+
+  const [思考秒数, set思考秒数] = useState(0)
+  useEffect(() => {
+    if (!isPending && !compacting) {
+      set思考秒数(0)
+      return
+    }
+    set思考秒数(0)
+    const 计时器 = window.setInterval(() => set思考秒数((秒) => 秒 + 1), 1000)
+    return () => window.clearInterval(计时器)
+  }, [isPending, compacting])
+
+  const 指令表 = useMemo(
+    () => [
+      { 指令: '/help', 描述: t('ai.cmdDesc.help') },
+      { 指令: '/clear', 描述: t('ai.cmdDesc.clear') },
+      { 指令: '/new', 描述: t('ai.cmdDesc.news') },
+      { 指令: '/resume', 描述: t('ai.cmdDesc.resume') },
+      { 指令: '/model', 描述: t('ai.cmdDesc.model') },
+      { 指令: '/compact', 描述: t('ai.cmdDesc.compact') },
+      { 指令: '/think', 描述: t('ai.cmdDesc.think') },
+      { 指令: '/status', 描述: t('ai.cmdDesc.status') },
+    ],
+    []
+  )
+  const 斜杠首词 = input.startsWith('/') && !input.includes('\n') ? input.split(/\s+/)[0].toLowerCase() : ''
+  const 补全候选 = useMemo(
+    () => (斜杠首词 ? 指令表.filter((项) => 项.指令.startsWith(斜杠首词)) : []),
+    [指令表, 斜杠首词]
+  )
+  const [补全下标, set补全下标] = useState(0)
+  useEffect(() => {
+    set补全下标(0)
+  }, [input])
+  // 模型选择器（对齐 Claude Code 的 /model 交互）：/model 无参开启后，
+  // ↑/↓移动高亮、←/→切思考开关、⏎确认、esc取消；null 表示选择器关闭。
+  const [模型选择下标, set模型选择下标] = useState<number | null>(null)
+  const 模型选择中 = 模型选择下标 !== null
+  const [会话模型, set会话模型] = useState<string | null>(null)
+  const 会话模型Ref = useRef<string | null>(null)
+  useEffect(() => {
+    会话模型Ref.current = 会话模型
+  }, [会话模型])
+  const 有效模型 = 会话模型 ?? aiModel
+  const 努力名表 = ta('ai.modelPicker.effortNames')
+  const 努力标签 = `${努力名表[思考强度顺序.indexOf(aiThinking)] ?? aiThinking} ${t('ai.modelPicker.effortUnit')}`
+  // 仅输入为空时方向键才交由选择器；用户一旦打字即恢复 caret/历史语义
+  const 选择器接管 = 模型选择中 && input.trim() === ''
+  const 补全打开 = 斜杠首词 !== '' && 补全候选.length > 0 && !isPending && !compacting
+  const 补全可见数 = 5
+  const 补全起始 =
+    补全候选.length <= 补全可见数
+      ? 0
+      : Math.min(Math.max(补全下标 - Math.floor(补全可见数 / 2), 0), 补全候选.length - 补全可见数)
+  const 确认补全 = useCallback(() => {
+    const 选中 = 补全候选[补全下标] ?? 补全候选[0]
+    if (!选中) return
+    const 首词长 = input.split(/\s+/)[0].length
+    const 后缀 = input.slice(首词长)
+    setInput(选中.指令 + (后缀.startsWith(' ') ? 后缀 : ''))
+    inputRef.current?.focus()
+  }, [补全候选, 补全下标, input])
+
+  const [拖拽中, set拖拽中] = useState(false)
+
   /**
    * 发送单条消息（对齐 Claude Code）：发送后立即清空输入栏（由调用方 setInput('')），
    * 携带 AbortController 支持 Esc 中断；中断时保留已发消息并记一条中断提示，
@@ -168,11 +303,12 @@ export function AIChat({ className }: AIChatProps) {
         const result = await chatMutation.mutateAsync({
           messages: [...aiMessagesRef.current, userMessage],
           signal: controller.signal,
+          ...(会话模型Ref.current ? { model: 会话模型Ref.current } : {}),
         })
         // 会话已在等待期间被切换（/clear、重置）：丢弃写入，不让孤儿回合污染新会话
         if (generationRef.current !== gen) return
         addAiMessage(userMessage)
-        addAiMessage(result.message)
+        addAiMessage(result.meta ? { ...result.message, meta: result.meta } : result.message)
       } catch (err) {
         if (generationRef.current !== gen) return
         if (是否中断错误(err)) {
@@ -202,12 +338,40 @@ export function AIChat({ className }: AIChatProps) {
     })
   }, [isPending, compacting, queued, sendMessage])
 
+  const 打开模型选择 = useCallback((选中: number) => {
+    const 列表 = 模型列表()
+    if (列表.length === 0) return
+    const 安全选中 = ((选中 % 列表.length) + 列表.length) % 列表.length
+    set模型选择下标(安全选中)
+  }, [])
+
+  const 切换思考 = useCallback(() => {
+    const 下一个 = 循环思考强度(aiThinking)
+    setAiThinking(下一个)
+    if (模型选择下标 === null) {
+      setSystemLines([t('ai.thinkLevel').replace('{level}', 下一个)])
+    }
+  }, [aiThinking, setAiThinking, 模型选择下标])
+
+  const 切换到下一个模型 = useCallback(() => {
+    const 列表 = 模型列表()
+    const 当前 = 列表.findIndex((模型) => 模型.id === (会话模型Ref.current ?? aiModelRef.current))
+    const 下一个 = 列表[(当前 + 1) % 列表.length] ?? 列表[0]
+    if (!下一个) return
+    setAiModel(下一个.id)
+    set会话模型(null)
+    set模型选择下标(null)
+    setSystemLines([`${t('ai.commands.modelSwitchedPrefix')}${下一个.id}`])
+  }, [setAiModel])
+
   /** 指令分发（对齐 Claude Code 语义）：/clear 新会话、/resume 恢复、/model 切换、/compact 语义压缩、/think /help /status、未知指令报错 */
   const runCommand = useCallback(
     async (raw: string) => {
       const parts = raw.split(/\s+/)
       const cmd = parts[0].toLowerCase()
       const arg = parts.slice(1).join(' ').trim().toLowerCase()
+      // 非裸 /model 指令接管输出区：先关选择器，后续分支重写 systemLines
+      if (!(cmd === '/model' && !arg)) set模型选择下标(null)
       const stashCurrentSession = () => {
         if (aiMessagesRef.current.length > 0) {
           stashSession([...aiMessagesRef.current])
@@ -215,7 +379,7 @@ export function AIChat({ className }: AIChatProps) {
       }
       switch (cmd) {
         case '/help':
-          setSystemLines(t('ai.commands.help').split('\n'))
+          setSystemLines([...t('ai.commands.help').split('\n'), ...t('ai.shortcuts').split('\n')])
           break
         case '/clear':
         case '/new': {
@@ -229,6 +393,8 @@ export function AIChat({ className }: AIChatProps) {
           chatMutation.reset()
           setQueued([])
           setSystemLines([])
+          set模型选择下标(null)
+          set会话模型(null)
           setSendError(null)
           setCompacting(false)
           // 新会话不残留上一轮待发图片（与 handleReset 同一语义），预览 objectURL 一并释放
@@ -238,26 +404,22 @@ export function AIChat({ className }: AIChatProps) {
         }
         case '/status': {
           const 历史数 = aiMessagesRef.current.length
-          const 当前模型 = 模型列表().find((模型) => 模型.id === aiModelRef.current)?.id ?? aiModelRef.current
+          const 生效模型 = 会话模型Ref.current ?? aiModelRef.current
+          const 当前模型 = 模型列表().find((模型) => 模型.id === 生效模型)?.id ?? 生效模型
           setSystemLines([
-            `${t('ai.commands.statusModel')}：${当前模型}`,
-            `${t('ai.commands.statusThinking')}：${aiThinking ? 'on' : 'off'}`,
+            `${t('ai.commands.statusModel')}：${当前模型}${会话模型Ref.current ? ` · ${t('ai.modelPicker.sessionBadge')}` : ''}`,
+            `${t('ai.commands.statusThinking')}：${aiThinking}`,
             `${t('ai.commands.statusMessages')}：${历史数}`,
-            `${t('ai.commands.statusContext')}：${模型列表().find((模型) => 模型.id === aiModelRef.current)?.contextLabel ?? '—'}`,
+            `${t('ai.commands.statusQueued')}：${queued.length}`,
+            `${t('ai.commands.statusContext')}：${模型列表().find((模型) => 模型.id === 生效模型)?.contextLabel ?? '—'}`,
           ])
           break
         }
         case '/model': {
           const 列表 = 模型列表()
           if (!arg) {
-            setSystemLines([
-              t('ai.commands.modelHeader'),
-              ...列表.map(
-                (模型, index) =>
-                  `  ${index + 1}. ${模型.id}${模型.id === aiModelRef.current ? t('ai.commands.modelCurrent') : ''}`
-              ),
-              t('ai.commands.modelHint'),
-            ])
+            const 当前 = 列表.findIndex((模型) => 模型.id === (会话模型Ref.current ?? aiModelRef.current))
+            打开模型选择(当前 === -1 ? 0 : 当前)
             break
           }
           const 目标 = 列表.find((模型, index) => 模型.id.toLowerCase() === arg || String(index + 1) === arg)
@@ -266,6 +428,7 @@ export function AIChat({ className }: AIChatProps) {
             break
           }
           setAiModel(目标.id)
+          set会话模型(null)
           setSystemLines([`${t('ai.commands.modelSwitchedPrefix')}${目标.id}`])
           break
         }
@@ -283,10 +446,7 @@ export function AIChat({ className }: AIChatProps) {
           break
         }
         case '/think': {
-          // 思考模式开关（唯一模型下 /model 已移除，思考开关由 /think 承接）
-          const 下一个 = !aiThinking
-          setAiThinking(下一个)
-          setSystemLines([t(下一个 ? 'ai.thinkOn' : 'ai.thinkOff')])
+          切换思考()
           break
         }
         case '/compact': {
@@ -305,7 +465,12 @@ export function AIChat({ className }: AIChatProps) {
           setCompacting(true)
           setSystemLines([t('ai.commands.compacting')])
           try {
-            const 摘要 = await compactConversation(aiMessagesRef.current, { signal: controller.signal })
+            const 聚焦 = raw.slice('/compact'.length).trim()
+            const 摘要 = await compactConversation(aiMessagesRef.current, {
+              signal: controller.signal,
+              ...(会话模型Ref.current ? { model: 会话模型Ref.current } : {}),
+              ...(聚焦 ? { focus: 聚焦 } : {}),
+            })
             // 压缩期间会话已被 /clear 切换：丢弃摘要，不回填新会话
             if (generationRef.current !== gen) break
             clearAiMessages()
@@ -321,21 +486,27 @@ export function AIChat({ className }: AIChatProps) {
           }
           break
         }
-        default:
-          setSystemLines([`${t('ai.commands.unknownPrefix')}${cmd}${t('ai.commands.unknownSuffix')}`])
+        default: {
+          const 行 = [`${t('ai.commands.unknownPrefix')}${cmd}${t('ai.commands.unknownSuffix')}`]
+          const 联想 = 最接近指令(cmd)
+          if (联想 && 联想 !== cmd) 行.push(`${t('ai.commands.didYouMean')} ${联想}`)
+          setSystemLines(行)
+        }
       }
     },
     [
       aiThinking,
       isPending,
       compacting,
+      queued,
       clearAiMessages,
       addAiMessage,
       chatMutation,
-      setAiThinking,
+      切换思考,
       setAiModel,
       stashSession,
       restoreSession,
+      打开模型选择,
     ]
   )
 
@@ -345,6 +516,15 @@ export function AIChat({ className }: AIChatProps) {
       const content = raw.trim()
       if (!content) return
       setInput('')
+      记录输入历史(content)
+      if (content === '?') {
+        setSystemLines([...t('ai.commands.help').split('\n'), ...t('ai.shortcuts').split('\n')])
+        return
+      }
+      if (content.startsWith('!')) {
+        setSystemLines([t('ai.shellUnsupported')])
+        return
+      }
       if (content.startsWith('/')) {
         void runCommand(content)
         return
@@ -355,8 +535,9 @@ export function AIChat({ className }: AIChatProps) {
       // 排队项带走的是独立 dataURL 字符串，释放 objectURL 不影响已入队消息
       for (const 图片 of pendingImages) URL.revokeObjectURL(图片.previewUrl)
       setPendingImages([])
-      // 新动作即清除指令输出（瞬态语义：不滞留在消息流）
+      // 新动作即清除指令输出（瞬态语义：不滞留在消息流），同时关闭模型选择器
       setSystemLines([])
+      set模型选择下标(null)
       if (isPending || sendingRef.current || compacting) {
         setQueued((prev) => [...prev, { content, images: images.length > 0 ? images : undefined }])
         return
@@ -368,7 +549,7 @@ export function AIChat({ className }: AIChatProps) {
         })
       })
     },
-    [isPending, compacting, runCommand, sendMessage, pendingImages]
+    [isPending, compacting, runCommand, sendMessage, pendingImages, 记录输入历史]
   )
 
   /**
@@ -453,6 +634,8 @@ export function AIChat({ className }: AIChatProps) {
     setInput('')
     setQueued([])
     setSystemLines([])
+    set模型选择下标(null)
+    set会话模型(null)
     setSendError(null)
     setCompacting(false)
     for (const 图片 of pendingImagesRef.current) URL.revokeObjectURL(图片.previewUrl)
@@ -481,10 +664,143 @@ export function AIChat({ className }: AIChatProps) {
     return () => window.removeEventListener('keydown', 关闭灯箱, true)
   }, [lightboxSrc])
 
-  // 终端习惯：Esc 关闭面板（中断会话）；忙时 Esc 中断当前请求（对齐 Claude Code）。
+  useEffect(() => {
+    if (!chatOpen || lightboxSrc) return
+    const 全局快捷 = (event: KeyboardEvent) => {
+      if (!event.altKey || event.ctrlKey || event.metaKey) return
+      const 目标 = event.target
+      if (目标 instanceof HTMLElement && 目标.tagName !== 'BODY' && !目标.closest('[role="dialog"]')) return
+      const 键 = event.key.toLowerCase()
+      if (键 === 't') {
+        event.preventDefault()
+        切换思考()
+      } else if (键 === 'p') {
+        event.preventDefault()
+        切换到下一个模型()
+      }
+    }
+    window.addEventListener('keydown', 全局快捷)
+    return () => window.removeEventListener('keydown', 全局快捷)
+  }, [chatOpen, lightboxSrc, 切换思考, 切换到下一个模型])
+
+  useEffect(() => {
+    const 输入框 = inputRef.current
+    if (!输入框) return
+    const 自适应 = () => {
+      输入框.style.height = 'auto'
+      输入框.style.height = `${Math.min(输入框.scrollHeight, 160)}px`
+    }
+    自适应()
+    window.addEventListener('resize', 自适应)
+    return () => window.removeEventListener('resize', 自适应)
+  }, [input, chatOpen])
+
   const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key === 'Tab' && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault()
+        切换到下一个模型()
+        return
+      }
+      if (选择器接管 && !event.nativeEvent.isComposing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        if (event.key === 's' || event.key === 'S') {
+          event.preventDefault()
+          const 目标 = 模型列表()[模型选择下标 ?? 0]
+          if (目标) {
+            set会话模型(目标.id)
+            setSystemLines([
+              `${t('ai.modelPicker.sessionOnlyPrefix')} ${目标.id} ${t('ai.modelPicker.sessionOnlySuffix')}`,
+            ])
+          }
+          set模型选择下标(null)
+          return
+        }
+        if (/^[1-9]$/.test(event.key)) {
+          event.preventDefault()
+          const 目标 = 模型列表()[Number(event.key) - 1]
+          if (目标) {
+            setAiModel(目标.id)
+            set会话模型(null)
+            setSystemLines([`${t('ai.commands.modelSwitchedPrefix')}${目标.id}`])
+          }
+          set模型选择下标(null)
+          return
+        }
+      }
+      if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+        if (选择器接管) {
+          event.preventDefault()
+          const 目标 = 模型列表()[模型选择下标 ?? 0]
+          if (目标) {
+            setAiModel(目标.id)
+            set会话模型(null)
+            setSystemLines([`${t('ai.commands.modelSwitchedPrefix')}${目标.id}`])
+          }
+          set模型选择下标(null)
+          return
+        }
+        event.preventDefault()
+        submitInput(input)
+        return
+      }
+      if (event.key === 'Tab' && 补全打开) {
+        event.preventDefault()
+        确认补全()
+        return
+      }
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        if (event.nativeEvent.isComposing) return
+        if (选择器接管) {
+          event.preventDefault()
+          if (模型列表().length > 0) {
+            打开模型选择((模型选择下标 ?? 0) + (event.key === 'ArrowUp' ? -1 : 1))
+          }
+          return
+        }
+        if (补全打开) {
+          event.preventDefault()
+          set补全下标((下标) =>
+            event.key === 'ArrowUp' ? (下标 - 1 + 补全候选.length) % 补全候选.length : (下标 + 1) % 补全候选.length
+          )
+          return
+        }
+        if (走历史可行(event.currentTarget, event.key === 'ArrowUp' ? 'up' : 'down')) {
+          event.preventDefault()
+          走输入历史(event.key === 'ArrowUp' ? 1 : -1)
+        }
+        return
+      }
+      if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && 选择器接管) {
+        if (event.nativeEvent.isComposing) return
+        event.preventDefault()
+        const 下一个 = 步进思考强度(aiThinking, event.key === 'ArrowRight' ? 1 : -1)
+        if (下一个 !== aiThinking) {
+          setAiThinking(下一个)
+        }
+        return
+      }
+      if (event.key.toLowerCase() === 'j' && event.ctrlKey && !event.altKey && !event.metaKey) {
+        event.preventDefault()
+        const 输入框 = event.currentTarget
+        const 起点 = 输入框.selectionStart ?? input.length
+        const 终点 = 输入框.selectionEnd ?? input.length
+        const 下一个 = `${input.slice(0, 起点)}\n${input.slice(终点)}`
+        setInput(下一个)
+        requestAnimationFrame(() => {
+          输入框.selectionStart = 起点 + 1
+          输入框.selectionEnd = 起点 + 1
+        })
+        return
+      }
       if (event.key === 'Escape') {
+        // 选择器开启时 Esc 优先关闭选择器，不最小化面板
+        if (模型选择中) {
+          event.preventDefault()
+          set模型选择下标(null)
+          setSystemLines([])
+          return
+        }
+        // Esc 空闲即最小化面板；忙时中断当前请求
         if (isPending || compacting) {
           event.preventDefault()
           abortRef.current?.abort()
@@ -493,14 +809,38 @@ export function AIChat({ className }: AIChatProps) {
         }
       }
     },
-    [setChatOpen, isPending, compacting]
+    [
+      setChatOpen,
+      isPending,
+      compacting,
+      补全打开,
+      补全候选,
+      input,
+      submitInput,
+      确认补全,
+      走输入历史,
+      模型选择下标,
+      模型选择中,
+      选择器接管,
+      打开模型选择,
+      aiThinking,
+      setAiThinking,
+      setAiModel,
+      set会话模型,
+      切换到下一个模型,
+    ]
   )
 
   // 会话判定（根因）：只要存在任何会话痕迹（消息/指令输出/排队/在途请求）就渲染会话视图，
   // 仅完全空白且空闲时展示主页。修复"发送中仍停留主页"——此前仅凭消息数判定，
   // 首条消息在途、optimistic 尚未落定时仍命中主页分支，连思考指示器一并被吞掉。
-  const 有会话 = optimisticMessages.length > 0 || systemLines.length > 0 || queued.length > 0 || isPending || compacting
-  const 当前模型定义 = 模型列表().find((模型) => 模型.id === aiModel)
+  const 有会话 =
+    optimisticMessages.length > 0 ||
+    systemLines.length > 0 ||
+    queued.length > 0 ||
+    isPending ||
+    compacting ||
+    模型选择中
 
   if (!chatOpen) {
     return (
@@ -521,6 +861,8 @@ export function AIChat({ className }: AIChatProps) {
 
   return (
     <div
+      // 面板内滚轮归面板：阻止 Lenis 根级 smoothWheel 劫持，对话列表改为原生滚动
+      data-lenis-prevent=""
       className={cn(
         'fixed bottom-4 right-4 z-[70] flex h-[34rem] w-80 flex-col overflow-hidden rounded-md border border-[#262626] bg-[#0a0a0a] font-mono text-[#e6e6e6] shadow-2xl',
         'sm:w-[26rem]',
@@ -529,19 +871,43 @@ export function AIChat({ className }: AIChatProps) {
       role="dialog"
       aria-modal="true"
       aria-label={t('ai.title')}
+      onDragOver={(event) => {
+        if (Array.from(event.dataTransfer.types).includes('Files')) {
+          event.preventDefault()
+          set拖拽中(true)
+        }
+      }}
+      onDragLeave={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return
+        set拖拽中(false)
+      }}
+      onDrop={(event) => {
+        event.preventDefault()
+        set拖拽中(false)
+        void 接收图片文件(event.dataTransfer.files)
+      }}
     >
-      {/* 终端标题栏：Xuan Harness + 版本 / 重置 / 关闭 */}
-      <div className="flex items-center justify-between border-b border-[#1f1f1f] bg-[#0d0d0d] px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-[#d97757]" aria-hidden="true">
-            ❯
-          </span>
-          <span className="text-sm font-semibold tracking-tight text-[#f0f0f0]">Xuan Harness</span>
-          <span className="text-[10px] text-[#666]">v1.0.0</span>
-          <span className="ml-1 inline-flex items-center gap-1 text-[10px] text-[#4ade80]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" aria-hidden="true" />
-            online
-          </span>
+      {拖拽中 && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/70 text-sm text-[#d97757]">
+          {t('ai.dropHint')}
+        </div>
+      )}
+      {/* 终端标题栏 */}
+      <div className="flex items-start justify-between border-b border-[#1f1f1f] bg-[#0d0d0d] px-3 py-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <pre className="select-none text-[10px] leading-[1.15] text-[#d77757]" aria-hidden="true">
+            {标志徽标行.join('\n')}
+          </pre>
+          <div className="flex min-w-0 flex-col leading-tight">
+            <div className="text-sm">
+              <span className="font-semibold tracking-tight text-[#f0f0f0]">{t('ai.headerName')}</span>
+              <span className="text-[#999999]">{` ${t('ai.headerVersion')}`}</span>
+            </div>
+            <div className="truncate text-[10px] text-[#999999]" data-testid="chat-header-status">
+              {`${有效模型} · ${t('ai.headerBilling')}`}
+            </div>
+            <div className="truncate text-[10px] text-[#999999]">{t('ai.headerCwd')}</div>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -564,7 +930,11 @@ export function AIChat({ className }: AIChatProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3 scrollbar-thin">
+      <div
+        data-testid="chat-messages"
+        data-lenis-prevent=""
+        className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 scrollbar-thin"
+      >
         {有会话 ? (
           <div className="flex flex-col gap-3">
             {optimisticMessages.map((message, index) =>
@@ -597,7 +967,7 @@ export function AIChat({ className }: AIChatProps) {
                     ⏺
                   </span>
                   <div className="min-w-0 flex-1">
-                    <ToolBlock name="检索知识库 (RAG)" />
+                    <ToolBlock name={t('ai.toolName')} detail={工具轨迹描述(message)} />
                     <div dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
                     {message.component && <UiComponentRenderer component={message.component} />}
                   </div>
@@ -611,8 +981,47 @@ export function AIChat({ className }: AIChatProps) {
                 </span>
                 <div className="flex items-center gap-1.5">
                   <Loader2 size={13} className="animate-spin text-[#d97757]" />
-                  <span>{compacting ? t('ai.commands.compacting') : t('ai.thinking')}</span>
+                  <span>
+                    {compacting
+                      ? t('ai.commands.compacting')
+                      : `${t('ai.thinking')} · ${思考秒数}s · ${t('ai.cancelHint')}`}
+                  </span>
                 </div>
+              </div>
+            )}
+            {模型选择中 && (
+              <div
+                className="border-t border-[#b1b9f9] pt-2 font-mono text-[12px] leading-relaxed"
+                data-testid="model-picker"
+              >
+                <div className="font-bold text-[#b1b9f9]">{t('ai.modelPicker.selectTitle')}</div>
+                <div className="whitespace-pre-wrap text-[#9aa0aa]">{t('ai.modelPicker.selectDesc')}</div>
+                {会话模型 && (
+                  <div className="text-[#9aa0aa]">{`${t('ai.modelPicker.sessionLinePrefix')} ${会话模型} ${t('ai.modelPicker.sessionLineSuffix')}`}</div>
+                )}
+                <div className="mt-1 flex flex-col">
+                  {模型列表().map((模型, index) => {
+                    const 高亮 = index === 模型选择下标
+                    const 当前生效 = 模型.id === 有效模型
+                    return (
+                      <div key={模型.id} data-testid={`model-option-${index + 1}`} className="flex items-center gap-1">
+                        <span className={高亮 ? 'text-[#b1b9f9]' : 'text-transparent'} aria-hidden="true">
+                          ❯
+                        </span>
+                        <span className="text-[#9aa0aa]">{`${index + 1}.`}</span>
+                        <span className={当前生效 ? 'text-[#4eba65]' : 高亮 ? 'text-[#b1b9f9]' : 'text-[#9aa0aa]'}>
+                          {模型.id}
+                          {当前生效 && <span className="text-[#af87ff]"> ✓</span>}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="mt-1">
+                  <span className="text-[#d77757]">{`${努力符号表[aiThinking]} ${努力标签}`}</span>
+                  <span className="text-[#505050]">{` ${t('ai.modelPicker.effortAdjust')}`}</span>
+                </div>
+                <div className="italic text-[#9aa0aa]">{t('ai.modelPicker.confirmHint')}</div>
               </div>
             )}
             {systemLines.length > 0 && (
@@ -628,11 +1037,14 @@ export function AIChat({ className }: AIChatProps) {
           <div className="flex h-full flex-col justify-center gap-2 text-[13px]">
             <p className="text-[#d97757]">
               <span aria-hidden="true">✻ </span>
-              {t('ai.empty')}
+              {t('ai.welcomeTitle')}
             </p>
-            <p className="text-xs text-[#9aa0aa]">我可以回答关于玄锐暮简历、技术栈与项目的问题。</p>
+            <p className="text-[#cfcfcf]">{t('ai.empty')}</p>
+            <p className="text-xs text-[#9aa0aa]">{t('ai.welcomeIntro')}</p>
+            <p className="text-[11px] text-[#666]">{t('ai.welcomeTips')}</p>
             <p className="text-[11px] text-[#666]">{t('ai.emptyCommands')}</p>
-            <div className="mt-1 flex flex-wrap gap-2">
+            <p className="mt-1 text-[11px] text-[#666]">{t('ai.extendedLabel')}</p>
+            <div className="flex flex-wrap gap-2">
               {ta('ai.quickQuestions').map((question) => (
                 <button
                   key={question}
@@ -674,8 +1086,40 @@ export function AIChat({ className }: AIChatProps) {
           event.preventDefault()
           submitInput(input)
         }}
-        className="border-t border-[#1f1f1f] bg-[#0a0a0a] p-2.5"
+        className="relative border-t border-[#1f1f1f] bg-[#0a0a0a] p-2.5"
       >
+        {补全打开 && (
+          <div
+            role="listbox"
+            aria-label={t('ai.commands.modelHint')}
+            data-testid="command-palette"
+            className="absolute inset-x-2.5 bottom-full z-10 mb-1 overflow-hidden rounded border border-[#2a2a2a] bg-[#121212] py-1 shadow-2xl"
+          >
+            {补全候选.map((项, 下标) =>
+              下标 < 补全起始 || 下标 >= 补全起始 + 补全可见数 ? null : (
+                <button
+                  key={项.指令}
+                  type="button"
+                  role="option"
+                  aria-selected={下标 === 补全下标}
+                  onMouseDown={(event) => {
+                    event.preventDefault()
+                    set补全下标(下标)
+                    确认补全()
+                  }}
+                  onMouseEnter={() => set补全下标(下标)}
+                  className={cn(
+                    'flex w-full items-center gap-3 px-2.5 py-1.5 text-left text-[12px]',
+                    下标 === 补全下标 ? 'text-[#b1b9f9]' : 'text-[#9aa0aa]'
+                  )}
+                >
+                  <span className="shrink-0 font-mono">{项.指令}</span>
+                  <span className="truncate">{项.描述}</span>
+                </button>
+              )
+            )}
+          </div>
+        )}
         {pendingImages.length > 0 && (
           <div className="mb-1.5 flex flex-wrap gap-1.5" data-testid="pending-images">
             {pendingImages.map((图片) => (
@@ -708,16 +1152,19 @@ export function AIChat({ className }: AIChatProps) {
             ))}
           </div>
         )}
-        <div className="flex items-center gap-2 rounded border border-[#2a2a2a] bg-[#121212] px-2.5 py-2 transition-colors focus-within:border-[#d97757]">
-          <span className="select-none text-[#d97757]" aria-hidden="true">
+        <div className="flex items-start gap-2 rounded-none border-x-0 border-y border-[#888] bg-[#121212] px-2.5 py-2 transition-colors focus-within:border-[#a6a6a6]">
+          <span className="select-none pt-0.5 text-[#e6e6e6]" aria-hidden="true">
             ❯
           </span>
-          <input
+          <textarea
             ref={inputRef}
             name="message"
-            type="text"
+            rows={1}
             value={input}
-            onChange={(event) => setInput(event.target.value)}
+            onChange={(event) => {
+              setInput(event.target.value)
+              历史下标Ref.current = -1
+            }}
             onKeyDown={handleKeyDown}
             onPaste={(event) => {
               // 剪贴板含图片文件时走统一上传入口并阻止默认插入；纯文本粘贴不受影响
@@ -732,8 +1179,9 @@ export function AIChat({ className }: AIChatProps) {
               }
             }}
             placeholder={t('ai.placeholder')}
-            className="flex-1 bg-transparent text-[13px] text-[#e6e6e6] outline-none placeholder:text-[#555]"
-            maxLength={200}
+            data-lenis-prevent=""
+            className="max-h-40 flex-1 resize-none overflow-y-auto overscroll-contain bg-transparent text-[13px] leading-relaxed text-[#e6e6e6] outline-none placeholder:text-[#555]"
+            maxLength={2000}
           />
           <button
             type="button"
@@ -757,20 +1205,18 @@ export function AIChat({ className }: AIChatProps) {
           />
           <span
             aria-hidden="true"
-            className={cn('inline-block h-4 w-[7px] bg-[#d97757]', !isPending && 'animate-pulse')}
+            className={cn('inline-block h-4 w-[7px] bg-[#e6e6e6]', !isPending && 'animate-pulse')}
           />
         </div>
-        <div className="mt-1.5 flex items-center justify-between text-[10px] text-[#666]">
-          <span>{isPending || compacting ? t('ai.busyHint') : t('ai.idleHint')}</span>
-          <button
-            type="button"
-            onClick={() => submitInput('/model')}
-            title={t('ai.commands.modelHint')}
-            className="flex items-center gap-1 rounded transition-colors hover:text-[#d97757]"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[#4ade80]" aria-hidden="true" />
-            {`${aiModel} · ${aiThinking ? 'think on' : 'think off'}${当前模型定义?.contextLabel ? ` · ${当前模型定义.contextLabel}` : ''}`}
-          </button>
+        <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px]">
+          <span className="min-w-0 flex-1 truncate" data-testid="chat-status-line">
+            <span className="text-[#ff6b80]" aria-hidden="true">
+              {'>> '}
+            </span>
+            <span className="text-[#ff6b80]">{`${有效模型} · think ${aiThinking}${会话模型 ? ` · ${t('ai.modelPicker.sessionBadge')}` : ''}`}</span>
+            <span className="text-[#666]">{` ${t('ai.statusCycle')}`}</span>
+          </span>
+          <span className="shrink-0 text-[#666]">{isPending || compacting ? t('ai.busyHint') : t('ai.idleHint')}</span>
         </div>
       </form>
 

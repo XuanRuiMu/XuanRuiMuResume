@@ -1415,4 +1415,64 @@ describe('AIChat', () => {
     fireEvent.submit(input.closest('form') as HTMLFormElement)
     expect(screen.getByTestId('chat-status-line')).not.toHaveTextContent(t('ai.modelPicker.sessionBadge'))
   })
+
+  it('左边缘拖动加宽窗口', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const 面板 = screen.getByRole('dialog', { name: t('ai.title') })
+    expect(面板.style.width).toBe('416px')
+
+    const 左柄 = screen.getByTestId('resize-left')
+    act(() => {
+      左柄.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 200, clientY: 300 }))
+      window.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 150, clientY: 300 }))
+    })
+    act(() => {
+      window.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+    })
+    expect(面板.style.width).toBe('466px')
+  })
+
+  it('顶边缘拖动加高窗口', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const 面板 = screen.getByRole('dialog', { name: t('ai.title') })
+    expect(面板.style.height).toBe('544px')
+
+    const 顶柄 = screen.getByTestId('resize-top')
+    act(() => {
+      顶柄.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 300, clientY: 200 }))
+      window.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 300, clientY: 150 }))
+    })
+    act(() => {
+      window.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+    })
+    expect(面板.style.height).toBe('594px')
+  })
+
+  it('拐角拖动同时调整宽高且不小于最小尺寸', () => {
+    mockUseAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(createMockState({ chatOpen: true }))
+    )
+
+    render(<AIChat />)
+    const 面板 = screen.getByRole('dialog', { name: t('ai.title') })
+
+    const 拐角 = screen.getByTestId('resize-corner')
+    act(() => {
+      拐角.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 200, clientY: 200 }))
+      window.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 1000, clientY: 1000 }))
+    })
+    act(() => {
+      window.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+    })
+    expect(面板.style.width).toBe('320px')
+    expect(面板.style.height).toBe('400px')
+  })
 })

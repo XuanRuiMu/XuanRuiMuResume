@@ -17,6 +17,10 @@ interface AIChatProps {
 const 图片MIME白名单 = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const 单图上限字节 = 16 * 1024 * 1024
 const 每条消息图片上限 = 4
+const 默认面板宽 = 416
+const 默认面板高 = 544
+const 最小面板宽 = 320
+const 最小面板高 = 400
 
 /** 排队项（对齐 Claude Code 的 queued 语义）：忙时发送的消息连同其图片一起排队 */
 interface QueuedItem {
@@ -103,8 +107,6 @@ function 工具轨迹描述(消息: AiMessage): string {
 const 已知指令 = ['/help', '/clear', '/new', '/resume', '/model', '/compact', '/think', '/status'] as const
 
 const 努力符号表: Record<思考强度, string> = { off: '○', low: '○', high: '●', max: '◉' }
-
-const 标志徽标行 = ['▐▛███▜▌', '▝▜█████▛▘', '▘▘ ▝▝']
 
 function 最接近指令(输入: string): string | undefined {
   let 最佳: string | undefined
@@ -260,6 +262,11 @@ export function AIChat({ className }: AIChatProps) {
   useEffect(() => {
     会话模型Ref.current = 会话模型
   }, [会话模型])
+  const [面板尺寸, set面板尺寸] = useState({ 宽: 默认面板宽, 高: 默认面板高 })
+  const 面板尺寸Ref = useRef(面板尺寸)
+  useEffect(() => {
+    面板尺寸Ref.current = 面板尺寸
+  }, [面板尺寸])
   const 有效模型 = 会话模型 ?? aiModel
   const 努力名表 = ta('ai.modelPicker.effortNames')
   const 努力标签 = `${努力名表[思考强度顺序.indexOf(aiThinking)] ?? aiThinking} ${t('ai.modelPicker.effortUnit')}`
@@ -608,6 +615,32 @@ export function AIChat({ className }: AIChatProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
+  const 开始调整尺寸 = (方向: '宽' | '高' | '双向') => (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    if (!Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) return
+    const 起点X = event.clientX
+    const 起点Y = event.clientY
+    const 起点宽 = 面板尺寸Ref.current.宽
+    const 起点高 = 面板尺寸Ref.current.高
+    const 移动 = (e: PointerEvent) => {
+      if (!Number.isFinite(e.clientX) || !Number.isFinite(e.clientY)) return
+      const 宽上限 = Math.max(最小面板宽, window.innerWidth - 32)
+      const 高上限 = Math.max(最小面板高, window.innerHeight - 32)
+      set面板尺寸({
+        宽: 方向 === '高' ? 起点宽 : Math.min(Math.max(起点宽 + 起点X - e.clientX, 最小面板宽), 宽上限),
+        高: 方向 === '宽' ? 起点高 : Math.min(Math.max(起点高 + 起点Y - e.clientY, 最小面板高), 高上限),
+      })
+    }
+    const 结束 = () => {
+      window.removeEventListener('pointermove', 移动)
+      window.removeEventListener('pointerup', 结束)
+      window.removeEventListener('pointercancel', 结束)
+    }
+    window.addEventListener('pointermove', 移动)
+    window.addEventListener('pointerup', 结束)
+    window.addEventListener('pointercancel', 结束)
+  }
+
   useEffect(() => {
     if (chatOpen) {
       scrollToBottom()
@@ -864,10 +897,10 @@ export function AIChat({ className }: AIChatProps) {
       // 面板内滚轮归面板：阻止 Lenis 根级 smoothWheel 劫持，对话列表改为原生滚动
       data-lenis-prevent=""
       className={cn(
-        'fixed bottom-4 right-4 z-[70] flex h-[34rem] w-80 flex-col overflow-hidden rounded-md border border-[#262626] bg-[#0a0a0a] font-mono text-[#e6e6e6] shadow-2xl',
-        'sm:w-[26rem]',
+        'fixed bottom-4 right-4 z-[70] flex max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-md border border-[#262626] bg-[#0a0a0a] font-mono text-[#e6e6e6] shadow-2xl',
         className
       )}
+      style={{ width: 面板尺寸.宽, height: 面板尺寸.高 }}
       role="dialog"
       aria-modal="true"
       aria-label={t('ai.title')}
@@ -892,12 +925,32 @@ export function AIChat({ className }: AIChatProps) {
           {t('ai.dropHint')}
         </div>
       )}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={t('ai.resizeWidth')}
+        data-testid="resize-left"
+        onPointerDown={开始调整尺寸('宽')}
+        className="absolute bottom-0 left-0 top-0 z-20 w-2 cursor-ew-resize touch-none hover:bg-[#d77757]/40"
+      />
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label={t('ai.resizeHeight')}
+        data-testid="resize-top"
+        onPointerDown={开始调整尺寸('高')}
+        className="absolute left-0 right-0 top-0 z-20 h-2 cursor-ns-resize touch-none hover:bg-[#d77757]/40"
+      />
+      <div
+        role="separator"
+        aria-label={t('ai.resizeBoth')}
+        data-testid="resize-corner"
+        onPointerDown={开始调整尺寸('双向')}
+        className="absolute left-0 top-0 z-30 h-4 w-4 cursor-nwse-resize touch-none hover:bg-[#d77757]/60"
+      />
       {/* 终端标题栏 */}
       <div className="flex items-start justify-between border-b border-[#1f1f1f] bg-[#0d0d0d] px-3 py-2">
         <div className="flex min-w-0 items-center gap-2">
-          <pre className="select-none text-[10px] leading-[1.15] text-[#d77757]" aria-hidden="true">
-            {标志徽标行.join('\n')}
-          </pre>
           <div className="flex min-w-0 flex-col leading-tight">
             <div className="text-sm">
               <span className="font-semibold tracking-tight text-[#f0f0f0]">{t('ai.headerName')}</span>

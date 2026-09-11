@@ -19,7 +19,6 @@ const 知识库文本 = buildResumeKnowledgeBase()
 
 describe('FP-02内容一致性回归', () => {
   it('群人数多处一致为200人+', () => {
-    expect(t('showcase.cards.teaching.desc')).toContain('200人+')
     expect(t('data.experience.entries.educator.description')).toContain('200人+')
     expect(t('data.experience.entries.educator.achievement3')).toContain('200人+')
   })
@@ -37,7 +36,7 @@ describe('FP-02内容一致性回归', () => {
   it('教学口径为线下小班课计算机培训', () => {
     expect(t('data.education.achievements.crashCourse')).toContain('线下小班课计算机培训')
     expect(t('data.education.achievements.crashCourse')).toContain('免修考试')
-    expect(t('showcase.cards.teaching.desc')).toContain('线下小班课计算机培训')
+    expect(t('showcase.cards.teaching.desc')).toContain('全链路')
   })
 
   it('音乐域只留证书口径且无创作断言', () => {

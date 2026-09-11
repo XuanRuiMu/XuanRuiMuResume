@@ -34,7 +34,7 @@ async function 到达(page: Page, 区块Id: string) {
   await page.waitForTimeout(500)
 }
 
-test('全站用户视角走查（双主题/签字/壁纸/AI面板/留言落盘/访客计数）', async ({ page }) => {
+test('全站用户视角走查（双主题/签字/壁纸/AI面板/联系方式/访客计数）', async ({ page }) => {
   test.setTimeout(300_000)
   fs.mkdirSync(输出目录, { recursive: true })
   const 摘要: string[] = []
@@ -150,7 +150,7 @@ test('全站用户视角走查（双主题/签字/壁纸/AI面板/留言落盘/�
   await page.waitForTimeout(700)
   const 状态栏 =
     (await page
-      .getByText(/deepseek-v4-flash-vision-exp · /)
+      .getByText(/deepseek-v4.1-flash-expires-on-0910 · /)
       .first()
       .textContent()) ?? ''
   摘要.push(`AI状态栏: ${状态栏.trim()}`)

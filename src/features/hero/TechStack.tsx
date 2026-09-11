@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { techstackV2, type TechCard } from '../../data/techStack'
 import { useReducedMotion } from '../../hooks/useReducedMotion'
 import { t } from '../../i18n/translations'
+import { 逼近目标转速 } from './techSpin'
 
 /**
  * 技术（原 My Technologies）· 1:1 移植参考站（localhost:8110/#contact）的「技术球」意向。
@@ -14,7 +15,8 @@ import { t } from '../../i18n/translations'
  *
  * 交互：
  *  - 自转速度已降为初版的 1/4（SPIN_SPEED 0.0004），更舒缓；
- *  - 仅当鼠标悬停在技术球本体上才暂停自转（暂停时便于精准点击），悬停容器空白区域不停；
+ *  - 仅当鼠标悬停在技术球本体上才减速（惯性 0.5 秒内线性减速至停止，便于精准点击），悬停容器空白区域不停；
+ *  - 移开后 0.5 秒内线性加速恢复原速，无缝续转；
  *  - 单击任一技术球 → 新标签页打开对应官网（GitHub 指向个人主页 https://github.com/XuanRuiMu）。
  * reduced-motion 时静态成球。
  */
@@ -53,7 +55,19 @@ export function TechStack() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const orbRefs = useRef<Array<HTMLAnchorElement | null>>([])
   const angleRef = useRef(0)
-  const pausedRef = useRef(false)
+  const 悬停计数Ref = useRef(0)
+  const 目标转速Ref = useRef(1)
+  const 当前转速Ref = useRef(1)
+
+  const 进入球 = () => {
+    悬停计数Ref.current += 1
+    目标转速Ref.current = 0
+  }
+
+  const 离开球 = () => {
+    悬停计数Ref.current = Math.max(0, 悬停计数Ref.current - 1)
+    if (悬停计数Ref.current === 0) 目标转速Ref.current = 1
+  }
 
   const orbs = useMemo(() => buildSphere(techstackV2.length), [])
 
@@ -87,10 +101,11 @@ export function TechStack() {
     let raf = 0
     let last = performance.now()
     const loop = (now: number) => {
-      const dt = now - last
+      const dt = Math.max(0, now - last)
       last = now
-      // 悬停暂停：不清空角度，移开后无缝续转
-      if (!pausedRef.current) angleRef.current += SPIN_SPEED * dt
+      // 惯性减速：悬停后 0.5 秒内线性减速至停止，移开后 0.5 秒内线性恢复；角度不清零，续转无缝
+      当前转速Ref.current = 逼近目标转速(当前转速Ref.current, 目标转速Ref.current, dt)
+      angleRef.current += SPIN_SPEED * 当前转速Ref.current * dt
       renderFrame(angleRef.current)
       raf = requestAnimationFrame(loop)
     }
@@ -131,12 +146,10 @@ export function TechStack() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${orb.card.name} 官网`}
-            onMouseEnter={() => {
-              pausedRef.current = true
-            }}
-            onMouseLeave={() => {
-              pausedRef.current = false
-            }}
+            onMouseEnter={进入球}
+            onMouseLeave={离开球}
+            onFocus={进入球}
+            onBlur={离开球}
             className="tech-orb group absolute left-1/2 top-1/2 flex cursor-pointer flex-col items-center justify-center gap-1 will-change-transform no-underline"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-[#0e1424]/90 shadow-[0_0_18px_rgba(124,211,252,0.25)] backdrop-blur-sm transition-transform duration-200 group-hover:scale-110 group-hover:border-[#7dd3fc]/60 light:bg-white/95 light:border-slate-300/70 light:shadow-[0_4px_14px_rgba(15,23,42,0.14)] light:group-hover:border-[#0369a1]/80">

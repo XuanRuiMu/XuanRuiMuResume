@@ -1,13 +1,9 @@
 import { resumeKnowledgeBase, type KnowledgeChunk } from './resumeKnowledgeBase'
+import { 共享意图表, 是否纯问候 } from './intentTable'
+import { RAG检索最低分 } from './deepseekConfig'
 
 export interface RetrievedChunk extends KnowledgeChunk {
   score: number
-}
-
-interface PatternRule {
-  patterns: RegExp[]
-  boostCategories: string[]
-  boostSources: string[]
 }
 
 function tokenize(text: string): string[] {
@@ -81,90 +77,22 @@ function cosineSimilarity(a: Map<string, number>, b: Map<string, number>): numbe
   return dot / (Math.sqrt(normA) * Math.sqrt(normB))
 }
 
-const PATTERN_RULES: PatternRule[] = [
-  {
-    patterns: [/你是谁/, /叫什么/, /名字/, /姓名/, /自我介绍一下/, /介绍一下自己/],
-    boostCategories: ['personalInfo'],
-    boostSources: ['personalInfo.ts'],
-  },
-  {
-    patterns: [/最擅长/, /擅长/, /优势/, /核心竞争力/],
-    boostCategories: ['techStack'],
-    boostSources: ['workspace'],
-  },
-  {
-    patterns: [/技术栈/, /用什么技术/, /技术/, /技能/, /会什么/],
-    boostCategories: ['techStack'],
-    boostSources: ['workspace'],
-  },
-  {
-    patterns: [/暮澜纪元/, /xrm/, /mmorpg/, /服务端/],
-    boostCategories: ['projects', 'experience'],
-    boostSources: ['projects.ts', 'experience.ts'],
-  },
-  {
-    patterns: [/暮澜纪元/],
-    boostCategories: ['projects'],
-    boostSources: ['projects.ts'],
-  },
-  {
-    patterns: [/项目/, /作品/, /做过什么/],
-    boostCategories: ['projects'],
-    boostSources: ['projects.ts'],
-  },
-  {
-    patterns: [/经历/, /经验/, /工作/, /实习/],
-    boostCategories: ['experience'],
-    boostSources: ['experience.ts'],
-  },
-  {
-    patterns: [/教育/, /学校/, /大学/, /专业/, /学历/],
-    boostCategories: ['education'],
-    boostSources: ['personalInfo.ts', 'education.ts'],
-  },
-  {
-    patterns: [/设计/, /ui/, /ux/, /figma/, /品牌/],
-    boostCategories: ['design'],
-    boostSources: ['design.ts'],
-  },
-  {
-    patterns: [/音乐/, /架子鼓/, /证书/, /乐器/],
-    boostCategories: ['music'],
-    boostSources: ['music.ts'],
-  },
-  {
-    patterns: [/媒体/, /视频/, /b站/, /小说/, /相声/, /创作/],
-    boostCategories: ['media'],
-    boostSources: ['media.ts'],
-  },
-  {
-    patterns: [/联系方式/, /邮箱/, /电话/, /github/, /bilibili/, /怎么联系/],
-    boostCategories: ['personalInfo'],
-    boostSources: ['personalInfo.ts'],
-  },
-  {
-    patterns: [/岗位/, /职位/, /目标/, /求职/, /期望/],
-    boostCategories: ['personalInfo'],
-    boostSources: ['personalInfo.ts'],
-  },
-]
-
 function applyPatternBoost(question: string, score: number, chunk: KnowledgeChunk): number {
+  const 文本 = question.toLowerCase()
   let bonus = 0
-  for (const rule of PATTERN_RULES) {
-    if (rule.patterns.some((pattern) => pattern.test(question))) {
-      if (rule.boostCategories.includes(chunk.metadata.category)) bonus += 0.35
-      if (rule.boostSources.includes(chunk.metadata.source)) bonus += 0.25
+  for (const 定义 of 共享意图表) {
+    if (定义.关键词.some((词) => 文本.includes(词.toLowerCase()))) {
+      if (定义.boostCategories.includes(chunk.metadata.category)) bonus += 0.35
+      if (定义.boostSources.includes(chunk.metadata.source)) bonus += 0.25
     }
   }
   return score + bonus
 }
 
-export function retrieveChunks(question: string, topK = 5): RetrievedChunk[] {
+export function retrieveChunks(question: string, topK = 5, 最低分: number = RAG检索最低分): RetrievedChunk[] {
+  if (是否纯问候(question)) return []
   const queryTokens = tokenize(question)
-  if (queryTokens.length === 0) {
-    return resumeKnowledgeBase.slice(0, topK).map((chunk) => ({ ...chunk, score: 0 }))
-  }
+  if (queryTokens.length === 0) return []
 
   const docTokens = resumeKnowledgeBase.map((chunk) => tokenize(chunk.content))
   const idf = computeIdf([queryTokens, ...docTokens])
@@ -177,5 +105,8 @@ export function retrieveChunks(question: string, topK = 5): RetrievedChunk[] {
     return { ...chunk, score: boostedScore }
   })
 
-  return scored.sort((a, b) => b.score - a.score).slice(0, topK)
+  return scored
+    .filter((项) => 项.score >= 最低分)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK)
 }

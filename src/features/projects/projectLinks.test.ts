@@ -4,14 +4,24 @@ import { experiences, educatorBilibiliUrl, wowguildVideoUrl } from '../../data/e
 import { personalInfo } from '../../data/personalInfo'
 
 describe('项目链接完整性', () => {
-  it('每个项目至少有一个有效GitHub链接', () => {
+  it('除暮澜纪元外每个项目至少有一个有效GitHub链接', () => {
     expect(projects.length).toBeGreaterThan(0)
     for (const 项目 of projects) {
+      if (项目.id === 'xrm') {
+        expect(项目.links.length).toBe(0)
+        continue
+      }
       expect(项目.links.length).toBeGreaterThan(0)
       for (const 链接 of 项目.links) {
         expect(链接.url.startsWith('https://github.com/')).toBe(true)
       }
     }
+  })
+
+  it('暮澜纪元便签不展示GitHub链接', () => {
+    const 暮澜 = projects.find((项目) => 项目.id === 'xrm')
+    expect(暮澜).toBeDefined()
+    expect(暮澜?.links ?? []).toHaveLength(0)
   })
 
   it('数据中心项目链接精确等于用户指定地址', () => {

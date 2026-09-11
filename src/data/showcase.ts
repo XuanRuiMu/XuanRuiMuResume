@@ -76,9 +76,7 @@ export const showcaseRows: ShowcaseRow[] = [
         href: 'https://github.com/XuanRuiMu/XuanRuiMuResume',
       },
       { id: 'xrmUi', titleKey: 'showcase.cards.xrmUi.title', descKey: 'showcase.cards.xrmUi.desc' },
-      { id: 'aiToolchain', titleKey: 'showcase.cards.aiToolchain.title', descKey: 'showcase.cards.aiToolchain.desc' },
       { id: 'toolbox', titleKey: 'showcase.cards.toolbox.title', descKey: 'showcase.cards.toolbox.desc' },
-      { id: 'generative', titleKey: 'showcase.cards.generative.title', descKey: 'showcase.cards.generative.desc' },
     ],
   },
   {

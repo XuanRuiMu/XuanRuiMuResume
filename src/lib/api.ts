@@ -13,20 +13,6 @@ export interface AnalyticsStats {
   stored: boolean
 }
 
-export interface ContactPayload {
-  name: string
-  contact: string
-  email?: string
-  message: string
-  website?: string
-}
-
-export interface ContactResponse {
-  success: boolean
-  mode?: 'sent' | 'queued' | 'ignored'
-  error?: string
-}
-
 export const ANALYTICS_ENABLED = import.meta.env.VITE_ENABLE_ANALYTICS === 'true'
 
 const ANALYTICS_KEY = ['analytics'] as const
@@ -73,15 +59,5 @@ export function useTrackVisit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ANALYTICS_KEY })
     },
-  })
-}
-
-export function useContactSubmit() {
-  return useMutation({
-    mutationFn: (payload: ContactPayload) =>
-      apiFetch<ContactResponse>('/api/contact', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      }),
   })
 }

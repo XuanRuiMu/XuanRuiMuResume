@@ -9,7 +9,7 @@ describe('useAppStore', () => {
       commandOpen: false,
       chatOpen: false,
       aiMessages: [],
-      aiThinking: true,
+      aiThinking: 'high',
       reducedMotion: false,
       performanceMetrics: {},
       frameMetrics: { fps: 0, p95: 0, avg: 0, downgradeCount: 0, upgradeCount: 0 },
@@ -23,13 +23,15 @@ describe('useAppStore', () => {
     expect(state.commandOpen).toBe(false)
     expect(state.chatOpen).toBe(false)
     expect(state.aiMessages).toHaveLength(0)
-    expect(state.aiThinking).toBe(true)
+    expect(state.aiThinking).toBe('high')
   })
 
-  it('should toggle ai thinking', () => {
+  it('should set ai thinking intensity', () => {
     const { setAiThinking } = useAppStore.getState()
-    setAiThinking(false)
-    expect(useAppStore.getState().aiThinking).toBe(false)
+    setAiThinking('max')
+    expect(useAppStore.getState().aiThinking).toBe('max')
+    setAiThinking('off')
+    expect(useAppStore.getState().aiThinking).toBe('off')
   })
 
   it('should set active section', () => {

@@ -1072,8 +1072,10 @@ html.circular-reveal-active::view-transition-old(root) {
   line-height: var(--note-body-line);
   letter-spacing: 0.004em;
   color: var(--note-text-soft);
-  overflow-wrap: break-word;
-  word-break: break-word;
+  /* 项目描述自然分行：不限字母/单词必须同行，允许在任意字符处换行 */
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  line-break: anywhere;
 }
 
 .clothesline-note-link {

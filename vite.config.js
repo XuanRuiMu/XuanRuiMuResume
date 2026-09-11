@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
@@ -47,10 +47,12 @@ function preloadCSSPlugin() {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  return {
   plugins: [
     observabilityPlugin(),
-    // dev 环境本地数据接口：/api/contact、/api/analytics 落盘到 data/（生产走 functions/）
+    // dev 环境本地数据接口：/api/analytics 落盘到 data/（生产走 functions/）
     开发数据接口插件({ dataDir: path.resolve(__dirname, 'data') }),
     // Serve /test-starry/ 目录索引
     {
@@ -140,7 +142,7 @@ export default defineConfig({
       },
       // GLM（Anthropic 兼容端点）同理：开发走本地代理，生产直连配置的 BASE（见 src/ai/models.ts）。
       '/api/glm': {
-        target: process.env.VITE_GLM_BASE_URL || 'https://open.bigmodel.cn/api/anthropic',
+        target: env.VITE_GLM_BASE_URL || 'https://open.bigmodel.cn/api/anthropic',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path.replace(/^\/api\/glm/, '/v1/messages'),
@@ -216,4 +218,5 @@ export default defineConfig({
     // 仅扫描真实入口，避免预打包扫描器误解析 public/ 下走 CDN importmap 的测试页（如 S2-effects.html）
     entries: ['index.html'],
   },
+  }
 })

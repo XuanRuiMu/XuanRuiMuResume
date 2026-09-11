@@ -49,7 +49,7 @@ export class MemoryKV implements KVNamespace {
 }
 
 export function createRequest(method: string, body?: unknown, headers?: Record<string, string>): Request {
-  return new Request('https://example.com/api/contact', {
+  return new Request('https://example.com/api/analytics', {
     method,
     headers: {
       'Content-Type': 'application/json',

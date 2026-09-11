@@ -1,5 +1,4 @@
 import type { Project } from './types'
-import { personalInfo } from './personalInfo'
 import { ta } from '../i18n/translations'
 
 export const lovewithmeGithubUrl = 'https://github.com/XuanRuiMu/HeWoLianAiBa'
@@ -12,7 +11,7 @@ export const projects: Project[] = [
     descKey: 'data.projects.xrm.desc',
     tags: ta('data.projects.xrm.tags'),
     metricKeys: ['data.projects.xrm.metrics.classes', 'data.projects.xrm.metrics.systems'],
-    links: [{ labelKey: 'projects.link.github', url: personalInfo.github }],
+    links: [],
   },
   {
     id: 'lovewithme',

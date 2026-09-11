@@ -1,11 +1,12 @@
 /**
  * 开发环境数据接口（Vite 插件）。
  *
- * 根因背景：/api/contact、/api/analytics 的生产实现是 Cloudflare Pages Functions
- * （functions/api/*.ts，依赖 KV 绑定），本地 `npm run dev` 下这些路径无人应答，
- * 留言表单必然报错、访问计数无从谈起——表单沦为摆设。本插件在 dev server 内提供
- * 同名路由的文件落盘实现：数据存在项目 data/ 目录（用户要求"数据存项目文件夹内"），
+ * 根因背景：/api/analytics 的生产实现是 Cloudflare Pages Functions
+ * （functions/api/*.ts，依赖 KV 绑定），本地 `npm run dev` 下该路径无人应答，
+ * 访问计数无从谈起。本插件在 dev server 内提供同名路由的文件落盘实现：
+ * 数据存在项目 data/ 目录（用户要求"数据存项目文件夹内"），
  * 生产构建不受影响（插件仅在 configureServer 生效，functions/ 契约保持不变）。
+ * 留言表单已下线（生产链路不可达），本插件不再承载 /api/contact。
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -27,26 +28,6 @@ export function 写Json(dataDir, file, data) {
 
 /** 访问事件上限：防止 events 数组无限膨胀（超出即淘汰最旧记录） */
 const 访问记录上限 = 5000
-
-/** 留言记录上限：同上 */
-const 留言上限 = 1000
-
-/**
- * 校验留言载荷（与 functions/api/contact.ts 的 zod schema 对齐的最小实现）：
- * name 1-64、联系方式 2-128（邮箱/手机/微信/QQ 均可）、message 1-2000、website 必须为空（蜜罐字段）。
- * 返回 null=合法，否则为错误字符串。兼容旧字段 email。
- */
-export function 校验留言(body) {
-  if (typeof body !== 'object' || body === null) return 'invalid_json'
-  const { name, message, website } = body
-  const 联系方式 = body.contact ?? body.email
-  if (typeof name !== 'string' || name.length < 1 || name.length > 64) return 'validation_error:name'
-  if (typeof 联系方式 !== 'string' || 联系方式.trim().length < 2 || 联系方式.length > 128)
-    return 'validation_error:contact'
-  if (typeof message !== 'string' || message.length < 1 || message.length > 2000) return 'validation_error:message'
-  if (website !== undefined && website !== '' && website !== null) return 'ignored:honeypot'
-  return null
-}
 
 /** 校验访问上报载荷：path 1-512、timestamp 正整数（referrer/userAgent 宽松截断即可） */
 export function 校验访问(body) {
@@ -75,11 +56,9 @@ export function 登记访问(状态, timestamp) {
  * 请求处理核心（与 Vite 解耦，便于单测）：
  * - GET  /analytics → 统计快照
  * - POST /analytics → 登记 + 返回新快照
- * - POST /contact   → 校验 + 落盘留言
  * 其余一律 next()（含 /deepseek 代理）。
  */
 export function createDevDataHandler({ dataDir, log = () => {} }) {
-  const 消息文件 = 'dev-messages.json'
   const 访问文件 = 'dev-analytics.json'
 
   function 读Body(req) {
@@ -140,38 +119,6 @@ export function createDevDataHandler({ dataDir, log = () => {} }) {
         写Json(dataDir, 访问文件, 状态)
         log(`[dev-api] POST /analytics → total=${快照.total} last24h=${快照.last24h}`)
         回复(res, 200, { success: true, ...快照 })
-        return
-      }
-
-      if (方法 === 'POST' && 路由.startsWith('/contact')) {
-        const body = await 读Body(req)
-
-        // 蜜罐命中：机器人流量静默吞掉（对齐 functions 版行为）
-        if (校验留言(body) === 'ignored:honeypot') {
-          回复(res, 200, { success: true, mode: 'ignored' })
-          return
-        }
-        const 错误 = 校验留言(body)
-        if (错误) {
-          回复(res, 400, { success: false, error: 错误 })
-          return
-        }
-
-        const 列表 = 读Json(dataDir, 消息文件, [])
-        列表.push({
-          name: body.name,
-          contact: (body.contact ?? body.email ?? '').trim(),
-          message: body.message,
-          receivedAt: new Date().toISOString(),
-        })
-        while (列表.length > 留言上限) {
-          列表.shift()
-        }
-        写Json(dataDir, 消息文件, 列表)
-        log(
-          `[dev-api] 新留言 #${列表.length} 来自 ${body.name} <${body.contact ?? body.email}>：${body.message.slice(0, 40)}`
-        )
-        回复(res, 200, { success: true, mode: 'queued' })
         return
       }
     } catch (err) {

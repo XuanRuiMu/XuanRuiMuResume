@@ -189,9 +189,6 @@ function ExperienceCard({ entry, isEven, reducedMotion }: ExperienceCardProps) {
             </ul>
 
             <div className={`experience-achievements mt-3 ${reducedMotion ? 'is-visible' : ''}`}>
-              <p className="mb-2 text-xs font-semibold tracking-wide text-[#aaa6c3]">
-                {t('experience.achievementsTitle')}
-              </p>
               <ul className="space-y-1.5">
                 {(entry.achievementKeys ?? []).map((key, index) => (
                   <li key={key} className={`text-[13px] leading-relaxed ${ACHIEVEMENT_GRADIENTS[index % 3]}`}>

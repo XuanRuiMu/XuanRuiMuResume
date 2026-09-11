@@ -12,12 +12,6 @@ export interface KVNamespace {
 
 export interface AppEnv {
   ANALYTICS_KV?: KVNamespace
-  CONTACT_KV?: KVNamespace
-  RESEND_API_KEY?: string
-  SENDGRID_API_KEY?: string
-  CONTACT_PROVIDER?: 'resend' | 'sendgrid'
-  CONTACT_FROM_EMAIL?: string
-  CONTACT_TO_EMAIL?: string
 }
 
 export interface FunctionContext {

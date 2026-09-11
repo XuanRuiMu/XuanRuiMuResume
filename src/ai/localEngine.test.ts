@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getLocalAnswer } from './localEngine'
 import { personalInfo } from '../data/personalInfo'
+import { t } from '../i18n/translations'
 
 describe('localEngine', () => {
   it('returns text answer for name question', () => {
@@ -51,5 +52,27 @@ describe('localEngine', () => {
     const result = getLocalAnswer('宇宙终极答案')
     expect(result.content).toContain(personalInfo.email)
     expect(result.component).toBeUndefined()
+  })
+
+  it('问候语返回问候终态而非没准备答案（你好/您好/hi/hello）', () => {
+    const 期望问候 = t('chat.answers.greeting')
+    for (const q of ['你好', '您好', 'hi', 'hello']) {
+      const result = getLocalAnswer(q)
+      expect(result.role).toBe('assistant')
+      expect(result.content).toBe(期望问候)
+      expect(result.content).not.toContain('没准备答案')
+      expect(result.component).toBeUndefined()
+    }
+  })
+
+  it('谢谢返回感谢终态', () => {
+    const result = getLocalAnswer('谢谢')
+    expect(result.content).toBe(t('chat.answers.thanks'))
+    expect(result.content).not.toContain('没准备答案')
+  })
+
+  it('再见返回告别终态', () => {
+    const result = getLocalAnswer('再见')
+    expect(result.content).toBe(t('chat.answers.farewell'))
   })
 })

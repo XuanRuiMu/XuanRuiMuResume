@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createDevDataHandler, 校验留言, 校验访问, 登记访问, 读Json, 写Json } from './dev-api-plugin.js'
+import { createDevDataHandler, 校验访问, 登记访问, 读Json, 写Json } from './dev-api-plugin.js'
 
 let dataDir
 let log
@@ -63,23 +63,6 @@ afterEach(() => {
 })
 
 describe('校验函数', () => {
-  it('合法留言返回 null', () => {
-    expect(校验留言({ name: '张三', contact: 'a@b.com', message: '你好', website: '' })).toBeNull()
-    expect(校验留言({ name: '张三', contact: '13800001111', message: '你好' })).toBeNull()
-    expect(校验留言({ name: '张三', email: 'a@b.com', message: '你好' })).toBeNull()
-  })
-
-  it('非法联系方式/空名/超长留言被拦截', () => {
-    expect(校验留言({ name: '', contact: 'a@b.com', message: '你好' })).toBe('validation_error:name')
-    expect(校验留言({ name: '张三', contact: 'a', message: '你好' })).toBe('validation_error:contact')
-    expect(校验留言({ name: '张三', contact: 'a@b.com', message: '' })).toBe('validation_error:message')
-    expect(校验留言({ name: '张三', contact: 'a@b.com', message: 'x'.repeat(2001) })).toBe('validation_error:message')
-  })
-
-  it('蜜罐字段命中返回 ignored（机器人静默吞掉）', () => {
-    expect(校验留言({ name: '张三', contact: 'a@b.com', message: '你好', website: 'spam' })).toBe('ignored:honeypot')
-  })
-
   it('访问载荷：path 与 timestamp 必须合法', () => {
     expect(校验访问({ path: '/', timestamp: Date.now() })).toBeNull()
     expect(校验访问({ path: '', timestamp: Date.now() })).toBe('validation_error:path')
@@ -115,31 +98,8 @@ describe('createDevDataHandler（HTTP 层）', () => {
     expect(持久化.events).toHaveLength(1)
   })
 
-  it('POST /contact 合法留言落盘并返回 queued', async () => {
-    const res = await 调用(构造Req('POST', '/contact', { name: '测试', contact: 't@t.com', message: '留言内容' }))
-    expect(res.statusCode).toBe(200)
-    expect(res.body).toEqual({ success: true, mode: 'queued' })
-    const 留言 = 读Json(dataDir, 'dev-messages.json', [])
-    expect(留言).toHaveLength(1)
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('新留言 #1'))
-  })
-
-  it('POST /contact 蜜罐命中返回 ignored 且不落盘', async () => {
-    const res = await 调用(
-      构造Req('POST', '/contact', { name: 'bot', contact: 'b@b.com', message: 'x', website: 'http://spam' })
-    )
-    expect(res.body.mode).toBe('ignored')
-    expect(读Json(dataDir, 'dev-messages.json', [])).toHaveLength(0)
-  })
-
-  it('POST /contact 非法载荷返回 400', async () => {
-    const res = await 调用(构造Req('POST', '/contact', { name: '', contact: 'a', message: '' }))
-    expect(res.statusCode).toBe(400)
-    expect(res.body.success).toBe(false)
-  })
-
   it('损坏的 JSON 请求体返回 400 而非崩溃', async () => {
-    const req = 构造Req('POST', '/contact')
+    const req = 构造Req('POST', '/analytics')
     req.on = (event, cb) => {
       if (event === 'data') setTimeout(() => cb('{broken'), 0)
       if (event === 'end') setTimeout(cb, 5)

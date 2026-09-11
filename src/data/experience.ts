@@ -27,7 +27,6 @@ export const experiences: ExperienceEntry[] = [
     achievementKeys: [
       'data.experience.entries.bachelor.achievement1',
       'data.experience.entries.bachelor.achievement2',
-      'data.experience.entries.bachelor.achievement3',
     ],
   },
   {
@@ -52,7 +51,6 @@ export const experiences: ExperienceEntry[] = [
     achievementKeys: [
       'data.experience.entries.wowguild.achievement1',
       'data.experience.entries.wowguild.achievement2',
-      'data.experience.entries.wowguild.achievement3',
     ],
     links: [{ labelKey: 'projects.link.bilibili', url: wowguildVideoUrl }],
   },
